@@ -1,6 +1,6 @@
 # MUST be at the very top - fixes DNS issues on cloud platforms like Render
-import eventlet
-eventlet.monkey_patch(socket=True, dns=False)
+import os
+os.environ['EVENTLET_NO_GREENDNS'] = 'yes'
 
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
