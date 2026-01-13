@@ -3616,7 +3616,7 @@ def on_join(data):
     if room:
         join_room(room)
 
-if __name__ == '__main__':
+def init_db_schema():
     from sqlalchemy import text, inspect
     
     with app.app_context():
@@ -3678,5 +3678,9 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
+# Run schema check on import so Gunicorn triggers it
+init_db_schema()
+
+if __name__ == '__main__':
     # Use socketio.run instead of app.run
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
