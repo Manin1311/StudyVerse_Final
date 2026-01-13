@@ -1,3 +1,7 @@
+# MUST be at the very top - fixes DNS issues on cloud platforms like Render
+import eventlet
+eventlet.monkey_patch(socket=True, dns=False)
+
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
