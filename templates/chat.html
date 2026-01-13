@@ -1,0 +1,334 @@
+{% extends "layout.html" %}
+
+{% block title %}AI Coach - StudyVerse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">AI Coach</h1>
+</div>
+
+<div class="card" style="display: flex; flex-direction: column; height: calc(100vh - 150px); padding: 0;">
+    <!-- Chat Header -->
+    <div
+        style="padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02);">
+        <div
+            style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: grid; place-items: center; color: white;">
+            <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+            <div style="font-weight: 600; font-size: 1.1rem;">StudyVerse AI</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">Always here to help</div>
+        </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div id="messagesContainer"
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 24px;">
+        {% if chat_messages %}
+        {% for m in chat_messages %}
+        <div class="ai-msg {% if m.role == 'user' %}user{% else %}bot{% endif %}">
+            {% if m.role != 'user' %}
+            <div class="bot-icon"
+                style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: grid; place-items: center; color: white; flex-shrink: 0;">
+                <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
+            </div>
+            {% endif %}
+            <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                <div class="msg-bubble markdown-content">
+                    {{ m.content }}
+                </div>
+                <div
+                    style="font-size: 0.7rem; color: var(--text-secondary); {% if m.role == 'user' %}text-align: right;{% endif %} margin: 0 4px;">
+                    <span data-timestamp="{{ m.created_at.isoformat() if m.created_at else '' }}">{{
+                        to_ist_time(m.created_at) if m.created_at else '' }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <!-- Welcome Message -->
+        <div class="ai-msg bot">
+            <div
+                style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: grid; place-items: center; color: white; flex-shrink: 0;">
+                <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
+            </div>
+            <div class="msg-bubble markdown-content">
+                Hello! I'm your **AI study coach**. I can help you with your syllabus, explain concepts, or just chat.
+                How can I help you today?
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Loading Indicator (Hidden by default) -->
+        <div id="loadingIndicator" class="ai-msg bot" style="display: none;">
+            <div
+                style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: grid; place-items: center; color: white; flex-shrink: 0;">
+                <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
+            </div>
+            <div class="msg-bubble">
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div style="padding: 16px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+        <form id="chatForm" style="display: flex; gap: 12px; align-items: center;">
+            <div style="flex: 1; position: relative;">
+                <input type="text" id="chatInput" autocomplete="off" placeholder="Ask anything... (or click mic)"
+                    style="width: 100%; padding: 12px 40px 12px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none;">
+                <!-- Voice Input Trigger -->
+                <i id="micBtn" class="fa-solid fa-microphone"
+                    style="position: absolute; right: 12px; top: 13px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s;"></i>
+            </div>
+
+            <button id="sendButton" type="submit"
+                style="background: var(--accent-green); color: black; border: none; width: 46px; height: 44px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; transition: transform 0.1s;">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Styles for Markdown & Typing -->
+<style>
+    .markdown-content ul,
+    .markdown-content ol {
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .markdown-content p {
+        margin-bottom: 10px;
+    }
+
+    .markdown-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    .markdown-content code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9em;
+        color: #ff79c6;
+    }
+
+    .markdown-content pre {
+        background: #1e1e1e;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin-bottom: 10px;
+    }
+
+    .markdown-content pre code {
+        background: none;
+        padding: 0;
+        color: #f8f8f2;
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3 {
+        margin-top: 10px;
+        margin-bottom: 8px;
+        font-size: 1.1em;
+        font-weight: 700;
+    }
+
+    .mic-active {
+        color: #ef4444 !important;
+        animation: pulse-mic 1.5s infinite;
+    }
+
+    @keyframes pulse-mic {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Typing Animation */
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 4px 0;
+    }
+
+    .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0);
+        }
+
+        40% {
+            transform: scale(1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<!-- Markdown Parsing Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+<!-- Timestamp Utility -->
+<script src="{{ url_for('static', filename='js/timestamp_utils.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+    document.querySelector('[data-nav="chat"]').classList.add('active');
+
+    // ----------------------------------------------------
+    // VOICE AI INTEGRATION (Web Speech API)
+    // ----------------------------------------------------
+    const micBtn = document.getElementById('micBtn');
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+
+    // Check browser support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+    let isSpeaking = false;
+
+    // Text-to-Speech Synth
+    const synth = window.speechSynthesis;
+    let voiceEnabled = true;
+
+    // Create Speaker Toggle in Header dynamically
+    const headerTitleDiv = document.querySelector('.card .page-header, .card > div:first-child > div:last-child');
+    if (headerTitleDiv) {
+        const speakerIcon = document.createElement('i');
+        speakerIcon.className = 'fa-solid fa-volume-high';
+        speakerIcon.style.cssText = 'font-size: 1rem; color: var(--text-secondary); cursor: pointer; margin-left: auto; transition: color 0.2s;';
+        speakerIcon.title = 'Toggle Voice Output';
+        speakerIcon.onclick = () => {
+            voiceEnabled = !voiceEnabled;
+            speakerIcon.className = voiceEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            speakerIcon.style.color = voiceEnabled ? 'var(--accent-green)' : 'var(--text-secondary)';
+            if (!voiceEnabled) synth.cancel();
+        };
+        // Insert before title or append to header container
+        document.querySelector('.card > div:first-child').appendChild(speakerIcon);
+        // Set initial color active
+        speakerIcon.style.color = 'var(--accent-green)';
+    }
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add('mic-active');
+            chatInput.placeholder = "Listening...";
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove('mic-active');
+            chatInput.placeholder = "Ask anything... (or click mic)";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            chatInput.value = transcript;
+            // Auto submit removed as per user request
+            // chatForm.dispatchEvent(new Event('submit')); 
+        };
+
+        // Mic Click Handler
+        micBtn.onclick = () => {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                synth.cancel(); // Stop any current speaking
+                recognition.start();
+            }
+        };
+    } else {
+        micBtn.style.display = 'none';
+        console.warn("Web Speech API not supported in this browser.");
+    }
+
+    // Hook into the existing Chat UI to read responses
+    // We observe the message container for new bot messages
+    const observer = new MutationObserver((mutations) => {
+        if (!voiceEnabled) return;
+
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.classList && node.classList.contains('ai-msg') && node.classList.contains('bot') && node.id !== 'loadingIndicator') {
+                        // Found a new bot message
+                        const textContent = node.querySelector('.msg-bubble').textContent;
+                        speak(textContent);
+                    }
+                });
+            }
+        });
+    });
+
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+        observer.observe(messagesContainer, { childList: true });
+    }
+
+    function speak(text) {
+        if (synth.speaking) {
+            console.error('speechSynthesis.speaking');
+            return;
+        }
+        if (text !== '') {
+            // Strip markdown symbols for cleaner speech
+            const cleanText = text.replace(/[*#_`]/g, '');
+            const utterThis = new SpeechSynthesisUtterance(cleanText);
+            utterThis.onend = function (event) {
+                // console.log('SpeechSynthesisUtterance.onend');
+            }
+            utterThis.onerror = function (event) {
+                // console.error('SpeechSynthesisUtterance.onerror');
+            }
+            // Optional: Choose a specific voice
+            // const voices = synth.getVoices();
+            // utterThis.voice = voices[0]; 
+
+            utterThis.rate = 1.0;
+            synth.speak(utterThis);
+        }
+    }
+</script>
+{% endblock %}
