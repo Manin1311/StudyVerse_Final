@@ -140,11 +140,77 @@
                     <i class="fa-solid fa-user-circle"></i>
                     <span>Settings</span>
                 </a>
+                <!-- Auto-Refresh Toggle -->
+                <button id="auto-refresh-toggle" class="nav-item"
+                    style="background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; font-size: 1rem;">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Auto Refresh: <span id="refresh-status"
+                            style="font-weight: 700; color: var(--text-secondary);">OFF</span></span>
+                </button>
+
                 <a href="/logout" class="nav-item" style="color: var(--destructive);">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>Logout</span>
                 </a>
             </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const toggleBtn = document.getElementById('auto-refresh-toggle');
+                    const statusSpan = document.getElementById('refresh-status');
+                    let refreshTimer = null;
+
+                    // Load state
+                    let isAutoRefresh = localStorage.getItem('autoRefresh') === 'true';
+                    updateUI();
+
+                    if (toggleBtn) {
+                        toggleBtn.addEventListener('click', () => {
+                            isAutoRefresh = !isAutoRefresh;
+                            localStorage.setItem('autoRefresh', isAutoRefresh);
+                            updateUI();
+                        });
+                    }
+
+                    function updateUI() {
+                        if (!statusSpan) return;
+                        if (isAutoRefresh) {
+                            statusSpan.textContent = "ON (20s)";
+                            statusSpan.style.color = "var(--accent-green)";
+                            startTimer();
+                        } else {
+                            statusSpan.textContent = "OFF";
+                            statusSpan.style.color = "var(--text-secondary)";
+                            stopTimer();
+                        }
+                    }
+
+                    function startTimer() {
+                        if (refreshTimer) clearInterval(refreshTimer);
+                        refreshTimer = setInterval(() => {
+                            // Don't refresh if user is typing or selecting text
+                            const activeTag = document.activeElement.tagName;
+                            if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+                                console.log('Skipping auto-refresh due to active input');
+                                return;
+                            }
+
+                            // Don't refresh on pages where real-time state is critical and might be lost
+                            const path = window.location.pathname;
+                            if (path.includes('/battle') || path.includes('/chat') || path.includes('/group')) {
+                                console.log('Skipping auto-refresh on active session page');
+                                return;
+                            }
+
+                            window.location.reload();
+                        }, 20000); // 20 seconds
+                    }
+
+                    function stopTimer() {
+                        if (refreshTimer) clearInterval(refreshTimer);
+                    }
+                });
+            </script>
         </aside>
 
         <!-- Flash Messages -->
