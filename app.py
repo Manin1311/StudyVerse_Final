@@ -704,14 +704,22 @@ class SyllabusService:
             if raw.lower().startswith("json"):
                 raw = raw[4:].lstrip()
 
+        parsed = None
+        # Try to parse JSON with multiple fallback approaches
         try:
             parsed = json.loads(raw)
-        except Exception:
-            start = raw.find("{")
-            end = raw.rfind("}")
-            if start == -1 or end == -1 or end <= start:
-                raise
-            parsed = json.loads(raw[start : end + 1])
+        except json.JSONDecodeError:
+            # Try to extract JSON from the response
+            try:
+                start = raw.find("{")
+                end = raw.rfind("}")
+                if start != -1 and end != -1 and end > start:
+                    parsed = json.loads(raw[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+        
+        if parsed is None:
+            raise ValueError("AI response could not be parsed as JSON. Please try again.")
 
         tasks = parsed.get("tasks", [])
         if not isinstance(tasks, list):
@@ -1194,6 +1202,54 @@ def dashboard():
         .limit(5)
         .all()
     )
+    
+    # Count online users (active in last 5 minutes)
+    online_threshold = datetime.utcnow() - timedelta(minutes=5)
+    online_users = User.query.filter(User.last_seen >= online_threshold).count()
+    # Add at least 1 for current user
+    if online_users < 1:
+        online_users = 1
+    
+    # Daily Quests (simple example quests based on user activity)
+    quests = []
+    # Quest 1: Complete 3 tasks today
+    today_completed = Todo.query.filter_by(user_id=current_user.id, completed=True).filter(
+        db.func.date(Todo.created_at) == datetime.utcnow().date()
+    ).count()
+    quests.append({
+        'description': 'Complete 3 tasks',
+        'icon': 'fa-check-circle',
+        'xp_reward': 50,
+        'progress': min(today_completed, 3),
+        'target': 3,
+        'completed': today_completed >= 3
+    })
+    
+    # Quest 2: Study for 30 minutes
+    today_study_mins = (
+        db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
+        .filter(StudySession.user_id == current_user.id)
+        .filter(db.func.date(StudySession.completed_at) == datetime.utcnow().date())
+        .scalar()
+    ) or 0
+    quests.append({
+        'description': 'Study for 30 minutes',
+        'icon': 'fa-clock',
+        'xp_reward': 75,
+        'progress': min(today_study_mins, 30),
+        'target': 30,
+        'completed': today_study_mins >= 30
+    })
+    
+    # Quest 3: Log in daily (always complete if you're seeing this)
+    quests.append({
+        'description': 'Log in today',
+        'icon': 'fa-door-open',
+        'xp_reward': 25,
+        'progress': 1,
+        'target': 1,
+        'completed': True
+    })
 
     return render_template(
         'dashboard.html',
@@ -1207,6 +1263,8 @@ def dashboard():
         topic_rows=topic_rows,
         recent_todos=recent_todos,
         upcoming_todos=upcoming_todos,
+        online_users=online_users,
+        quests=quests,
     )
 
 @app.route('/chat')
@@ -2561,6 +2619,42 @@ def progress():
         daily_hours=daily,
         top_topics=top_topics,
         streak_freezes=streak_freezes
+    )
+
+@app.route('/leaderboard')
+@login_required
+def leaderboard():
+    """Global leaderboard based on level and XP."""
+    # Get top 50 users ordered by level (desc), then by total_xp (desc)
+    top_users = (
+        User.query
+        .filter(User.is_public_profile == True)
+        .order_by(User.level.desc(), User.total_xp.desc())
+        .limit(50)
+        .all()
+    )
+    
+    # Add rank info to each user for display
+    for user in top_users:
+        user.rank_info = GamificationService.get_rank(user.level)
+    
+    # Find current user's rank
+    my_rank = 1
+    all_users_ranked = (
+        User.query
+        .filter(User.is_public_profile == True)
+        .order_by(User.level.desc(), User.total_xp.desc())
+        .all()
+    )
+    for i, u in enumerate(all_users_ranked):
+        if u.id == current_user.id:
+            my_rank = i + 1
+            break
+    
+    return render_template(
+        'leaderboard.html',
+        leaderboard=top_users,
+        my_rank=my_rank
     )
 
 @app.route('/settings')

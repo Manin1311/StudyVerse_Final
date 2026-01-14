@@ -33,18 +33,6 @@
     </div>
 </div>
 
-<!-- Recommended Matches -->
-<div class="card" style="margin-bottom: 24px; border: 1px solid rgba(167, 139, 250, 0.3);">
-    <div class="card-header">
-        <div class="card-title" style="color: #a78bfa;"><i class="fa-solid fa-wand-magic-sparkles"></i> Recommended
-            Study Buddies</div>
-    </div>
-    <div id="loading-matches" style="text-align: center; padding: 20px; color: var(--text-secondary);">
-        <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing compatibility...
-    </div>
-    <div id="matches-list" style="display: none; gap: 16px;"></div>
-</div>
-
 <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
     <!-- Friend Requests -->
     <div class="card">
@@ -201,64 +189,21 @@
             });
     }
 
-    if (data.status === 'success') {
-        document.getElementById(`req-${reqId}`).remove();
-        // Ideally reload to update "My Friends" list, or manipulate DOM
-        if (action === 'accept') {
-            location.reload();
-        }
-    }
+    function respondRequest(reqId, action) {
+        const endpoint = action === 'accept' ? `/friends/accept/${reqId}` : `/friends/reject/${reqId}`;
+        fetch(endpoint, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById(`req-${reqId}`).remove();
+                    if (action === 'accept') {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.error || 'Failed to process request');
+                }
             });
     }
-
-    // Load Matches
-    const matchesList = document.getElementById('matches-list');
-    const loadingMatches = document.getElementById('loading-matches');
-
-    // Initial load
-    fetch('/api/matches')
-        .then(r => r.json())
-        .then(matches => {
-            loadingMatches.style.display = 'none';
-            if (matches.length > 0) {
-                matchesList.style.display = 'grid'; // Grid layout for cards
-                matchesList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-
-                matches.forEach(m => {
-                    const card = document.createElement('div');
-                    card.style = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.2s;';
-                    card.onmouseover = () => card.style.transform = 'translateY(-2px)';
-                    card.onmouseout = () => card.style.transform = 'translateY(0)';
-
-                    // Topics logic
-                    const topics = m.common_topics.map(t => `<span style="font-size:0.7rem; background:rgba(59,130,246,0.1); color:#60a5fa; padding: 2px 8px; border-radius: 10px;">${t}</span>`).join('');
-
-                    card.innerHTML = `
-                        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
-                            <img src="${m.avatar}" style="width: 48px; height: 48px; border-radius: 50%;">
-                            <div>
-                                <div style="font-weight: 600;">${m.name}</div>
-                                <div style="font-size: 0.8rem; color: ${m.rank.color};"><i class="fa-solid ${m.rank.icon}"></i> ${m.rank.name}</div>
-                            </div>
-                            <div style="margin-left: auto; text-align: right;">
-                                 <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-green);">${m.match_score} pts</div>
-                                 <div style="font-size: 0.7rem; color: var(--text-secondary);">Match</div>
-                            </div>
-                        </div>
-                        ${topics ? `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;">${topics}</div>` : ''}
-                        <button onclick="sendRequest(${m.id}, this)" style="width:100%;" class="btn-secondary">Request Buddy</button>
-                     `;
-                    matchesList.appendChild(card);
-                });
-            } else {
-                matchesList.style.display = 'block';
-                matchesList.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-secondary);">No matches found. Update your public profile or activity!</div>';
-            }
-        })
-        .catch(e => {
-            console.error(e);
-            loadingMatches.innerText = 'Could not load matches.';
-        });
 </script>
 <style>
     .btn-icon {
