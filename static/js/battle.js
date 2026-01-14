@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('connect_error', (error) => {
         console.error('[Battle] Socket connection error:', error);
-        alert('Connection error. Please refresh the page.');
+        // Alert removed to prevent annoyance during temporary disconnects
     });
 
     socket.on('disconnect', (reason) => {
