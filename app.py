@@ -54,11 +54,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Connection pool settings for cloud PostgreSQL (Render, Heroku, etc.)
 # Optimized for concurrent users - prevents crashes and SSL errors
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_recycle': 280,      # Recycle connections before Render's 300s timeout
-    'pool_pre_ping': True,    # Validate connections before using (CRITICAL)
-    'pool_size': 10,          # Handle 10 concurrent DB connections
-    'max_overflow': 20,       # Allow bursts up to 30 total connections
-    'pool_timeout': 30,       # Timeout for getting a connection from pool
+    'pool_recycle': 240,       # Lower than Render's 300s timeout
+    'pool_pre_ping': True,     # Validate connections
+    'pool_size': 5,            # Lower pool size per worker
+    'max_overflow': 10,        # Allow burst
+    'pool_timeout': 30,
 }
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 
