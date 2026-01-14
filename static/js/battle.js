@@ -1,8 +1,9 @@
 // BYTE BATTLE FRONTEND LOGIC
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Socket Init ---
-    const socket = io({ transports: ['websocket', 'polling'] });
+    // --- Socket Init (Simplified for robustness) ---
+    // Allow auto-detection of transports (Polling -> WebSocket)
+    const socket = io();
     let currentRoom = null;
     let isHost = false;
     let battleTimer = null;
