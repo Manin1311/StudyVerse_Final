@@ -18,6 +18,7 @@ def init_mail(app):
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USE_SSL'] = False
     app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+    # Keep the fix for spaces in password as it is robust
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '').replace(' ', '')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 
                                                         f"StudyVerse <{os.environ.get('MAIL_USERNAME')}>")
@@ -28,17 +29,12 @@ def send_async_email(app, msg):
     """Send email asynchronously in a background thread."""
     with app.app_context():
         try:
-            print(f"Attempting to send email to {msg.recipients}...")
             mail.send(msg)
             print(f"✓ Email sent successfully to {msg.recipients}")
         except Exception as e:
             print(f"✗ Failed to send email: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            import sys
-            sys.stdout.flush()
 
-def send_email(subject, recipients, html_body, text_body=None, sync=False):
+def send_email(subject, recipients, html_body, text_body=None):
     """
     Send an email with HTML and optional text body.
     
@@ -47,10 +43,9 @@ def send_email(subject, recipients, html_body, text_body=None, sync=False):
         recipients (list): List of recipient email addresses
         html_body (str): HTML content of the email
         text_body (str, optional): Plain text version of the email
-        sync (bool): If True, send synchronously (blocking). Default False.
     
     Returns:
-        bool: True if email was sent/queued successfully, False otherwise
+        bool: True if email was queued successfully, False otherwise
     """
     from flask import current_app
     
@@ -62,17 +57,11 @@ def send_email(subject, recipients, html_body, text_body=None, sync=False):
             body=text_body or "Please view this email in an HTML-compatible client."
         )
         
-        if sync:
-            send_async_email(current_app._get_current_object(), msg)
-            return True
-        else:
-            # Send email asynchronously to avoid blocking
-            Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
-            return True
+        # Send email asynchronously to avoid blocking
+        Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
+        return True
     except Exception as e:
         print(f"✗ Error preparing email: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return False
 
 def send_welcome_email(user_email, user_first_name, user_last_name=""):
@@ -119,8 +108,7 @@ The StudyVerse Team
             subject=f"Welcome to StudyVerse, {user_first_name}! 🚀",
             recipients=user_email,
             html_body=html_body,
-            text_body=text_body,
-            sync=True
+            text_body=text_body
         )
     except Exception as e:
         print(f"✗ Error sending welcome email: {str(e)}")
