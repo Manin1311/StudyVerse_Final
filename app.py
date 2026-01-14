@@ -47,6 +47,16 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Connection pool settings for cloud PostgreSQL (Render, Heroku, etc.)
+# Optimized for concurrent users - prevents crashes and SSL errors
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 280,      # Recycle connections before Render's 300s timeout
+    'pool_pre_ping': True,    # Validate connections before using (CRITICAL)
+    'pool_size': 10,          # Handle 10 concurrent DB connections
+    'max_overflow': 20,       # Allow bursts up to 30 total connections
+    'pool_timeout': 30,       # Timeout for getting a connection from pool
+}
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 
 # Google OAuth Config - Use environment variables
@@ -62,19 +72,29 @@ google = oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-# Session Configuration - Fix persistent login issues
+# Session Configuration - Environment-aware security
+IS_PRODUCTION = os.getenv('RENDER', False) or os.getenv('PRODUCTION', False)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION  # True on HTTPS (Render)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
-app.config['REMEMBER_COOKIE_SECURE'] = False  # Set to True in production
+app.config['REMEMBER_COOKIE_SECURE'] = IS_PRODUCTION  # True on HTTPS
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize SocketIO
-socketio = SocketIO(app)
+# Initialize SocketIO with production settings - optimized for concurrent users
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",  # Allow all origins (or set to your domain)
+    async_mode='gevent',        # Use gevent for high-performance async (matches Procfile)
+    ping_timeout=120,           # 2 min timeout for slow connections
+    ping_interval=25,           # Keep connection alive every 25s
+    max_http_buffer_size=1e8,   # 100MB max message size
+    logger=False,
+    engineio_logger=False
+)
 
 # AI API Configuration
 AI_API_KEY = os.getenv("AI_API_KEY", "")
