@@ -88,9 +88,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. Entry Logic ---
 
-    buttons.create.addEventListener('click', () => {
-        socket.emit('battle_create', {});
+    // Add connection status handling
+    socket.on('connect', () => {
+        console.log('[Battle] Socket connected successfully');
     });
+
+    socket.on('connect_error', (error) => {
+        console.error('[Battle] Socket connection error:', error);
+        alert('Connection error. Please refresh the page.');
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log('[Battle] Socket disconnected:', reason);
+    });
+
+    if (buttons.create) {
+        buttons.create.addEventListener('click', () => {
+            console.log('[Battle] Create button clicked, emitting battle_create');
+            buttons.create.textContent = "Creating...";
+            buttons.create.disabled = true;
+            socket.emit('battle_create', {});
+
+            // Timeout fallback
+            setTimeout(() => {
+                if (buttons.create.textContent === "Creating...") {
+                    buttons.create.textContent = "Create Room";
+                    buttons.create.disabled = false;
+                    alert("Failed to create room. Server might not be responding. Please try again.");
+                }
+            }, 10000);
+        });
+    } else {
+        console.error('[Battle] btn-create element not found!');
+    }
 
     buttons.join.addEventListener('click', () => {
         const code = document.getElementById('join-code').value.trim();
@@ -105,9 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('battle_created', (data) => {
+        console.log('[Battle] Room created:', data.room_code);
         currentRoom = data.room_code;
         isHost = true;
         display.room.textContent = currentRoom;
+
+        // Reset create button
+        if (buttons.create) {
+            buttons.create.textContent = "Create Room";
+            buttons.create.disabled = false;
+        }
 
         showScreen('battle');
         setStatus("WAITING FOR PLAYER");
