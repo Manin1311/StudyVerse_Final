@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Socket Init (Simplified for robustness) ---
     // Allow auto-detection of transports (Polling -> WebSocket)
     const socket = io();
-    let currentRoom = null;
+    let currentRoom = sessionStorage.getItem('battle_room_code'); // Restore from session
     let isHost = false;
     let battleTimer = null;
 
@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('battle_created', (data) => {
         console.log('[Battle] Room created:', data.room_code);
         currentRoom = data.room_code;
+        sessionStorage.setItem('battle_room_code', currentRoom); // Save to session
         isHost = true;
         display.room.textContent = currentRoom;
 

@@ -2929,6 +2929,39 @@ def on_battle_create(data):
     emit('battle_created', {'room_code': room_code, 'player_id': current_user.id})
     print(f"Battle created: {room_code} by {current_user.first_name}")
 
+@socketio.on('battle_rejoin_attempt')
+def on_battle_rejoin_attempt(data):
+    if not current_user.is_authenticated:
+        return
+        
+    room_code = data.get('room_code', '').strip().upper()
+    if room_code not in battles:
+        emit('battle_error', {'message': 'Room invalid or expired.'})
+        return
+        
+    room = battles[room_code]
+    
+    # Verify user is actually in the room
+    if current_user.id in room['players']:
+        # UPDATE SID (Critical for refresh)
+        room['players'][current_user.id]['sid'] = request.sid
+        
+        join_room(room_code)
+        
+        # Determine if host
+        is_host = (room['host'] == current_user.id)
+        
+        emit('battle_rejoined', {
+            'state': room['state'], 
+            'room_code': room_code,
+            'is_host': is_host,
+            'players': [{'id': p, 'name': v['name']} for p,v in room['players'].items()]
+        })
+        print(f"User {current_user.first_name} re-joined room {room_code}")
+    else:
+        # User thinks they are in room, but server disagrees (restart)
+        emit('battle_error', {'message': 'You are not in this room.'})
+
 @socketio.on('battle_join_request')
 def on_battle_join_request(data):
     if not current_user.is_authenticated:
