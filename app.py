@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
@@ -88,7 +91,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",  # Allow all origins (or set to your domain)
-    async_mode='eventlet',      # Use eventlet for async (matches Procfile)
+    async_mode='gevent',      # Use gevent for async (matches Procfile)
     ping_timeout=120,           # 2 min timeout for slow connections
     ping_interval=25,           # Keep connection alive every 25s
     max_http_buffer_size=1e8,   # 100MB max message size
