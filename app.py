@@ -1357,7 +1357,7 @@ class ShopService:
             'id': 'theme_cyberpunk',
             'name': 'Cyberpunk Theme 🤖',
             'description': 'Neon purple visuals and glitch effects.',
-            'price': 1000,
+            'price': 10,
             'icon': 'fa-vr-cardboard',
             'type': 'theme',
             'color': '#d946ef'
@@ -1366,7 +1366,7 @@ class ShopService:
             'id': 'theme_matrix',
             'name': 'Matrix Theme 💚',
             'description': 'Enter the Matrix with green code rain.',
-            'price': 1500,
+            'price': 10,
             'icon': 'fa-code',
             'type': 'theme',
             'color': '#22c55e'
@@ -1375,7 +1375,7 @@ class ShopService:
             'id': 'theme_sunset',
             'name': 'Sunset Theme 🌅',
             'description': 'Warm orange and pink gradient vibes.',
-            'price': 1200,
+            'price': 10,
             'icon': 'fa-sun',
             'type': 'theme',
             'color': '#fb923c'
@@ -1384,7 +1384,7 @@ class ShopService:
             'id': 'theme_ocean',
             'name': 'Ocean Theme 🌊',
             'description': 'Deep blue calming ocean aesthetics.',
-            'price': 1200,
+            'price': 10,
             'icon': 'fa-water',
             'type': 'theme',
             'color': '#06b6d4'
@@ -1393,7 +1393,7 @@ class ShopService:
             'id': 'theme_midnight',
             'name': 'Midnight Theme 🌙',
             'description': 'Pure black with silver accents.',
-            'price': 1800,
+            'price': 10,
             'icon': 'fa-moon',
             'type': 'theme',
             'color': '#94a3b8'
@@ -1402,7 +1402,7 @@ class ShopService:
             'id': 'theme_forest',
             'name': 'Forest Theme 🌲',
             'description': 'Natural green forest atmosphere.',
-            'price': 1300,
+            'price': 10,
             'icon': 'fa-tree',
             'type': 'theme',
             'color': '#16a34a'
@@ -1411,7 +1411,7 @@ class ShopService:
             'id': 'theme_aurora',
             'name': 'Aurora Theme 🌌',
             'description': 'Northern lights with flowing colors.',
-            'price': 3000,
+            'price': 10,
             'icon': 'fa-wand-magic-sparkles',
             'type': 'theme',
             'color': '#a78bfa'
@@ -1420,7 +1420,7 @@ class ShopService:
             'id': 'theme_lava',
             'name': 'Lava Theme 🌋',
             'description': 'Molten lava with fiery animations.',
-            'price': 2500,
+            'price': 10,
             'icon': 'fa-fire-flame-curved',
             'type': 'theme',
             'color': '#dc2626'
@@ -1429,7 +1429,7 @@ class ShopService:
             'id': 'theme_synthwave',
             'name': 'Synthwave Theme 🎵',
             'description': '80s retro neon grid aesthetic.',
-            'price': 3500,
+            'price': 10,
             'icon': 'fa-compact-disc',
             'type': 'theme',
             'color': '#f472b6'
@@ -1438,7 +1438,7 @@ class ShopService:
             'id': 'theme_retro',
             'name': 'Retro Terminal 💻',
             'description': 'Classic green terminal vibes.',
-            'price': 2000,
+            'price': 10,
             'icon': 'fa-terminal',
             'type': 'theme',
             'color': '#84cc16'
