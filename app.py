@@ -969,6 +969,9 @@ def signup():
             send_welcome_email(user.email, user.first_name, user.last_name)
         except Exception as e:
             print(f"Failed to send welcome email: {e}")
+            import traceback
+            traceback.print_exc()
+            flash("Welcome email could not be sent. Please check your spam folder or contact support if this persists.", "warning")
             # Continue even if email fails
             
     except ValueError as e:
