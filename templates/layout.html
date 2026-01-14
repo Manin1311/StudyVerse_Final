@@ -195,12 +195,12 @@
                                 return;
                             }
 
-                            // Don't refresh on pages where real-time state is critical and might be lost
-                            const path = window.location.pathname;
-                            if (path.includes('/battle') || path.includes('/chat') || path.includes('/group')) {
-                                console.log('Skipping auto-refresh on active session page');
-                                return;
-                            }
+                            // Removed path restriction as per user request
+                            // const path = window.location.pathname;
+                            // if (path.includes('/battle') || path.includes('/chat') || path.includes('/group')) {
+                            //    console.log('Skipping auto-refresh on active session page');
+                            //    return;
+                            // }
 
                             window.location.reload();
                         }, 20000); // 20 seconds

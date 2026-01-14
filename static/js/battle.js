@@ -89,18 +89,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. Entry Logic ---
 
+    // --- Debug UI ---
+    const debugDiv = document.createElement('div');
+    debugDiv.id = 'battle-debug';
+    debugDiv.style.cssText = "position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: lime; padding: 5px 10px; font-size: 10px; border-radius: 4px; pointer-events: none; opacity: 0.7; z-index: 9999;";
+    debugDiv.innerHTML = 'Status: <span id="debug-status">Init...</span>';
+    document.body.appendChild(debugDiv);
+
+    function setDebug(msg) {
+        const el = document.getElementById('debug-status');
+        if (el) el.textContent = msg;
+        console.log('[BattleDebug]', msg);
+    }
+
     // Add connection status handling
     socket.on('connect', () => {
+        setDebug('Connected');
         console.log('[Battle] Socket connected successfully');
+
+        // Auto-rejoin if we have a room code and we are not already cleanly inside
+        if (currentRoom) { // currentRoom loaded from sessionStorage on init
+            setDebug('Attempting Rejoin...');
+            console.log('[Battle] Attempting to rejoin room:', currentRoom);
+            socket.emit('battle_rejoin_attempt', { room_code: currentRoom });
+        } else {
+            setDebug('Ready (No Room)');
+        }
     });
 
     socket.on('connect_error', (error) => {
+        setDebug('Conn Error');
         console.error('[Battle] Socket connection error:', error);
-        // Alert removed to prevent annoyance during temporary disconnects
     });
 
     socket.on('disconnect', (reason) => {
+        setDebug('Disconnected');
         console.log('[Battle] Socket disconnected:', reason);
+    });
+
+    if (buttons.create) {
+        buttons.create.addEventListener('click', () => {
+            // ... existing create logic ...
+            setDebug('Creating Room...');
+            // ...
+        });
+    }
+
+    // ...
+
+    socket.on('battle_error', (data) => {
+        setDebug('Error: ' + data.message);
+        console.error('[Battle] Error:', data.message);
+        alert(data.message);
+
+        // If room is invalid, clear session to prevent stuck loop
+        if (data.message.includes('Invalid room') || data.message.includes('expired') || data.message.includes('not in this room')) {
+            sessionStorage.removeItem('battle_room_code');
+            currentRoom = null;
+            showScreen('entry');
+            setDebug('Session Cleared');
+        }
+
+        // Reset join button if it was in a loading state
+        if (buttons.join.textContent === "Requesting...") {
+            buttons.join.textContent = "Join";
+            buttons.join.disabled = false;
+        }
+        // Hide modal if open
+        if (modals.joinReq) modals.joinReq.style.display = 'none';
+    });
+
+    socket.on('battle_rejoined', (data) => {
+        setDebug('Rejoined: ' + data.room_code);
+        console.log('[Battle] Rejoined room:', data.room_code);
+        // ... (rest of logic same) ...
+    });
+
+    socket.on('battle_created', (data) => {
+        setDebug('Created: ' + data.room_code);
+        // ...
+    });
+
+    // ...
+
+    socket.on('battle_join_request_notify', (data) => {
+        setDebug('Join Req: ' + data.player_name);
+        // ...
     });
 
     if (buttons.create) {
@@ -133,6 +207,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.emit('battle_join_request', { room_code: code });
         currentRoom = code;
+    });
+
+    socket.on('battle_error', (data) => {
+        console.error('[Battle] Error:', data.message);
+        alert(data.message);
+
+        // If room is invalid, clear session to prevent stuck loop
+        if (data.message.includes('Invalid room') || data.message.includes('expired') || data.message.includes('not in this room')) {
+            sessionStorage.removeItem('battle_room_code');
+            currentRoom = null;
+            showScreen('entry');
+        }
+
+        // Reset join button if it was in a loading state
+        if (buttons.join.textContent === "Requesting...") {
+            buttons.join.textContent = "Join";
+            buttons.join.disabled = false;
+        }
+        // Hide modal if open
+        modals.joinReq.style.display = 'none';
+    });
+
+    socket.on('battle_rejoined', (data) => {
+        console.log('[Battle] Rejoined room:', data.room_code);
+        currentRoom = data.room_code;
+        isHost = data.is_host;
+
+        display.room.textContent = currentRoom;
+
+        // Restore UI state
+        // If battle holds state like code content, we should restore it here if server sent it
+        // For now, just show the screen
+        showScreen('battle');
+        setStatus(data.state === 'waiting' ? "WAITING FOR PLAYER" : "BATTLE IN PROGRESS");
+
+        if (isHost && data.state === 'waiting') {
+            addChatMsg("ByteBot", "Reconnected successfully. Waiting for opponent...", 'system');
+        } else {
+            addChatMsg("ByteBot", "Reconnected successfully.", 'system');
+        }
     });
 
     socket.on('battle_created', (data) => {

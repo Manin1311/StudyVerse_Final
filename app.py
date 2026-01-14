@@ -2991,11 +2991,10 @@ def on_battle_join_request(data):
         'sid': request.sid
     }
     
-    # Notify Host
-    host_sid = room['players'][room['host']]['sid']
+    # Notify Host (Broadcast to room, simpler and more robust if host re-connected)
     socketio.emit('battle_join_request_notify', {
         'player_name': room['pending_join']['name']
-    }, room=host_sid)
+    }, room=room_code)
 
 @socketio.on('battle_join_response')
 def on_battle_join_response(data):
