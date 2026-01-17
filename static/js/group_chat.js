@@ -104,7 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const message = chatInput.value.trim();
                 const file = fileInput.files[0];
 
-                if (!message && !file) return;
+                console.log('🔵 Form submitted. Message:', message, 'File:', file);
+
+                if (!message && !file) {
+                    console.log('❌ No message or file - aborting');
+                    return;
+                }
 
                 let filePath = null;
 
@@ -115,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     try {
                         sendButton.disabled = true;
+                        console.log('📤 Uploading file...');
                         const response = await fetch('/group/upload', {
                             method: 'POST',
                             body: formData
@@ -123,25 +129,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (response.ok) {
                             const result = await response.json();
                             filePath = result.url;
+                            console.log('✅ File uploaded:', filePath);
                         } else {
-                            console.error('File upload failed');
+                            console.error('❌ File upload failed');
                             alert('Failed to upload file');
                             sendButton.disabled = false;
                             return;
                         }
                     } catch (err) {
-                        console.error('Error uploading file:', err);
+                        console.error('❌ Error uploading file:', err);
                         sendButton.disabled = false;
                         return;
                     }
                 }
 
                 // Emit message via SocketIO
+                console.log('📡 Emitting message to room:', GROUP_ID);
                 socket.emit('send_message', {
                     group_id: GROUP_ID,
                     content: message,
                     file_path: filePath
                 });
+                console.log('✅ Message emitted successfully');
 
                 // Reset UI
                 chatInput.value = '';
