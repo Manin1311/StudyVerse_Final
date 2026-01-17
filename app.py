@@ -96,7 +96,11 @@ socketio = SocketIO(
     ping_interval=25,           # Keep connection alive every 25s
     max_http_buffer_size=1e8,   # 100MB max message size
     logger=False,
-    engineio_logger=False
+    engineio_logger=False,
+    # Force WebSocket transport for real-time delivery
+    transports=['websocket', 'polling'],  # Try WebSocket first, fallback to polling
+    always_connect=True,        # Maintain persistent connection
+    allow_upgrades=True         # Allow transport upgrades
 )
 
 # AI API Configuration

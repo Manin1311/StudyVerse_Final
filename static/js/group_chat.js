@@ -75,10 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Socket.IO Logic
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
-        const socket = io();
+        // Force WebSocket transport for instant messaging
+        const socket = io({
+            transports: ['websocket', 'polling'],  // Try WebSocket first
+            upgrade: true,  // Allow upgrades
+            rememberUpgrade: true  // Remember successful upgrade
+        });
 
         socket.on('connect', () => {
             console.log('Connected to SocketIO server');
+            console.log('Transport:', socket.io.engine.transport.name);  // Debug: show transport type
             socket.emit('join', { group_id: GROUP_ID });
         });
 
