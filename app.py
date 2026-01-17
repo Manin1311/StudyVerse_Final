@@ -2781,8 +2781,8 @@ def on_join(data):
         room_name = str(group_id)
         join_room(room_name)
         print(f"✓ User {current_user.id if current_user.is_authenticated else 'Unknown'} joined room {room_name}")
-        # Send confirmation back to client
-        socketio.emit('joined_room', {'room': room_name}, room=request.sid)
+        # Send confirmation back to THIS client only
+        emit('joined_room', {'room': room_name})
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -2810,9 +2810,8 @@ def handle_message(data):
 
     # Convert timestamp to IST
     ist_time = to_ist_time(msg.created_at)
-
-    # Broadcast to everyone in the room (including sender)
-    socketio.emit('receive_message', {
+    
+    message_data = {
         'id': msg.id,
         'user_id': current_user.id,
         'username': current_user.first_name or 'User',
@@ -2820,7 +2819,12 @@ def handle_message(data):
         'file_path': msg.file_path,
         'created_at': ist_time,
         'role': 'user'
-    }, room=str(group_id), include_self=True)
+    }
+
+    # Broadcast to everyone in the room
+    print(f"📤 Broadcasting message to room {group_id}: {msg.content[:50]}")
+    emit('receive_message', message_data, to=str(group_id), broadcast=True, include_self=True)
+    print(f"✅ Message broadcasted")
 
     
     # AI Logic (Simple mention check)
