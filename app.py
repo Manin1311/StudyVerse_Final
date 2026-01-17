@@ -2803,7 +2803,8 @@ def handle_message(data):
     # Convert timestamp to IST
     ist_time = to_ist_time(msg.created_at)
 
-    emit('receive_message', {
+    # Broadcast to everyone in the room (including sender)
+    socketio.emit('receive_message', {
         'id': msg.id,
         'user_id': current_user.id,
         'username': current_user.first_name or 'User',
@@ -2811,7 +2812,7 @@ def handle_message(data):
         'file_path': msg.file_path,
         'created_at': ist_time,
         'role': 'user'
-    }, room=str(group_id), broadcast=True)
+    }, room=str(group_id), include_self=True)
 
     
     # AI Logic (Simple mention check)
@@ -2824,14 +2825,14 @@ def handle_message(data):
         # Convert AI message timestamp to IST
         ai_ist_time = to_ist_time(ai_msg.created_at)
         
-        emit('receive_message', {
+        socketio.emit('receive_message', {
             'id': ai_msg.id,
             'user_id': None,
             'username': 'StudyVerse',
             'content': ai_msg.content,
             'created_at': ai_ist_time,
             'role': 'assistant'
-        }, room=str(group_id), broadcast=True)
+        }, room=str(group_id), include_self=True)
 
 
 @app.route('/group/upload', methods=['POST'])
