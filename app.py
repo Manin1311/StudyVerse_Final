@@ -2778,7 +2778,11 @@ def settings_update():
 def on_join(data):
     group_id = data.get('group_id')
     if group_id:
-        join_room(str(group_id))
+        room_name = str(group_id)
+        join_room(room_name)
+        print(f"✓ User {current_user.id if current_user.is_authenticated else 'Unknown'} joined room {room_name}")
+        # Send confirmation back to client
+        socketio.emit('joined_room', {'room': room_name}, room=request.sid)
 
 @socketio.on('send_message')
 def handle_message(data):

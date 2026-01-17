@@ -88,7 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
             socket.emit('join', { group_id: GROUP_ID });
         });
 
+        socket.on('joined_room', (data) => {
+            console.log('✓ Joined room:', data.room);
+        });
+
         socket.on('receive_message', (data) => {
+            console.log('📩 Message received:', data);
             appendMessage(data);
         });
 
