@@ -115,17 +115,42 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             setDebug('Ready (No Room)');
         }
+
+        // Start heartbeat to keep connection alive
+        startHeartbeat();
     });
 
     socket.on('connect_error', (error) => {
         setDebug('Conn Error');
         console.error('[Battle] Socket connection error:', error);
+        stopHeartbeat();
     });
 
     socket.on('disconnect', (reason) => {
         setDebug('Disconnected');
         console.log('[Battle] Socket disconnected:', reason);
+        stopHeartbeat();
     });
+
+    // Heartbeat mechanism to keep connection alive
+    let heartbeatInterval = null;
+
+    function startHeartbeat() {
+        stopHeartbeat(); // Clear any existing interval
+        heartbeatInterval = setInterval(() => {
+            if (currentRoom) {
+                socket.emit('battle_heartbeat', { room_code: currentRoom });
+                console.log('[Battle] Heartbeat sent for room:', currentRoom);
+            }
+        }, 30000); // Send heartbeat every 30 seconds
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+        }
+    }
 
     if (buttons.create) {
         buttons.create.addEventListener('click', () => {

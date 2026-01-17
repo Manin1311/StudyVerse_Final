@@ -2991,7 +2991,16 @@ def on_battle_join_request(data):
         'sid': request.sid
     }
     
-    # Notify Host (Broadcast to room, simpler and more robust if host re-connected)
+    # Notify Host - Broadcast to room AND specifically to host's SID
+    # This ensures the notification reaches the host even after page refresh
+    host_sid = room['players'][room['host']]['sid']
+    
+    # Emit to host's specific session
+    socketio.emit('battle_join_request_notify', {
+        'player_name': room['pending_join']['name']
+    }, room=host_sid)
+    
+    # Also broadcast to entire room as backup
     socketio.emit('battle_join_request_notify', {
         'player_name': room['pending_join']['name']
     }, room=room_code)
@@ -3328,6 +3337,22 @@ def on_battle_rematch_vote(data):
                 'message': "Rematch accepted! 🔥 Host, please choose settings again (Easy/Medium/Hard and Python/Java/C/JavaScript).",
                 'type': 'system'
             }, room=room_code)
+
+@socketio.on('battle_heartbeat')
+def on_battle_heartbeat(data):
+    """Handle heartbeat to keep connection alive and prevent disconnections"""
+    if not current_user.is_authenticated:
+        return
+        
+    room_code = data.get('room_code', '').strip().upper()
+    if room_code not in battles:
+        return
+        
+    room = battles[room_code]
+    if current_user.id in room['players']:
+        # Update SID to latest (handles reconnections/refreshes)
+        room['players'][current_user.id]['sid'] = request.sid
+        print(f"Heartbeat from {current_user.first_name} in {room_code}")
 
 
 
@@ -3750,13 +3775,15 @@ def quiz_submit():
 def handle_wb_draw(data):
     room = data.get('room')
     if room:
-        emit('wb_draw', data, room=room, include_self=False)
+        # Broadcast to all in room except sender
+        emit('wb_draw', data, room=str(room), broadcast=True, skip_sid=request.sid)
 
 @socketio.on('wb_clear')
 def handle_wb_clear(data):
     room = data.get('room')
     if room:
-        emit('wb_clear', data, room=room, include_self=False)
+        # Broadcast clear command to all users in room
+        emit('wb_clear', data, room=str(room), broadcast=True, include_self=True)
 
 @socketio.on('join')
 def on_join(data):
