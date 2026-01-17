@@ -2811,7 +2811,7 @@ def handle_message(data):
         'file_path': msg.file_path,
         'created_at': ist_time,
         'role': 'user'
-    }, room=str(group_id))
+    }, room=str(group_id), broadcast=True)
 
     
     # AI Logic (Simple mention check)
@@ -2831,7 +2831,7 @@ def handle_message(data):
             'content': ai_msg.content,
             'created_at': ai_ist_time,
             'role': 'assistant'
-        }, room=str(group_id))
+        }, room=str(group_id), broadcast=True)
 
 
 @app.route('/group/upload', methods=['POST'])
