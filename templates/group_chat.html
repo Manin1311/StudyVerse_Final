@@ -271,6 +271,8 @@
 <script>
     const GROUP_ID = "{{ group.id if group else '' }}";
     const CURRENT_USER_ID = "{{ current_user.id }}";
+    const CURRENT_USER_NAME = "{{ current_user.first_name }} {{ current_user.last_name }}";
+    const CURRENT_USER_AVATAR = "{{ current_user.get_avatar(64) }}";
     document.querySelector('[data-nav="group"]').classList.add('active');
 
     // Simple member search

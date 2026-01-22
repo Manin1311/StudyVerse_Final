@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (existingMessages.length > 0) {
         const lastMsg = existingMessages[existingMessages.length - 1];
         lastMessageId = parseInt(lastMsg.getAttribute('data-message-id')) || 0;
-        
+
         // Populate seen IDs
         existingMessages.forEach(el => {
             const id = parseInt(el.getAttribute('data-message-id'));
@@ -195,7 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tempMessage = {
                     id: tempId,  // Temporary ID
                     user_id: CURRENT_USER_ID,
-                    username: 'You',
+                    username: CURRENT_USER_NAME || 'You',  // Use actual user name
+                    avatar: CURRENT_USER_AVATAR,  // Use actual user avatar
                     content: message,
                     file_path: filePath,
                     created_at: new Date().toLocaleTimeString('en-US', {
@@ -226,12 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.id && !String(data.id).startsWith('temp-')) {
             if (seenMessageIds.has(data.id)) {
                 console.log(`Duplicate message ${data.id} ignored.`);
-                return; 
+                return;
             }
-            
+
             // Mark as seen
             seenMessageIds.add(data.id);
-            
+
             // Update lastMessageId for polling
             if (typeof data.id === 'number') {
                 lastMessageId = Math.max(lastMessageId, data.id);
@@ -240,12 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove any temp messages if this is 'my' message coming back from server
             const isMe = String(data.user_id) === String(CURRENT_USER_ID);
             if (isMe) {
-                 // Try to find a temp message and remove it to avoid visual double for a split second
-                 // (Simple heuristic: remove the last temp message if exists)
-                 const temps = messagesContainer.querySelectorAll('[data-temp="true"]');
-                 if (temps.length > 0) {
-                     temps[temps.length - 1].remove();
-                 }
+                // Try to find a temp message and remove it to avoid visual double for a split second
+                // (Simple heuristic: remove the last temp message if exists)
+                const temps = messagesContainer.querySelectorAll('[data-temp="true"]');
+                if (temps.length > 0) {
+                    temps[temps.length - 1].remove();
+                }
             }
         }
 
@@ -261,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isMe) {
             msgDiv.style.flexDirection = 'row-reverse';
         }
-        
+
         // Mark temp messages
         if (data.is_temp) {
             msgDiv.setAttribute('data-temp', 'true');
