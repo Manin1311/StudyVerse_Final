@@ -2823,7 +2823,7 @@ def handle_message(data):
 
     # Broadcast to everyone in the room
     print(f"📤 Broadcasting message to room {group_id}: {msg.content[:50]}")
-    emit('receive_message', message_data, to=str(group_id), broadcast=True, include_self=True)
+    emit('receive_message', message_data, room=str(group_id), broadcast=True)
     print(f"✅ Message broadcasted")
 
     
