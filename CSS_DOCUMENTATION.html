@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyVerse CSS - Complete Documentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --accent: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            color: var(--dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 50px 40px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 40px 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--secondary);
+            margin: 30px 0 15px 0;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 20px 0 10px 0;
+        }
+
+        .card {
+            background: var(--light);
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            border-left-color: var(--warning);
+        }
+
+        .success {
+            background: #d1fae5;
+            border-left-color: var(--accent);
+        }
+
+        .info {
+            background: #dbeafe;
+            border-left-color: var(--primary);
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background: #282c34;
+            color: #61dafb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        ul,
+        ol {
+            margin: 15px 0 15px 25px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        .visual-demo {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background: white;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 StudyVerse CSS Documentation</h1>
+            <p>Complete Styling Guide with Advanced Concepts</p>
+        </header>
+
+        <div class="content">
+            <h2>📁 CSS Files Overview</h2>
+
+            <div class="card success">
+                <h3>2 CSS Files in Our Project:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Purpose</th>
+                            <th>Lines</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>style.css</code></td>
+                            <td>Main application styles - layout, components, responsive design</td>
+                            <td>~2000+ lines</td>
+                        </tr>
+                        <tr>
+                            <td><code>zen_mode.css</code></td>
+                            <td>Distraction-free study mode - minimal overlay styles</td>
+                            <td>~300 lines</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>🎓 CSS Core Concepts</h2>
+
+            <h3>1. CSS Selectors</h3>
+            <div class="card">
+                <p><strong>Concept:</strong> Target HTML elements to apply styles</p>
+
+                <h4>Element Selector:</h4>
+                <pre><code>/* Targets all paragraphs */
+p {
+    color: #333;
+    font-size: 16px;
+}
+
+/* Targets all headings */
+h1 {
+    font-size: 2rem;
+    font-weight: 700;
+}
+</code></pre>
+
+                <h4>Class Selector (.):</h4>
+                <pre><code>/* Targets elements with class="card" */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Multiple classes */
+.btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+</code></pre>
+
+                <h4>ID Selector (#):</h4>
+                <pre><code>/* Targets element with id="header" */
+#header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+</code></pre>
+
+                <h4>Descendant Selector (space):</h4>
+                <pre><code>/* Targets p inside .card */
+.card p {
+    margin-bottom: 10px;
+}
+
+/* Targets button inside nav inside header */
+header nav button {
+    background: transparent;
+}
+</code></pre>
+
+                <h4>Child Selector (>):</h4>
+                <pre><code>/* Direct children only */
+.card > p {
+    /* Only p that are direct children of .card */
+}
+</code></pre>
+
+                <h4>Attribute Selector ([]):</h4>
+                <pre><code>/* Targets input with type="text" */
+input[type="text"] {
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+/* Targets links starting with https */
+a[href^="https"] {
+    color: green;
+}
+</code></pre>
+
+                <h4>Pseudo-classes (:):</h4>
+                <pre><code>/* Hover state */
+button:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Focus state (for accessibility) */
+input:focus {
+    outline: 2px solid #3b82f6;
+}
+
+/* First child */
+.todo-item:first-child {
+    border-top: none;
+}
+
+/* Last child */
+.nav-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Nth child (alternate colors) */
+tr:nth-child(even) {
+    background: #f8fafc;
+}
+</code></pre>
+
+                <h4>Pseudo-elements (::):</h4>
+                <pre><code>/* Add content before element */
+.badge::before {
+    content: "⭐";
+    margin-right: 5px;
+}
+
+/* Add content after */
+.card::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+/* Style first line */
+p::first-line {
+    font-weight: bold;
+}
+</code></pre>
+            </div>
+
+            <h3>2. The Box Model</h3>
+            <div class="card highlight">
+                <p><strong>Concept:</strong> Every element is a box with content, padding, border, and margin</p>
+
+                <div class="visual-demo">
+                    <div style="border: 3px solid #ef4444; padding: 20px; margin: 20px; background: #dbeafe;">
+                        <strong>Content</strong>
+                        <div style="font-size: 0.9rem; color: #64748b; margin-top: 10px;">
+                            • Margin (orange border) - Outside spacing<br>
+                            • Border (red line) - Element border<br>
+                            • Padding (blue area) - Inside spacing<br>
+                            • Content (this text) - Actual content
+                        </div>
+                    </div>
+                </div>
+
+                <pre><code>.box {
+    /* Content size */
+    width: 300px;
+    height: 200px;
+    
+    /* Inside spacing */
+    padding: 20px;
+    /* padding-top: 20px;
+       padding-right: 20px;
+       padding-bottom: 20px;
+       padding-left: 20px; */
+    
+    /* Border */
+    border: 2px solid #3b82f6;
+    /* border-width: 2px;
+       border-style: solid;
+       border-color: #3b82f6; */
+    
+    /* Outside spacing */
+    margin: 30px;
+    /* margin-top: 30px;
+       margin-right: 30px;
+       margin-bottom: 30px;
+       margin-left: 30px; */
+}
+
+/* Box-sizing: border-box
+   Makes width include padding and border */
+* {
+    box-sizing: border-box;
+}
+
+/* Now width: 300px means total width is 300px
+   (including padding and border) */
+</code></pre>
+            </div>
+
+            <h3>3. CSS Variables (Custom Properties)</h3>
+            <div class="card info">
+                <p><strong>Concept:</strong> Reusable values throughout your stylesheet</p>
+
+                <pre><code>/* Define variables in :root (global) */
+:root {
+    /* Colors */
+    --primary: #3b82f6;
+    --secondary: #8b5cf6;
+    --accent: #10b981;
+    --danger: #ef4444;
+    
+    /* Spacing */
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    
+    /* Typography */
+    --font-body: 'Inter', sans-serif;
+    --font-heading: 'Poppins', sans-serif;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+    
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 24px;
+}
+
+/* Use variables with var() */
+.card {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-lg);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+}
+
+/* Dark theme (override variables) */
+[data-theme="dark"] {
+    --primary: #60a5fa;
+    --bg-color: #1e293b;
+    --text-color: #f1f5f9;
+}
+</code></pre>
+
+                <p><strong>Benefits:</strong></p>
+                <ul>
+                    <li>✅ Change color once, updates everywhere</li>
+                    <li>✅ Easy theme switching (light/dark)</li>
+                    <li>✅ Consistent design system</li>
+                    <li>✅ Easier maintenance</li>
+                </ul>
+            </div>
+
+            <h3>4. Flexbox Layout</h3>
+            <div class="card">
+                <p><strong>Concept:</strong> One-dimensional layout (row OR column)</p>
+
+                <h4>Basic Flexbox:</h4>
+                <pre><code>.container {
+    display: flex;
+    
+    /* Direction */
+    flex-direction: row;        /* horizontal (default) */
+    /* flex-direction: column;      vertical */
+    /* flex-direction: row-reverse;  right to left */
+    
+    /* Main axis alignment (horizontal if row) */
+    justify-content: center;    /* center items */
+    /* justify-content: flex-start;  left align */
+    /* justify-content: flex-end;    right align */
+    /* justify-content: space-between; space between items */
+    /* justify-content: space-around;  space around items */
+    
+    /* Cross axis alignment (vertical if row) */
+    align-items: center;        /* vertically center */
+    /* align-items: flex-start;    top align */
+    /* align-items: flex-end;      bottom align */
+    /* align-items: stretch;       fill height */
+    
+    /* Wrapping */
+    flex-wrap: wrap;           /* wrap to next line */
+    /* flex-wrap: nowrap;          single line (default) */
+    
+    /* Gap between items */
+    gap: 16px;
+}
+
+.item {
+    /* Grow factor (take remaining space) */
+    flex-grow: 1;
+    
+    /* Shrink factor (shrink if needed) */
+    flex-shrink: 1;
+    
+    /* Base size before growing/shrinking */
+    flex-basis: 200px;
+    
+    /* Shorthand: grow shrink basis */
+    flex: 1 1 200px;
+    
+    /* Self alignment (override parent align-items) */
+    align-self: flex-start;
+}
+</code></pre>
+
+                <h4>Real Example from Our App:</h4>
+                <pre><code>/* Navbar with logo and menu */
+.navbar {
+    display: flex;
+    justify-content: space-between;  /* Logo left, menu right */
+    align-items: center;             /* Vertically centered */
+    padding: 16px 24px;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 12px;                       /* Space between items */
+}
+
+/* Three-column layout */
+.layout-home {
+    display: flex;
+    gap: 24px;
+}
+
+.layout-home > div {
+    flex: 1;                         /* Equal width columns */
+}
+</code></pre>
+            </div>
+
+            <h3>5. Grid Layout</h3>
+            <div class="card">
+                <p><strong>Concept:</strong> Two-dimensional layout (rows AND columns)</p>
+
+                <pre><code>.grid-container {
+    display: grid;
+    
+    /* Define columns */
+    grid-template-columns: 200px 1fr 1fr;
+    /* 3 columns: 200px fixed, 2 flexible */
+    
+    /* Or: repeat pattern */
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 equal columns */
+    
+    /* Or: auto-fit (responsive) */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    /* As many columns as fit, min 250px each */
+    
+    /* Define rows */
+    grid-template-rows: auto 1fr auto;
+    /* Header, content, footer */
+    
+    /* Gap between items */
+    gap: 24px;
+    /* grid-row-gap: 24px;     row gap */
+    /* grid-column-gap: 16px;  column gap */
+}
+
+.item {
+    /* Span multiple columns */
+    grid-column: span 2;        /* Take 2 columns */
+    
+    /* Specific placement */
+    grid-column: 1 / 3;         /* From column 1 to 3 */
+    grid-row: 1 / 2;            /* From row 1 to 2 */
+}
+</code></pre>
+
+                <h4>Real Example:</h4>
+                <pre><code>/* Shop items grid */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+/* Dashboard layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;  /* 3 columns */
+    grid-template-rows: auto 1fr;        /* 2 rows */
+    gap: 20px;
+}
+
+/* First column spans 2 rows */
+.sidebar {
+    grid-row: span 2;
+}
+</code></pre>
+            </div>
+
+            <h3>6. Positioning</h3>
+            <div class="card highlight">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Position Type</th>
+                            <th>Behavior</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>static</code></td>
+                            <td>Normal flow (default)</td>
+                            <td>Most elements</td>
+                        </tr>
+                        <tr>
+                            <td><code>relative</code></td>
+                            <td>Relative to normal position</td>
+                            <td>Slight adjustments, anchor for absolute</td>
+                        </tr>
+                        <tr>
+                            <td><code>absolute</code></td>
+                            <td>Relative to nearest positioned parent</td>
+                            <td>Tooltips, badges, overlays</td>
+                        </tr>
+                        <tr>
+                            <td><code>fixed</code></td>
+                            <td>Relative to viewport</td>
+                            <td>Fixed header, floating button</td>
+                        </tr>
+                        <tr>
+                            <td><code>sticky</code></td>
+                            <td>Relative until scroll point, then fixed</td>
+                            <td>Sticky headers</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <pre><code>/* Relative positioning */
+.badge {
+    position: relative;
+    top: -5px;               /* Move 5px up */
+    left: 10px;              /* Move 10px right */
+}
+
+/* Absolute positioning (inside relative parent) */
+.card {
+    position: relative;      /* Anchor for children */
+}
+
+.card-badge {
+    position: absolute;
+    top: 10px;              /* 10px from card top */
+    right: 10px;            /* 10px from card right */
+}
+
+/* Fixed header */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;          /* Stack above other elements */
+}
+
+/* Sticky table header */
+thead {
+    position: sticky;
+    top: 0;
+    background: white;
+}
+</code></pre>
+            </div>
+
+            <h3>7. Responsive Design (Media Queries)</h3>
+            <div class="card">
+                <p><strong>Concept:</strong> Different styles for different screen sizes</p>
+
+                <pre><code>/* Mobile First Approach */
+
+/* Base styles (mobile) */
+.container {
+    padding: 16px;
+}
+
+.sidebar {
+    display: none;          /* Hidden on mobile */
+}
+
+/* Tablet (768px and up) */
+@media (min-width: 768px) {
+    .container {
+        padding: 24px;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Desktop (1024px and up) */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .sidebar {
+        display: block;     /* Show on desktop */
+    }
+    
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Large Desktop (1440px and up) */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .header {
+        display: none;
+    }
+    
+    body {
+        color: black;
+        background: white;
+    }
+}
+</code></pre>
+            </div>
+
+            <h3>8. Animations & Transitions</h3>
+            <div class="card">
+                <h4>Transitions (Smooth State Changes):</h4>
+                <pre><code>.button {
+    background: #3b82f6;
+    color: white;
+    padding: 12px 24px;
+    
+    /* Transition all properties over 0.3s */
+    transition: all 0.3s ease;
+    
+    /* Or specific properties: */
+    transition: background 0.3s ease,
+                transform 0.2s ease;
+}
+
+.button:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+    /* Smooth transition to new state */
+}
+
+/* Transition properties */
+.element {
+    transition-property: all;         /* What to animate */
+    transition-duration: 0.3s;        /* How long */
+    transition-timing-function: ease; /* Speed curve */
+    transition-delay: 0s;             /* Wait before start */
+}
+
+/* Timing functions */
+transition-timing-function: linear;      /* Constant speed */
+transition-timing-function: ease;        /* Slow start/end */
+transition-timing-function: ease-in;     /* Slow start */
+transition-timing-function: ease-out;    /* Slow end */
+transition-timing-function: ease-in-out; /* Slow start/end */
+transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+</code></pre>
+
+                <h4>Keyframe Animations:</h4>
+                <pre><code>/* Define animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Or with percentages */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Apply animation */
+.card {
+    animation: fadeIn 0.5s ease;
+    
+    /* Full syntax: */
+    animation-name: fadeIn;
+    animation-duration: 0.5s;
+    animation-timing-function: ease;
+    animation-delay: 0s;
+    animation-iteration-count: 1;      /* Or: infinite */
+    animation-direction: normal;        /* Or: reverse, alternate */
+    animation-fill-mode: forwards;      /* Keep final state */
+}
+
+/* Loading spinner */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+</code></pre>
+            </div>
+
+            <h2>🎨 Advanced CSS Concepts</h2>
+
+            <h3>1. Gradients</h3>
+            <div class="card">
+                <h4>Linear Gradient:</h4>
+                <pre><code>/* Top to bottom */
+background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+
+/* Left to right */
+background: linear-gradient(to right, #3b82f6, #8b5cf6);
+
+/* Diagonal */
+background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+
+/* Multiple colors */
+background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #8b5cf6 50%,
+    #ec4899 100%
+);
+
+/* Used in our app header */
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+</code></pre>
+
+                <h4>Radial Gradient:</h4>
+                <pre><code>/* Circle gradient */
+background: radial-gradient(circle, #3b82f6, #8b5cf6);
+
+/* Ellipse */
+background: radial-gradient(ellipse, #3b82f6, #8b5cf6);
+
+/* Positioned */
+background: radial-gradient(
+    circle at top right,
+    #3b82f6,
+    #8b5cf6
+);
+</code></pre>
+            </div>
+
+            <h3>2. Shadows</h3>
+            <div class="card">
+                <h4>Box Shadow:</h4>
+                <pre><code>.card {
+    /* offset-x offset-y blur spread color */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Multiple shadows */
+.card-hover {
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.15),
+        0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Inset shadow (inside) */
+.input {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</code></pre>
+
+                <h4>Text Shadow:</h4>
+                <pre><code>h1 {
+    /* offset-x offset-y blur color */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Glow effect */
+.glow {
+    text-shadow: 0 0 10px #3b82f6,
+                 0 0 20px #3b82f6;
+}
+</code></pre>
+            </div>
+
+            <h3>3. Transforms</h3>
+            <div class="card">
+                <pre><code>/* Scale */
+.hover-scale:hover {
+    transform: scale(1.1);           /* 110% size */
+}
+
+/* Rotate */
+.rotate {
+    transform: rotate(45deg);
+}
+
+/* Translate (move) */
+.slide {
+    transform: translateX(100px);    /* Move right 100px */
+    transform: translateY(-50px);    /* Move up 50px */
+    transform: translate(100px, -50px); /* Both */
+}
+
+/* Skew (distort) */
+.skew {
+    transform: skewX(20deg);
+}
+
+/* Multiple transforms */
+.combo {
+    transform: rotate(45deg) scale(1.2) translateX(50px);
+}
+
+/* 3D transforms */
+.flip-card {
+    transform: rotateY(180deg);
+    transform-style: preserve-3d;
+}
+</code></pre>
+            </div>
+
+            <h3>4. Filters</h3>
+            <div class="card">
+                <pre><code>/* Blur */
+.blurred {
+    filter: blur(5px);
+}
+
+/* Grayscale */
+img.grayscale {
+    filter: grayscale(100%);
+}
+
+/* Brightness */
+.bright {
+    filter: brightness(1.5);         /* 150% brightness */
+}
+
+/* Contrast */
+.high-contrast {
+    filter: contrast(2);
+}
+
+/* Multiple filters */
+img {
+    filter: grayscale(50%) brightness(1.2) contrast(1.1);
+}
+
+/* Backdrop filter (blur background) */
+.glass-morphism {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+</code></pre>
+            </div>
+
+            <h2>📄 Key File Breakdowns</h2>
+
+            <h3>style.css - Main Stylesheet</h3>
+            <div class="card success">
+                <h4>File Structure:</h4>
+                <pre><code>/* 1. CSS Variables */
+:root {
+    --primary: #3b82f6;
+    --secondary: #8b5cf6;
+    --accent-green: #4ade80;
+    --text-primary: #f8fafc;
+    --bg-dark: #0f172a;
+}
+
+/* 2. Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* 3. Layout Components */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 280px;
+    background: #1e293b;
+    padding: 24px;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 40px;
+}
+
+/* 4. Reusable Components */
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--accent-green);
+    color: black;
+}
+
+.btn-primary:hover {
+    background: #22c55e;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(74, 222, 128, 0.3);
+}
+
+/* 5. Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+}
+</code></pre>
+
+                <h4>Key Features:</h4>
+                <ul>
+                    <li>✅ CSS Variables for theming</li>
+                    <li>✅ Flexbox sidebar layout</li>
+                    <li>✅ Glass-morphism effects (backdrop-filter)</li>
+                    <li>✅ Smooth transitions & hover effects</li>
+                    <li>✅ Mobile-responsive with sidebar toggle</li>
+                </ul>
+            </div>
+
+            <h3>zen_mode.css - Distraction-Free Mode</h3>
+            <div class="card">
+                <h4>Purpose:</h4>
+                <p>Minimal overlay for focused studying</p>
+
+                <pre><code>.zen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        135deg,
+        #1e3a8a 0%,
+        #312e81 100%
+    );
+    z-index: 9999;
+    display: none;                /* Hidden by default */
+    
+    /* Flexbox centering */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    /* Smooth entrance */
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.zen-clock {
+    font-size: 6rem;
+    font-weight: 300;
+    color: white;
+    font-family: 'SF Mono', monospace;
+    letter-spacing: 0.1em;
+}
+
+.zen-quote {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    max-width: 600px;
+    margin: 40px 0;
+    font-style: italic;
+}
+
+/* Minimal controls */
+.zen-controls {
+    position: absolute;
+    bottom: 40px;
+    display: flex;
+    gap: 20px;
+}
+
+.zen-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.zen-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+</code></pre>
+            </div>
+
+            <h2>❓ Faculty Questions & Answers</h2>
+
+            <h3>Q1: What's the difference between class and ID?</h3>
+            <div class="card highlight">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Class (.)</th>
+                            <th>ID (#)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Usage</td>
+                            <td>Multiple elements</td>
+                            <td>One element only</td>
+                        </tr>
+                        <tr>
+                            <td>Selector</td>
+                            <td><code>.btn</code></td>
+                            <td><code>#header</code></td>
+                        </tr>
+                        <tr>
+                            <td>Reusability</td>
+                            <td>Reusable</td>
+                            <td>Unique</td>
+                        </tr>
+                        <tr>
+                            <td>Specificity</td>
+                            <td>Low (0,0,1,0)</td>
+                            <td>High (0,1,0,0)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p><strong>Best Practice:</strong> Use classes for styling, IDs for JavaScript selection</p>
+            </div>
+
+            <h3>Q2: What is CSS Specificity?</h3>
+            <div class="card">
+                <p><strong>Answer:</strong> When multiple rules apply to same element, specificity determines which wins
+                </p>
+
+                <h4>Specificity Hierarchy (highest to lowest):</h4>
+                <ol>
+                    <li><code>!important</code> - Override everything (avoid!)</li>
+                    <li>Inline styles: <code>style="color: red"</code></li>
+                    <li>ID selectors: <code>#header</code></li>
+                    <li>Class selectors: <code>.card</code></li>
+                    <li>Element selectors: <code>div</code></li>
+                </ol>
+
+                <pre><code>/* Specificity: 0,0,0,1 */
+p {
+    color: black;
+}
+
+/* Specificity: 0,0,1,0 - WINS */
+.text {
+    color: blue;
+}
+
+/* Specificity: 0,1,0,0 - WINS */
+#main-text {
+    color:red;
+}
+
+/* Specificity: 0,1,1,1 - WINS */
+#main .text p {
+    color: green;
+}
+</code></pre>
+            </div>
+
+            <h3>Q3: When to use Flexbox vs Grid?</h3>
+            <div class="card success">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Use</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Navigation bar</td>
+                            <td>Flexbox</td>
+                            <td>One-dimensional (horizontal)</td>
+                        </tr>
+                        <tr>
+                            <td>Card grid</td>
+                            <td>Grid</td>
+                            <td>Two-dimensional layout</td>
+                        </tr>
+                        <tr>
+                            <td>Centering items</td>
+                            <td>Flexbox</td>
+                            <td>Simpler syntax</td>
+                        </tr>
+                        <tr>
+                            <td>Dashboard layout</td>
+                            <td>Grid</td>
+                            <td>Complex 2D structure</td>
+                        </tr>
+                        <tr>
+                            <td>Form row</td>
+                            <td>Flexbox</td>
+                            <td>Horizontal alignment</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p><strong>Rule of Thumb:</strong> Flexbox for 1D, Grid for 2D</p>
+            </div>
+
+            <h3>Q4: What are pseudo-classes and pseudo-elements?</h3>
+            <div class="card">
+                <h4>Pseudo-classes (:) - Select elements in special states</h4>
+                <pre><code>button:hover        /* When mouse over */
+input:focus         /* When selected */
+li:first-child      /* First item in list */
+tr:nth-child(odd)   /* Odd rows */
+a:visited           /* Visited links */
+</code></pre>
+
+                <h4>Pseudo-elements (::) - Style parts of elements</h4>
+                <pre><code>p::first-line       /* First line of paragraph */
+p::first-letter     /* First letter */
+div::before         /* Insert content before */
+div::after          /* Insert content after */
+::selection         /* Selected text */
+</code></pre>
+            </div>
+
+            <h3>Q5: How does mobile-first design work?</h3>
+            <div class="card highlight">
+                <p><strong>Answer: Start with mobile, progressively enhance for larger screens</strong></p>
+
+                <pre><code>/* Base styles (mobile) */
+.container {
+    padding: 16px;
+    font-size: 14px;
+}
+
+/* Tablet (min-width means "this size and larger") */
+@media (min-width: 768px) {
+    .container {
+        padding: 24px;
+        font-size: 16px;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+</code></pre>
+
+                <p><strong>Benefits:</strong></p>
+                <ul>
+                    <li>Better performance on mobile</li>
+                    <li>Forces prioritization of content</li>
+                    <li>Easier to scale up than down</li>
+                </ul>
+            </div>
+
+            <h2>🎯 Summary</h2>
+
+            <div class="card success">
+                <h3>CSS Concepts Covered:</h3>
+                <ul>
+                    <li>✅ Selectors - Element, class, ID, attribute, pseudo</li>
+                    <li>✅ Box Model - Content, padding, border, margin</li>
+                    <li>✅ CSS Variables - Reusable values, theming</li>
+                    <li>✅ Flexbox - One-dimensional layouts</li>
+                    <li>✅ Grid - Two-dimensional layouts</li>
+                    <li>✅ Positioning - Static, relative, absolute, fixed, sticky</li>
+                    <li>✅ Responsive Design - Media queries, mobile-first</li>
+                    <li>✅ Animations - Transitions, keyframes</li>
+                    <li>✅ Gradients - Linear, radial</li>
+                    <li>✅ Shadows - Box shadow, text shadow</li>
+                    <li>✅ Transforms - Scale, rotate, translate</li>
+                    <li>✅ Filters - Blur, grayscale, brightness</li>
+                </ul>
+            </div>
+
+            <div class="card" style="text-align: center; margin-top: 40px; padding: 40px;">
+                <h2>🎨 End of Documentation</h2>
+                <p style="margin-top: 15px; font-size: 1.1rem;">
+                    <strong>StudyVerse Project</strong> • CSS Styling Guide
+                </p>
+                <p style="margin-top: 10px; color: var(--secondary);">
+                    2 CSS files with modern design techniques
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
