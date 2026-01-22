@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     role: 'user',
                     is_temp: true
                 };
+
                 console.log('💬 Adding message to UI immediately');
                 appendMessage(tempMessage);
 

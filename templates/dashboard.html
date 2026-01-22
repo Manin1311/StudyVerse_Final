@@ -412,8 +412,8 @@
         // --- Activity Globe Logic ---
         const globeElem = document.getElementById('activity-globe');
         if (globeElem) {
-            // Generate random data points for "users"
-            const N = 30; // Number of active users relative to mockup
+            // No activity points when only you are online
+            const N = 0; // Will only show points when multiple users are online
             const gData = [...Array(N).keys()].map(() => ({
                 lat: (Math.random() - 0.5) * 160,
                 lng: (Math.random() - 0.5) * 360,
