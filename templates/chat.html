@@ -78,7 +78,7 @@
         <form id="chatForm" style="display: flex; gap: 12px; align-items: center;">
             <div style="flex: 1; position: relative;">
                 <input type="text" id="chatInput" autocomplete="off" placeholder="Ask anything... (or click mic)"
-                    style="width: 100%; padding: 12px 40px 12px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none;">
+                    style="width: 100%; padding: 12px 40px 12px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none; position: relative; z-index: 1; pointer-events: auto;">
                 <!-- Voice Input Trigger -->
                 <i id="micBtn" class="fa-solid fa-microphone"
                     style="position: absolute; right: 12px; top: 13px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s;"></i>
