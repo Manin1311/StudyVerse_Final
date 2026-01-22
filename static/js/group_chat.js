@@ -72,7 +72,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------
-    // Socket.IO Logic
+    // Auto-refresh: Poll for new messages every 2 seconds
+    // ----------------------------------------------------
+    let lastMessageId = 0;
+
+    // Get the last message ID from the page
+    const existingMessages = document.querySelectorAll('[data-message-id]');
+    if (existingMessages.length > 0) {
+        const lastMsg = existingMessages[existingMessages.length - 1];
+        lastMessageId = parseInt(lastMsg.getAttribute('data-message-id')) || 0;
+    }
+
+    // Poll for new messages every 2 seconds
+    setInterval(async () => {
+        try {
+            const response = await fetch(`/group/${GROUP_ID}/messages?since=${lastMessageId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg);
+                        lastMessageId = Math.max(lastMessageId, msg.id);
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error polling messages:', err);
+        }
+    }, 2000); // Poll every 2 seconds
+
+    // ----------------------------------------------------
+    // Socket.IO Logic (keeping as backup)
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
         // Force WebSocket transport for instant messaging
@@ -151,6 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     file_path: filePath
                 });
                 console.log('✅ Message emitted successfully');
+
+                // FALLBACK: Also append to UI immediately (will remove duplicates later)
+                // This ensures user ALWAYS sees their message even if Socket.IO broadcast fails
+                const tempMessage = {
+                    id: Date.now(),  // Temporary ID
+                    user_id: CURRENT_USER_ID,
+                    username: 'You',
+                    content: message,
+                    file_path: filePath,
+                    created_at: new Date().toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    role: 'user'
+                };
+                console.log('💬 Adding message to UI immediately');
+                appendMessage(tempMessage);
 
                 // Reset UI
                 chatInput.value = '';
