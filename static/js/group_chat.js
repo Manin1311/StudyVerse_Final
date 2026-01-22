@@ -72,7 +72,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------
-    // Socket.IO Logic
+    // Auto-refresh: Poll for new messages every 2 seconds
+    // ----------------------------------------------------
+    let lastMessageId = 0;
+    const seenMessageIds = new Set();
+
+    // Get the last message ID from the page
+    const existingMessages = document.querySelectorAll('[data-message-id]');
+    if (existingMessages.length > 0) {
+        const lastMsg = existingMessages[existingMessages.length - 1];
+        lastMessageId = parseInt(lastMsg.getAttribute('data-message-id')) || 0;
+        
+        // Populate seen IDs
+        existingMessages.forEach(el => {
+            const id = parseInt(el.getAttribute('data-message-id'));
+            if (id) seenMessageIds.add(id);
+        });
+    }
+
+    // Poll for new messages every 2 seconds
+    setInterval(async () => {
+        try {
+            const response = await fetch(`/group/${GROUP_ID}/messages?since=${lastMessageId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg);
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error polling messages:', err);
+        }
+    }, 2000); // Poll every 2 seconds
+
+    // ----------------------------------------------------
+    // Socket.IO Logic (keeping as backup)
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
         // Force WebSocket transport for instant messaging
@@ -152,6 +188,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 console.log('✅ Message emitted successfully');
 
+                // FALLBACK: Also append to UI immediately (will remove duplicates later)
+                // This ensures user ALWAYS sees their message even if Socket.IO broadcast fails
+                // Mark as temp so it can be replaced
+                const tempId = 'temp-' + Date.now();
+                const tempMessage = {
+                    id: tempId,  // Temporary ID
+                    user_id: CURRENT_USER_ID,
+                    username: 'You',
+                    content: message,
+                    file_path: filePath,
+                    created_at: new Date().toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    role: 'user',
+                    is_temp: true
+                };
+                console.log('💬 Adding message to UI immediately');
+                appendMessage(tempMessage);
+
                 // Reset UI
                 chatInput.value = '';
                 chatInput.style.height = 'auto';
@@ -164,6 +221,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(data) {
         if (!messagesContainer) return;
 
+        // DEDUPLICATION LOGIC
+        // If it's a real message (not temp) and we've seen it, skip
+        if (data.id && !String(data.id).startsWith('temp-')) {
+            if (seenMessageIds.has(data.id)) {
+                console.log(`Duplicate message ${data.id} ignored.`);
+                return; 
+            }
+            
+            // Mark as seen
+            seenMessageIds.add(data.id);
+            
+            // Update lastMessageId for polling
+            if (typeof data.id === 'number') {
+                lastMessageId = Math.max(lastMessageId, data.id);
+            }
+
+            // Remove any temp messages if this is 'my' message coming back from server
+            const isMe = String(data.user_id) === String(CURRENT_USER_ID);
+            if (isMe) {
+                 // Try to find a temp message and remove it to avoid visual double for a split second
+                 // (Simple heuristic: remove the last temp message if exists)
+                 const temps = messagesContainer.querySelectorAll('[data-temp="true"]');
+                 if (temps.length > 0) {
+                     temps[temps.length - 1].remove();
+                 }
+            }
+        }
+
         const isMe = String(data.user_id) === String(CURRENT_USER_ID);
         const isAI = data.role === 'assistant';
 
@@ -175,6 +260,14 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.style.maxWidth = '70%';
         if (isMe) {
             msgDiv.style.flexDirection = 'row-reverse';
+        }
+        
+        // Mark temp messages
+        if (data.is_temp) {
+            msgDiv.setAttribute('data-temp', 'true');
+            msgDiv.style.opacity = '0.7'; // Visual cue it's sending
+        } else {
+            msgDiv.setAttribute('data-message-id', data.id);
         }
 
         // Avatar HTML

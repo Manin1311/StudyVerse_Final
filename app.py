@@ -1978,6 +1978,50 @@ def group_send():
 
     return redirect(url_for('group_chat'))
 
+@app.route('/group/<int:group_id>/messages')
+@login_required
+def get_group_messages(group_id):
+    """Polling endpoint for group messages."""
+    # Check membership
+    membership = GroupMember.query.filter_by(group_id=group_id, user_id=current_user.id).first()
+    if not membership:
+        return jsonify({'error': 'Not a member'}), 403
+
+    since_id = request.args.get('since', 0, type=int)
+    
+    messages = (
+        GroupChatMessage.query
+        .filter(GroupChatMessage.group_id == group_id)
+        .filter(GroupChatMessage.id > since_id)
+        .order_by(GroupChatMessage.created_at.asc())
+        .limit(50)
+        .all()
+    )
+    
+    # Format messages for JSON
+    msg_list = []
+    for m in messages:
+        sender_name = 'Unknown'
+        avatar = None
+        if m.role == 'assistant':
+            sender_name = 'AI Coach'
+        elif m.user:
+            sender_name = m.user.first_name
+            avatar = m.user.get_avatar(64)
+            
+        msg_list.append({
+            'id': m.id,
+            'user_id': m.user_id,
+            'username': sender_name,
+            'avatar': avatar,
+            'content': m.content,
+            'file_path': m.file_path,
+            'created_at': to_ist_time(m.created_at),
+            'role': m.role
+        })
+        
+    return jsonify({'messages': msg_list})
+
 @app.route('/todos')
 @login_required
 def todos():
