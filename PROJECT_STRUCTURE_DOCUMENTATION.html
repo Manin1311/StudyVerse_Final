@@ -497,181 +497,112 @@ Total: 1.42s (still ~1.4s for actual execution)
 </code></pre>
             </div>
 
-            <h2>💾 PART 2: instance Folder</h2>
+            <h2>💾 PART 2: Database Configuration</h2>
 
-            <h3>What is the instance Folder?</h3>
-            <div class="card info">
-                <p><strong>Definition:</strong></p>
-                <p>The <code>instance/</code> folder contains <strong>instance-specific configuration and data
-                        files</strong> for your Flask application.</p>
-
-                <h4>In Our Project:</h4>
-                <div class="folder-structure">
-                    <span class="folder">instance/</span>
-                    └── <span class="db">StudyVerse.db</span> (SQLite Database - 2.5 MB)
-                </div>
-            </div>
-
-            <h3>Why Does Flask Use instance/?</h3>
-            <div class="card">
-                <h4>Problem Flask Solves:</h4>
-                <ul>
-                    <li><strong>Production Server:</strong> Has real user data, secret keys</li>
-                    <li><strong>Development Server:</strong> Has test data, different configs</li>
-                    <li><strong>Team Member A:</strong> Has their own local database</li>
-                    <li><strong>Team Member B:</strong> Has different local database</li>
-                </ul>
-
-                <p><strong>Problem:</strong> Can't share these files via Git! Each environment is different.</p>
-
-                <h4>Solution: instance/ Folder</h4>
-                <ul>
-                    <li>✅ Separate from source code</li>
-                    <li>✅ Not tracked by Git (.gitignore)</li>
-                    <li>✅ Each developer/server has their own</li>
-                    <li>✅ Local configuration & data</li>
-                </ul>
-            </div>
-
-            <h3>What's Inside instance/?</h3>
+            <h3>StudyVerse Database Setup</h3>
             <div class="card success">
-                <h4>Database Configuration - PostgreSQL + SQLite Fallback:</h4>
+                <h4>✅ YOUR PROJECT USES POSTGRESQL ONLY!</h4>
 
-                <p><strong>Your Project Uses:</strong></p>
-                <pre><code># In app.py (line 51):
-app.config['SQLALCHEMY_DATABASE_URI'] = \
-    os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db')
-
-# How it works:
-# 1. Check for DATABASE_URL environment variable
-# 2. If found → Use PostgreSQL (Production/pgAdmin)
-# 3. If NOT found → Fallback to SQLite (Local Development)
+                <p><strong>Database Configuration (from .env):</strong></p>
+                <pre><code>DATABASE_URL=postgresql://postgres:password@localhost:5432/StudyVerse_Final
 </code></pre>
 
-                <h4>StudyVerse Database contains ALL your app data:</h4>
+                <h4>What This Means:</h4>
+                <ul>
+                    <li>✅ <strong>Database:</strong> PostgreSQL (production-grade)</li>
+                    <li>✅ <strong>Management Tool:</strong> pgAdmin 4</li>
+                    <li>✅ <strong>Connection:</strong> localhost:5432</li>
+                    <li>✅ <strong>Database Name:</strong> StudyVerse_Final</li>
+                    <li>✅ <strong>All Data:</strong> Stored in PostgreSQL server</li>
+                    <li>❌ <strong>instance/ folder:</strong> NOT USED (deleted)</li>
+                    <li>❌ <strong>SQLite:</strong> NOT USED</li>
+                </ul>
+            </div>
 
+            <h3>Why PostgreSQL Instead of SQLite?</h3>
+            <div class="card">
                 <table>
                     <thead>
                         <tr>
-                            <th>Table Name</th>
-                            <th>Contains</th>
-                            <th>Example Data</th>
+                            <th>Feature</th>
+                            <th>SQLite</th>
+                            <th>PostgreSQL ✅</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>user</code></td>
-                            <td>All registered users</td>
-                            <td>email, password_hash, first_name, total_xp, level</td>
+                            <td><strong>Setup</strong></td>
+                            <td>Zero config (file-based)</td>
+                            <td>Server required</td>
                         </tr>
                         <tr>
-                            <td><code>todo</code></td>
-                            <td>All tasks</td>
-                            <td>title, category, completed, due_date, user_id</td>
+                            <td><strong>Concurrent Users</strong></td>
+                            <td>Limited (file locking)</td>
+                            <td>✅ Unlimited</td>
                         </tr>
                         <tr>
-                            <td><code>chat_message</code></td>
-                            <td>AI chat history</td>
-                            <td>content, role (user/assistant), user_id</td>
+                            <td><strong>Production Ready</strong></td>
+                            <td>No (small apps only)</td>
+                            <td>✅ Yes</td>
                         </tr>
                         <tr>
-                            <td><code>group_message</code></td>
-                            <td>Group chat messages</td>
-                            <td>content, user_id, group_id, file_path</td>
+                            <td><strong>Scalability</strong></td>
+                            <td>Limited</td>
+                            <td>✅ Excellent</td>
                         </tr>
                         <tr>
-                            <td><code>study_group</code></td>
-                            <td>Study groups</td>
-                            <td>name, description, created_by, room_code</td>
+                            <td><strong>Advanced Features</strong></td>
+                            <td>Basic SQL</td>
+                            <td>✅ JSON, Full-text search, etc.</td>
                         </tr>
                         <tr>
-                            <td><code>pomodoro_session</code></td>
-                            <td>Focus sessions</td>
-                            <td>start_time, duration, user_id</td>
-                        </tr>
-                        <tr>
-                            <td><code>syllabus_document</code></td>
-                            <td>Uploaded syllabi</td>
-                            <td>title, file_path, user_id</td>
-                        </tr>
-                        <tr>
-                            <td><code>xp_history</code></td>
-                            <td>XP transactions</td>
-                            <td>source (task_completed), amount, user_id</td>
-                        </tr>
-                        <tr>
-                            <td><code>friendship</code></td>
-                            <td>Friend connections</td>
-                            <td>user_id, friend_id, status (pending/accepted)</td>
+                            <td><strong>Deployment</strong></td>
+                            <td>File upload</td>
+                            <td>✅ Server connection (Render)</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <p><strong>Database Size:</strong> ~2.5 MB (grows as users add data)</p>
+                <p><strong>Your Choice:</strong> PostgreSQL for production-grade, scalable application! 🚀</p>
             </div>
 
-            <h3>How Flask Creates instance/ Folder</h3>
-            <div class="card">
-                <h4>Automatic Creation:</h4>
-                <pre><code># In app.py
-app = Flask(__name__)
-
-# Flask config
-app.config['SQLALCHEMY_DATABASE_URI'] = \
-    'sqlite:///StudyVerse.db'
-    # This creates: instance/StudyVerse.db automatically
-
-# First time app runs:
-db.create_all()  # Creates database file in instance/
-</code></pre>
-
-                <h4>Path Resolution:</h4>
-                <pre><code>Project Root/
-├── app.py
-├── templates/
-├── static/
-└── instance/             ← Created automatically
-    └── StudyVerse.db     ← Database file
-</code></pre>
-
-                <p><strong>Why instance/ ?</strong></p>
-                <ul>
-                    <li>Flask convention for local data</li>
-                    <li>Separate from code (clean organization)</li>
-                    <li>Auto-excluded from version control</li>
-                </ul>
-            </div>
-
-            <h3>Viewing SQLite Database</h3>
+            <h3>Viewing Your PostgreSQL Database</h3>
             <div class="card highlight">
-                <h4>Method 1: SQLite Browser (GUI)</h4>
-                <pre><code># Download: https://sqlitebrowser.org/
-# Then: File → Open Database → Select StudyVerse.db
-
-You can:
-- View all tables
-- Browse data
-- Run SQL queries
-- Edit records
-- Export data
+                <h4>Method 1: pgAdmin 4 (GUI - What You're Using!) ✅</h4>
+                <pre><code># Already setup:
+1. Open pgAdmin 4
+2. Connect to localhost server
+3. Navigate to Databases → StudyVerse_Final
+4. Browse:
+   - Tables: See all 15+ tables
+   - Data: View/edit records
+   - SQL Tool: Run queries
+   - Import/Export: Backup data
 </code></pre>
 
                 <h4>Method 2: Python Script</h4>
-                <pre><code>import sqlite3
+                <pre><code>import psycopg2
 
-# Connect to database
-conn = sqlite3.connect('instance/StudyVerse.db')
+# Connect to PostgreSQL
+conn = psycopg2.connect(
+    host="localhost",
+    database="StudyVerse_Final",
+    user="postgres",
+    password="your_password"
+)
+
 cursor = conn.cursor()
 
 # View all tables
-cursor.execute(
-    "SELECT name FROM sqlite_master WHERE type='table'"
-)
+cursor.execute("""
+    SELECT tablename FROM pg_tables 
+    WHERE schemaname='public'
+""")
 tables = cursor.fetchall()
 print("Tables:", tables)
 
-# View all users
-cursor.execute("SELECT email, level, total_xp FROM user")
+# View users
+cursor.execute("SELECT email, level, total_xp FROM \"user\"")
 users = cursor.fetchall()
 for user in users:
     print(f"Email: {user[0]}, Level: {user[1]}, XP: {user[2]}")
@@ -679,16 +610,44 @@ for user in users:
 conn.close()
 </code></pre>
 
-                <h4>Method 3: Command Line</h4>
+                <h4>Method 3: Command Line (psql)</h4>
                 <pre><code># Windows/Mac/Linux
-sqlite3 instance/StudyVerse.db
+psql -U postgres -d StudyVerse_Final
 
-# SQLite commands:
-.tables                    # Show all tables
-.schema user              # Show user table structure
-SELECT * FROM user;       # View all users
-.quit                     # Exit
+# PostgreSQL commands:
+\dt                    # Show all tables
+\d user               # Show user table structure
+SELECT * FROM "user"; # View all users
+\q                    # Exit
 </code></pre>
+            </div>
+
+            <h3>What is instance/ Folder? (Not Used in Your Project)</h3>
+            <div class="card info">
+                <p><strong>Concept Explanation (For Understanding):</strong></p>
+                <p>The <code>instance/</code> folder is Flask's default location for SQLite database files.</p>
+
+                <h4>When Flask Creates instance/:</h4>
+                <pre><code># IF your .env had:
+DATABASE_URL=sqlite:///StudyVerse.db
+
+# THEN Flask would create:
+Project Root/
+└── instance/
+    └── StudyVerse.db  ← File-based database
+</code></pre>
+
+                <h4>Why You DON'T Have instance/:</h4>
+                <pre><code># YOUR .env has:
+DATABASE_URL=postgresql://localhost:5432/StudyVerse_Final
+
+# PostgreSQL is server-based, NOT file-based
+# Database lives in PostgreSQL server
+# No instance/ folder needed! ✅
+</code></pre>
+
+                <p><strong>Summary:</strong> <code>instance/</code> folder is ONLY for SQLite. You're using PostgreSQL,
+                    so you don't need it!</p>
             </div>
 
             <h3>Common Questions About instance/</h3>
