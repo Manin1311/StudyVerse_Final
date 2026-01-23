@@ -294,9 +294,8 @@
 
             // --- Charts Logic ---
             try {
-                const dailyLabels = {{ daily_hours | map(attribute = 'label') | list | tojson
-            }};
-        const dailyData = {{ daily_hours | map(attribute = 'hours') | list | tojson }};
+                const dailyLabels = {{ daily_hours | map(attribute='label') | list | tojson }};
+        const dailyData = {{ daily_hours | map(attribute='hours') | list | tojson }};
 
         const chartLabels = (dailyLabels && dailyLabels.length) ? dailyLabels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const chartData = (dailyData && dailyData.length) ? dailyData : [0, 0, 0, 0, 0, 0, 0];
