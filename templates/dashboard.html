@@ -57,7 +57,7 @@
                             style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
                             <div
                                 style="height: 100%; width: {{ (quest.progress / quest.target * 100)|int }}%; 
-                                background: {{ 'var(--accent-green)' if quest.completed else 'var(--accent-blue)' } transition: width 0.5s;">
+                                background: {{ 'var(--accent-green)' if quest.completed else 'var(--accent-blue)' }}; transition: width 0.5s;">
                             </div>
                         </div>
                         <div
@@ -386,8 +386,10 @@
     document.addEventListener('DOMContentLoaded', () => {
         const ctx = document.getElementById('studyProgressChart');
         if (ctx) {
-            const completed = {{ completed_todos or 0 }};
-        const total = {{ total_todos or 0 }};
+            const completed = {{ completed_todos or 0 }
+        };
+        const total = {{ total_todos or 0 }
+    };
     const pending = Math.max(0, total - completed);
 
     const isEmpty = total === 0;
