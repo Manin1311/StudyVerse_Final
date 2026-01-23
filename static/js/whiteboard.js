@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return; // Not on whiteboard page
 
     const ctx = canvas.getContext('2d');
-    const socket = io();
+    const socket = io('/', { transports: ['polling', 'websocket'] });
     const group_id = typeof GROUP_ID !== 'undefined' ? GROUP_ID : null;
 
     if (!group_id) return;

@@ -111,11 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Socket.IO Logic (keeping as backup)
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
-        // Force WebSocket transport for instant messaging
-        const socket = io({
-            transports: ['websocket', 'polling'],  // Try WebSocket first
-            upgrade: true,  // Allow upgrades
-            rememberUpgrade: true  // Remember successful upgrade
+        // Initialize socket with explicit path and polling-first transport for stability on Render
+        const socket = io('/', {
+            transports: ['polling', 'websocket'],
+            upgrade: true,
+            rememberUpgrade: true
         });
 
         socket.on('connect', () => {
