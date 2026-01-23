@@ -87,45 +87,20 @@
                 style="position: absolute; bottom: 10px; left: 10px; font-size: 0.8rem; opacity: 0.7;">AM</span>
         </div>
 
-        <!-- Live Global Activity Widget (Replaces Battle Arena) -->
+        <!-- Study Progress Chart Widget -->
         <div class="card"
-            style="height: 300px; padding: 0; background: linear-gradient(135deg, rgba(82, 82, 91, 0.1), #18181b); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative;">
-
-            <div style="position: absolute; top: 16px; left: 16px; z-index: 10; pointer-events: none;">
-                <h3
-                    style="display: flex; align-items: center; gap: 10px; color: white; font-size: 1.1rem; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
-                    <i class="fa-solid fa-earth-americas" style="color: #60a5fa;"></i> Live Activity
-                </h3>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px;">
-                    <span
-                        style="display: inline-block; width: 8px; height: 8px; background: #4ade80; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #4ade80; animation: pulse 2s infinite;"></span>
-                    {{ online_users }} User{% if online_users != 1 %}s{% endif %} Online
-                </p>
+            style="height: 300px; padding: 20px; background: var(--bg-card); border: 1px solid var(--border); display: flex; flex-direction: column; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <div>
+                    <h3 class="card-title">
+                        <i class="fa-solid fa-chart-pie" style="color: var(--accent-purple);"></i> Study Progress
+                    </h3>
+                    <p class="text-muted" style="font-size: 0.8rem;">Task completion overview</p>
+                </div>
             </div>
 
-            <div id="activity-globe" style="width: 100%; height: 100%;"></div>
-
-            <style>
-                @keyframes pulse {
-                    0% {
-                        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
-                    }
-
-                    70% {
-                        box-shadow: 0 0 0 6px rgba(74, 222, 128, 0);
-                    }
-
-                    100% {
-                        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
-                    }
-                }
-            </style>
-
-            <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 10;">
-                <a href="/battle" class="btn-primary"
-                    style="display: block; width: 100%; text-align: center; text-decoration: none; backdrop-filter: blur(4px); background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5);">
-                    Find Study Partner
-                </a>
+            <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
+                <canvas id="studyProgressChart"></canvas>
             </div>
         </div>
     </div>
@@ -405,53 +380,76 @@
 </script>
 <!-- Markdown Parser for AI response -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<!-- Globe.gl -->
-<script src="//unpkg.com/globe.gl"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Activity Globe Logic ---
-        const globeElem = document.getElementById('activity-globe');
-        if (globeElem) {
-            // No activity points when only you are online
-            const N = 0; // Will only show points when multiple users are online
-            const gData = [...Array(N).keys()].map(() => ({
-                lat: (Math.random() - 0.5) * 160,
-                lng: (Math.random() - 0.5) * 360,
-                size: Math.random() / 3,
-                color: ['#60a5fa', '#4ade80', '#fbbf24', '#f43f5e'][Math.floor(Math.random() * 4)]
-            }));
+        const ctx = document.getElementById('studyProgressChart');
+        if (ctx) {
+            // Data derived from server-side variables
+            const completed = {{ completed_todos or 0 }
+        };
+        const total = {{ total_todos or 0 }
+    };
+    const pending = Math.max(0, total - completed);
 
-            try {
-                const Globe = window.Globe()
-                    (globeElem)
-                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-                    .pointsData(gData)
-                    .pointAltitude('size')
-                    .pointColor('color')
-                    .pointRadius(0.8)
-                    .pointsMerge(true)
-                    .pointResolution(2)
-                    .backgroundColor('rgba(0,0,0,0)')
-                    .width(globeElem.offsetWidth)
-                    .height(globeElem.offsetHeight)
-                    .showAtmosphere(true)
-                    .atmosphereColor('#3b82f6')
-                    .atmosphereAltitude(0.2);
+    // Handle empty state
+    const isEmpty = total === 0;
+    const dataValues = isEmpty ? [1] : [completed, pending];
+    const bgColors = isEmpty ? ['rgba(255, 255, 255, 0.1)'] : ['#4ade80', '#3b82f6'];
+    const labels = isEmpty ? ['No Tasks'] : ['Completed', 'Pending'];
 
-                // Auto-rotate
-                Globe.controls().autoRotate = true;
-                Globe.controls().autoRotateSpeed = 1.2;
-                Globe.controls().enableZoom = false;
-                Globe.controls().enablePan = false;
-
-                // Responsive resize
-                window.addEventListener('resize', () => {
-                    Globe.width(globeElem.offsetWidth);
-                    Globe.height(globeElem.offsetHeight);
-                });
-            } catch (err) {
-                console.error("Globe init failed:", err);
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: bgColors,
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#a1a1aa', // var(--text-secondary)
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11
+                        },
+                        usePointStyle: true,
+                        boxWidth: 6
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(24, 24, 27, 0.9)', // var(--bg-card) mostly
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function (context) {
+                            if (isEmpty) return ' Add tasks to track progress!';
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const percentage = Math.round((value / total) * 100);
+                            return ` ${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '75%',
+            animation: {
+                animateScale: true,
+                animateRotate: true
             }
+        }
+    });
         }
     });
 </script>
