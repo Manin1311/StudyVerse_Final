@@ -4564,3 +4564,222 @@ body.theme_neon_city {
 .shop-item-card p {
     color: var(--text-secondary);
 }
+
+/* ========================================
+   RESPONSIVE & LAYOUT CORE
+   ======================================== */
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
+    z-index: 999;
+    flex-shrink: 0;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 30px;
+    position: relative;
+    background-color: var(--bg-main);
+}
+
+.mobile-header {
+    display: none;
+    /* Hidden on desktop */
+    padding: 16px 20px;
+    background-color: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    height: 60px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.logo-mobile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Dashboard Layout */
+.layout-home {
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: 24px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Stats Cards Responsive Grid */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+/* Sidebar Collapsed State (Desktop) */
+body.sidebar-collapsed .sidebar {
+    width: 80px;
+}
+
+body.sidebar-collapsed .logo span,
+body.sidebar-collapsed .nav-item span {
+    display: none;
+}
+
+body.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+body.sidebar-collapsed .nav-item i {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+/* ========================================
+   MEDIA QUERIES
+   ======================================== */
+
+/* Tablet (max-width: 1200px) */
+@media (max-width: 1200px) {
+    .layout-home {
+        grid-template-columns: 1fr 300px;
+    }
+
+    .layout-home>div:first-child {
+        display: none;
+        /* Hide left column widgets on tablet for space */
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        padding-top: 60px;
+        /* Space for fixed mobile header */
+    }
+
+    .mobile-header {
+        display: flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        inset: 0;
+        top: 60px;
+        width: 100%;
+        height: calc(100vh - 60px);
+        transform: translateX(-100%);
+        box-shadow: none;
+        padding-top: 0;
+        background-color: var(--bg-main);
+        /* Full screen menu feel */
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-header {
+        display: none;
+    }
+
+    .main-content {
+        padding: 16px;
+        height: auto;
+    }
+
+    /* Stack Dashboard */
+    .layout-home {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .layout-home>div:first-child {
+        display: flex;
+        /* Restore left column */
+        flex-direction: column;
+    }
+
+    /* Stats Stack */
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+
+    /* Profile Adjustments */
+    .profile-hero {
+        flex-direction: column;
+        padding: 20px !important;
+        height: auto !important;
+        min-height: 240px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .profile-hero>div {
+        flex-direction: column;
+        padding: 0 !important;
+        width: 100%;
+    }
+
+    .profile-hero img {
+        margin: 0 auto;
+    }
+
+    .profile-hero h2 {
+        font-size: 1.5rem !important;
+    }
+
+    /* Hide desktop-only controls */
+    .desktop-sidebar-toggle {
+        display: none !important;
+    }
+
+    /* Adjust Cards */
+    .card {
+        padding: 16px;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+}
