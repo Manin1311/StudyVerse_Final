@@ -4669,48 +4669,119 @@ body.sidebar-collapsed .nav-item i {
 }
 
 /* ========================================
-   MEDIA QUERIES
+   MEDIA QUERIES - COMPREHENSIVE RESPONSIVE DESIGN
    ======================================== */
 
-/* Tablet (max-width: 1200px) */
+/* Extra Large Desktop (max-width: 1400px) */
+@media (max-width: 1400px) {
+    .layout-home {
+        grid-template-columns: 260px 1fr 280px;
+        gap: 20px;
+    }
+}
+
+/* Large Tablet / Small Desktop (max-width: 1200px) */
 @media (max-width: 1200px) {
     .layout-home {
         grid-template-columns: 1fr 300px;
+        gap: 20px;
     }
 
     .layout-home>div:first-child {
         display: none;
-        /* Hide left column widgets on tablet for space */
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .schedule-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .main-content {
+        padding: 24px;
+    }
+}
+
+/* Tablet (max-width: 992px) */
+@media (max-width: 992px) {
+    .layout-home {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .layout-home>div:first-child {
+        display: flex;
+        flex-direction: column;
     }
 
     .stats-row {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .schedule-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Battle Arena - Stack vertically */
+    .battle-arena-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Leaderboard */
+    .leaderboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Shop Items */
+    .shop-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Forms */
+    .form-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-row>* {
+        width: 100% !important;
+    }
 }
 
 /* Mobile (max-width: 768px) */
 @media (max-width: 768px) {
+
+    /* App Container */
     .app-container {
         flex-direction: column;
         padding-top: 60px;
-        /* Space for fixed mobile header */
     }
 
+    /* Mobile Header */
     .mobile-header {
         display: flex;
     }
 
+    /* Sidebar */
     .sidebar {
         position: fixed;
         inset: 0;
         top: 60px;
         width: 100%;
+        max-width: 100%;
         height: calc(100vh - 60px);
         transform: translateX(-100%);
         box-shadow: none;
-        padding-top: 0;
+        padding: 20px;
+        padding-top: 10px;
         background-color: var(--bg-main);
-        /* Full screen menu feel */
+        z-index: 1001;
+        overflow-y: auto;
     }
 
     body.sidebar-open .sidebar {
@@ -4721,35 +4792,92 @@ body.sidebar-collapsed .nav-item i {
         display: none;
     }
 
+    /* Hide desktop sidebar toggle */
+    .desktop-sidebar-toggle {
+        display: none !important;
+    }
+
+    /* Main Content */
     .main-content {
         padding: 16px;
         height: auto;
+        padding-bottom: 40px;
     }
 
-    /* Stack Dashboard */
+    /* Dashboard Layout */
     .layout-home {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 20px;
     }
 
     .layout-home>div:first-child {
         display: flex;
-        /* Restore left column */
         flex-direction: column;
     }
 
-    /* Stats Stack */
+    /* Stats Grid */
     .stats-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 
-    /* Profile Adjustments */
+    .schedule-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    /* Typography */
+    .page-title {
+        font-size: 1.75rem;
+        margin-bottom: 8px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    h4 {
+        font-size: 1.1rem;
+    }
+
+    /* Cards */
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+    }
+
+    /* Buttons */
+    .btn-primary,
+    .btn-secondary {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+
+    /* Profile Page */
     .profile-hero {
         flex-direction: column;
         padding: 20px !important;
         height: auto !important;
-        min-height: 240px;
+        min-height: 200px;
         justify-content: center;
         text-align: center;
     }
@@ -4758,27 +4886,429 @@ body.sidebar-collapsed .nav-item i {
         flex-direction: column;
         padding: 0 !important;
         width: 100%;
+        align-items: center;
     }
 
     .profile-hero img {
         margin: 0 auto;
+        width: 100px;
+        height: 100px;
     }
 
     .profile-hero h2 {
         font-size: 1.5rem !important;
+        margin-top: 12px;
     }
 
-    /* Hide desktop-only controls */
-    .desktop-sidebar-toggle {
-        display: none !important;
+    .profile-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 
-    /* Adjust Cards */
-    .card {
+    /* Pomodoro Timer */
+    .timer-display {
+        font-size: 4rem;
+    }
+
+    .timer-controls {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .timer-controls button {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    /* Task Manager */
+    .task-grid {
+        display: block;
+    }
+
+    .task-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .task-row>* {
+        width: 100% !important;
+    }
+
+    /* Hide less important columns on mobile */
+    .task-row .task-status,
+    .task-row .task-progress,
+    .task-row .task-due-date {
+        display: none;
+    }
+
+    /* Battle Arena */
+    .battle-arena-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+
+    .code-editor {
+        min-height: 300px;
+    }
+
+    /* Shop Grid */
+    .shop-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Leaderboard */
+    .leaderboard-item {
+        padding: 12px;
+    }
+
+    .leaderboard-rank {
+        font-size: 1.2rem;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        padding: 20px;
+        margin: 20px;
+    }
+
+    /* Forms */
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-row>* {
+        width: 100% !important;
+    }
+
+    input,
+    textarea,
+    select {
+        font-size: 16px;
+        /* Prevents zoom on iOS */
+    }
+
+    /* Flash Messages */
+    #flash-container {
+        top: 70px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .flash-message {
+        font-size: 0.9rem;
+        padding: 10px 16px;
+    }
+
+    /* Clock Widget */
+    .clock-widget {
+        height: 150px !important;
+    }
+
+    #clock-hour,
+    #clock-min {
+        font-size: 3rem;
+    }
+
+    /* Globe/Activity Widget */
+    #activity-globe {
+        height: 250px !important;
+    }
+
+    /* Pixel Banner */
+    .pixel-banner {
+        height: 120px !important;
+    }
+
+    /* Weekly Todo */
+    .weekly-todo {
         padding: 16px;
     }
 
+    /* AI Sidebar */
+    .ai-sidebar {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Zen Mode */
+    .zen-quote {
+        font-size: 1.5rem;
+        padding: 0 20px;
+    }
+
+    .zen-controls {
+        flex-direction: column;
+        gap: 12px;
+        padding: 20px;
+    }
+}
+
+/* Small Mobile (max-width: 576px) */
+@media (max-width: 576px) {
+
+    /* Further reduce padding */
+    .main-content {
+        padding: 12px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    /* Typography */
     .page-title {
         font-size: 1.5rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.3rem;
+    }
+
+    h3 {
+        font-size: 1.15rem;
+    }
+
+    /* Stats - Single column on very small screens */
+    .stats-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .schedule-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    /* Buttons */
+    .btn-primary,
+    .btn-secondary {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        width: 100%;
+    }
+
+    /* Timer */
+    .timer-display {
+        font-size: 3rem;
+    }
+
+    /* Clock */
+    #clock-hour,
+    #clock-min {
+        font-size: 2.5rem;
+    }
+
+    .clock-widget {
+        height: 130px !important;
+    }
+
+    /* Profile */
+    .profile-hero img {
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Modal */
+    .modal-content {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    /* Form inputs */
+    input,
+    textarea,
+    select,
+    button {
+        min-height: 44px;
+        /* Touch-friendly */
+    }
+
+    /* Nav items */
+    .nav-item {
+        padding: 12px 16px;
+        font-size: 0.95rem;
+    }
+
+    /* Badges */
+    .badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    /* Leaderboard */
+    .leaderboard-item {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    /* Shop items */
+    .shop-item-card {
+        padding: 14px;
+    }
+
+    /* Pixel Banner */
+    .pixel-banner {
+        height: 100px !important;
+    }
+
+    /* Activity Globe */
+    #activity-globe {
+        height: 200px !important;
+    }
+}
+
+/* Extra Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.4rem;
+    }
+
+    .card {
+        padding: 12px;
+    }
+
+    .timer-display {
+        font-size: 2.5rem;
+    }
+
+    #clock-hour,
+    #clock-min {
+        font-size: 2rem;
+    }
+
+    .profile-hero {
+        padding: 16px !important;
+    }
+
+    .nav-item {
+        padding: 10px 14px;
+    }
+}
+
+/* iPhone SE and similar (max-width: 390px) */
+@media (max-width: 390px) {
+    .main-content {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .page-title {
+        font-size: 1.3rem;
+    }
+
+    .timer-display {
+        font-size: 2.2rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+
+    .flash-message {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
+}
+
+/* Landscape Mode for Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sidebar {
+        height: 100vh;
+        top: 0;
+        padding-top: 10px;
+    }
+
+    .app-container {
+        padding-top: 0;
+    }
+
+    .mobile-header {
+        position: relative;
+        height: 50px;
+    }
+
+    .main-content {
+        padding: 12px;
+        height: calc(100vh - 50px);
+    }
+
+    .timer-display {
+        font-size: 2.5rem;
+    }
+
+    .clock-widget {
+        height: 100px !important;
+    }
+
+    #clock-hour,
+    #clock-min {
+        font-size: 2rem;
+    }
+
+    .pixel-banner {
+        height: 80px !important;
+    }
+
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Print Styles */
+@media print {
+
+    .sidebar,
+    .mobile-header,
+    .nav-menu,
+    button,
+    .btn-primary,
+    .btn-secondary {
+        display: none !important;
+    }
+
+    .main-content {
+        padding: 0;
+        margin: 0;
+    }
+
+    .card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+
+    /* Sharper borders and shadows */
+    .card {
+        border-width: 0.5px;
+    }
+
+    img {
+        image-rendering: -webkit-optimize-contrast;
     }
 }
