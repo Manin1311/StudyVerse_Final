@@ -75,16 +75,16 @@
         </div>
 
         <!-- Clock Widget -->
-        <div class="card clock-widget" style="height: 180px; flex-direction: column; gap: 4px;">
-            <div style="display: flex; gap: 8px;">
+        <div class="card clock-widget" style="height: 180px; flex-direction: column; gap: 4px; position: relative;">
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
                 <div id="clock-hour">00</div>
-                <span style="font-size: 2rem; align-self: flex-start;">:</span>
+                <span style="font-size: 2rem;">:</span>
                 <div id="clock-min">00</div>
+                <span id="clock-ampm"
+                    style="font-size: 1.2rem; opacity: 0.7; margin-left: 8px; align-self: center;">AM</span>
             </div>
             <div style="font-size: 1rem; font-family: var(--font-body); opacity: 0.8; font-weight: 500;" id="clock-day">
                 SUNDAY</div>
-            <span id="clock-ampm"
-                style="position: absolute; bottom: 10px; left: 10px; font-size: 0.8rem; opacity: 0.7;">AM</span>
         </div>
 
         <!-- Live Global Activity Widget (Replaces Battle Arena) -->
@@ -354,12 +354,14 @@
 <script>
     function updateClock() {
         const now = new Date();
-        const hours = now.getHours();
+        const hours24 = now.getHours();
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const hoursStr = String(hours).padStart(2, '0');
+        // Convert to 12-hour format
+        const ampm = hours24 >= 12 ? 'PM' : 'AM';
+        const hours12 = hours24 % 12 || 12; // Convert 0 to 12 for midnight
+        const hoursStr = String(hours12).padStart(2, '0');
 
         document.getElementById('clock-hour').textContent = hoursStr;
         document.getElementById('clock-min').textContent = minutes;
