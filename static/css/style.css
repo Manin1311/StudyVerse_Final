@@ -4632,20 +4632,115 @@ body.theme_neon_city {
     color: var(--text-primary);
 }
 
-/* Dashboard Layout */
+/* Dashboard Layout - Modern Responsive Grid */
 .layout-home {
     display: grid;
-    grid-template-columns: 280px 1fr 300px;
-    gap: 24px;
+    gap: clamp(1rem, 2vw, 2rem);
     max-width: 100%;
     margin: 0 auto;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-/* Stats Cards Responsive Grid */
+/* Stats Cards Responsive Grid - Auto-fit with minmax */
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* ========================================
+   MODERN RESPONSIVE UTILITIES (Faculty Recommended)
+   ======================================== */
+
+/* Container Pattern - Auto-fit Grid */
+.container {
+    display: grid;
+    gap: clamp(1rem, 2vw, 2rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+/* Card Pattern - Fluid Width with Max */
+.card {
+    height: auto;
+    min-height: 200px;
+    width: 100%;
+    max-width: 100%;
+    padding: clamp(1rem, 3vw, 2rem);
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+/* Schedule Grid - Responsive Auto-fit */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* Shop Grid - Responsive Auto-fit */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* Profile Stats Grid */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+/* Battle Arena Grid */
+.battle-arena-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* Leaderboard Grid */
+.leaderboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+/* Fluid Typography */
+.page-title {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+h2 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+h3 {
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+}
+
+h4 {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+/* Responsive Padding */
+.main-content {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* Responsive Buttons */
+.btn-primary,
+.btn-secondary {
+    padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
+    font-size: clamp(0.875rem, 2vw, 1rem);
 }
 
 /* Sidebar Collapsed State (Desktop) */
@@ -4669,83 +4764,39 @@ body.sidebar-collapsed .nav-item i {
 }
 
 /* ========================================
-   MEDIA QUERIES - COMPREHENSIVE RESPONSIVE DESIGN
+   MEDIA QUERIES - SIMPLIFIED WITH MODERN CSS
    ======================================== */
 
 /* Extra Large Desktop (max-width: 1400px) */
 @media (max-width: 1400px) {
+
+    /* Most responsiveness handled by auto-fit grids */
     .layout-home {
-        grid-template-columns: 260px 1fr 280px;
-        gap: 20px;
+        gap: clamp(0.75rem, 2vw, 1.5rem);
     }
 }
 
 /* Large Tablet / Small Desktop (max-width: 1200px) */
 @media (max-width: 1200px) {
-    .layout-home {
-        grid-template-columns: 1fr 300px;
-        gap: 20px;
-    }
 
-    .layout-home>div:first-child {
-        display: none;
-    }
-
-    .stats-row {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
-
-    .schedule-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
-
+    /* Auto-fit grids will naturally adjust */
     .main-content {
-        padding: 24px;
+        padding: clamp(1rem, 2.5vw, 1.5rem);
     }
 }
 
 /* Tablet (max-width: 992px) */
 @media (max-width: 992px) {
+
+    /* Force single column for dashboard on tablets */
     .layout-home {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .layout-home>div:first-child {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .stats-row {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .schedule-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* Battle Arena - Stack vertically */
-    .battle-arena-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* Leaderboard */
-    .leaderboard-grid {
         grid-template-columns: 1fr;
     }
 
-    /* Shop Items */
-    .shop-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* Forms */
+    /* Forms stack vertically */
     .form-row {
         flex-direction: column;
-        gap: 16px;
+        gap: 1rem;
     }
 
     .form-row>* {
