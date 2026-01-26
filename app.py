@@ -40,7 +40,12 @@ except ImportError:
     GEMINI_AVAILABLE = False
 
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 app = Flask(__name__)
+# Fix for Render/Heroku (Reverse Proxy) - Critical for OAuth and HTTPS
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 # Production: Must use DATABASE_URL from environment (e.g. Render)
 # Production: Must use DATABASE_URL from environment (e.g. Render)
