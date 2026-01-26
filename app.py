@@ -3649,8 +3649,9 @@ def update_last_seen():
         try:
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
-        except:
-            pass # Ignore if DB issues
+        except Exception:
+            db.session.rollback()
+            pass # Fail silently to prevent request crash
 
 @app.route('/settings/public-profile', methods=['POST'])
 @login_required
