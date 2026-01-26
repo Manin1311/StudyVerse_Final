@@ -492,6 +492,7 @@ class SyllabusDocument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(100), nullable=False)
+    extracted_text = db.Column(db.Text, nullable=True) # AI Context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Event(db.Model):
@@ -4157,6 +4158,13 @@ def init_db_schema():
                     if 'completed_at' not in columns:
                          print("Running migration: Adding completed_at to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
+
+                # 4. Check for SyllabusDocument updates
+                if 'syllabus_document' in inspector.get_table_names():
+                    columns = [c['name'] for c in inspector.get_columns('syllabus_document')]
+                    if 'extracted_text' not in columns:
+                        print("Running migration: Adding extracted_text to syllabus_document table...")
+                        conn.execute(text("ALTER TABLE syllabus_document ADD COLUMN extracted_text TEXT"))
                 
                 # 4. Create Habit tables if missing (Standard approach)
                 # Since we use db.create_all() at startup, this is mainly for verification or alter
