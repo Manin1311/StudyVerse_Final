@@ -1,5 +1,5 @@
-import eventlet
-eventlet.monkey_patch()
+# import eventlet
+# eventlet.monkey_patch()
 
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -91,7 +91,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",  # Allow all origins (or set to your domain)
-    async_mode='eventlet',      # Use eventlet for production (better WebSocket support)
+    async_mode='threading',      # Use threading for compatibility with Python 3.13
     ping_timeout=120,           # 2 min timeout for slow connections
     ping_interval=25,           # Keep connection alive every 25s
     max_http_buffer_size=1e8,   # 100MB max message size
@@ -417,6 +417,21 @@ class Todo(db.Model):
     category = db.Column(db.String(50))
     is_group = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+class Habit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Could add color, icon, etc. later
+
+class HabitLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    habit_id = db.Column(db.Integer, db.ForeignKey('habit.id'), nullable=False)
+    # We only care about the DATE for the log
+    completed_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -473,9 +488,17 @@ class SyllabusDocument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(100), nullable=False)
-    extracted_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    date = db.Column(db.String(50), nullable=False) # Format: YYYY-MM-DD
+    time = db.Column(db.String(50), nullable=True)
+    is_notified = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ------------------------------
 # Data Structures (DS) Utilities
@@ -1202,9 +1225,7 @@ def dashboard():
     upcoming_todos = (
         Todo.query
         .filter_by(user_id=current_user.id, completed=False)
-        .filter(Todo.due_date.isnot(None))
-        .filter(Todo.due_date != '')
-        .order_by(Todo.due_date.asc())
+        .order_by(Todo.id.desc())
         .limit(5)
         .all()
     )
@@ -1248,6 +1269,7 @@ def dashboard():
     })
     
     # Quest 3: Log in daily (always complete if you're seeing this)
+    # Quest 3: Log in daily (always complete if you're seeing this)
     quests.append({
         'description': 'Log in today',
         'icon': 'fa-door-open',
@@ -1256,6 +1278,99 @@ def dashboard():
         'target': 1,
         'completed': True
     })
+
+    # -------------------------
+    # WEEKLY STATS CALCULATION
+    # -------------------------
+    today = datetime.utcnow().date()
+    # Align to current week (Monday - Sunday)
+    start_of_week = today - timedelta(days=today.weekday()) 
+    dates = [start_of_week + timedelta(days=i) for i in range(7)]
+    
+    daily_stats = []
+    total_focus_week = 0
+    total_tasks_week = 0
+    total_goals_week = 0 
+    
+    for d in dates:
+        # 1. Daily Focus Mins
+        d_focus = db.session.query(db.func.sum(StudySession.duration)).filter(
+            StudySession.user_id == current_user.id,
+            db.func.date(StudySession.completed_at) == d
+        ).scalar() or 0
+        
+        # 2. Daily Tasks Completed (Using real completed_at)
+        d_tasks = Todo.query.filter(
+            Todo.user_id == current_user.id,
+            Todo.completed == True,
+            db.func.date(Todo.completed_at) == d
+        ).count()
+        
+        # 3. Daily Goals (High Priority Completed)
+        d_goals = Todo.query.filter(
+            Todo.user_id == current_user.id,
+            Todo.completed == True,
+            Todo.priority == 'high',
+            db.func.date(Todo.completed_at) == d
+        ).count()
+        
+        total_focus_week += d_focus
+        total_tasks_week += d_tasks
+        total_goals_week += d_goals
+        
+        # Normalize for chart (Max 4 hours focus = 100%, Max 5 tasks = 100%)
+        focus_pct = min((d_focus / 240) * 100, 100) # 4 hours max bar
+        task_pct = min((d_tasks / 5) * 100, 100)    # 5 tasks max bar
+        
+        daily_stats.append({
+            'day': d.strftime('%a'),
+            'focus_pct': int(focus_pct),
+            'task_pct': int(task_pct)
+        })
+
+    weekly_stats = {
+        'total_focus': total_focus_week,
+        'total_tasks': total_tasks_week,
+        'total_goals': total_goals_week,
+        'chart': daily_stats
+    }
+
+    # -------------------------
+    # HABIT TRACKER DATA
+    # -------------------------
+    # Get all active habits
+    habits = Habit.query.filter_by(user_id=current_user.id).all()
+    
+    # Get logged habits for today
+    today_logs = HabitLog.query.filter(
+        HabitLog.habit_id.in_([h.id for h in habits]),
+        HabitLog.completed_date == datetime.utcnow().date()
+    ).all()
+    today_log_ids = {log.habit_id for log in today_logs}
+
+    # Calculate Weekly Progress (Mon-Sun) - Habit Completion %
+    habit_chart = []
+    total_habits_count = len(habits)
+    
+    for d in dates: # Mon, Tue, ...
+        if total_habits_count > 0:
+            # Count unique habit IDs completed on this day for this user
+            logs_count = db.session.query(db.func.count(db.distinct(HabitLog.habit_id))).join(Habit).filter(
+                Habit.user_id == current_user.id,
+                HabitLog.completed_date == d
+            ).scalar() or 0
+            
+            pct = int((logs_count / total_habits_count) * 100)
+        else:
+            pct = 0
+            logs_count = 0
+            
+        habit_chart.append({
+            'day': d.strftime('%a'),
+            'pct': pct,
+            'count': logs_count
+        })
+             
 
     return render_template(
         'dashboard.html',
@@ -1271,6 +1386,11 @@ def dashboard():
         upcoming_todos=upcoming_todos,
         online_users=online_users,
         quests=quests,
+        today_study_mins=today_study_mins,
+        weekly_stats=weekly_stats,
+        habits=habits,
+        today_log_ids=today_log_ids,
+        habit_chart=habit_chart
     )
 
 @app.route('/chat')
@@ -2138,6 +2258,12 @@ def todos_toggle(todo_id):
     todo = Todo.query.filter_by(id=todo_id, user_id=current_user.id).first_or_404()
     todo.completed = not todo.completed
     
+    # Update timestamp
+    if todo.completed:
+        todo.completed_at = datetime.utcnow()
+    else:
+        todo.completed_at = None
+    
     # Award XP if completing
     if todo.completed:
         GamificationService.add_xp(current_user.id, 'task', 10)
@@ -2332,6 +2458,54 @@ def pomodoro_delete_goal(goal_id):
     db.session.delete(goal)
     db.session.commit()
     return jsonify({'status': 'success'})
+
+# -------------------------
+# HABIT TRACKER ROUTES
+# -------------------------
+@app.route('/habits/add', methods=['POST'])
+@login_required
+def habits_add():
+    title = request.form.get('title', '').strip()
+    if title:
+        habit = Habit(user_id=current_user.id, title=title)
+        db.session.add(habit)
+        db.session.commit()
+        flash('Habit added!', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/habits/toggle/<int:habit_id>', methods=['POST'])
+@login_required
+def habits_toggle(habit_id):
+    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first_or_404()
+    today = datetime.utcnow().date()
+    
+    # Check if logged for today
+    log = HabitLog.query.filter_by(habit_id=habit.id, completed_date=today).first()
+    
+    if log:
+        # Uncheck
+        db.session.delete(log)
+        db.session.commit()
+    else:
+        # Check
+        log = HabitLog(habit_id=habit.id, completed_date=today)
+        db.session.add(log)
+        db.session.commit()
+        
+        # Gamification: Small XP for habit
+        GamificationService.add_xp(current_user.id, 'habit', 5)
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/habits/delete/<int:habit_id>', methods=['GET'])
+@login_required
+def habits_delete(habit_id):
+    habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first_or_404()
+    # Logs cascade delete would be better, but manual verify
+    HabitLog.query.filter_by(habit_id=habit.id).delete()
+    db.session.delete(habit)
+    db.session.commit()
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/syllabus')
@@ -3848,6 +4022,73 @@ def on_join(data):
     if room:
         join_room(room)
 
+# -----------------
+# EVENT API
+# -----------------
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@login_required
+def handle_events():
+    if request.method == 'POST':
+        data = request.json
+        new_event = Event(
+            user_id=current_user.id,
+            title=data.get('title'),
+            description=data.get('description', ''),
+            date=data.get('date'),
+            time=data.get('time', '')
+        )
+        db.session.add(new_event)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event created successfully!'})
+
+    date_filter = request.args.get('date')
+    query = Event.query.filter_by(user_id=current_user.id)
+    if date_filter:
+        query = query.filter_by(date=date_filter)
+    events = query.order_by(Event.date.asc(), Event.time.asc()).all()
+    
+    return jsonify({
+        'status': 'success',
+        'events': [{
+            'id': e.id,
+            'title': e.title,
+            'description': e.description,
+            'date': e.date,
+            'time': e.time,
+            'is_notified': e.is_notified
+        } for e in events]
+    })
+
+@app.route('/api/events/check-warnings', methods=['GET'])
+@login_required
+def check_event_warnings():
+    # Helper to check for today's events that haven't been notified
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False).first()
+    
+    return jsonify({
+        'status': 'success',
+        'has_warning': bool(active_event),
+        'event': {
+            'id': active_event.id,
+            'title': active_event.title,
+            'description': active_event.description,
+            'time': active_event.time
+        } if active_event else None
+    })
+
+@app.route('/api/events/<int:event_id>/dismiss', methods=['POST'])
+@login_required
+def dismiss_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    event.is_notified = True
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
 def init_db_schema():
     from sqlalchemy import text, inspect
     
@@ -3904,6 +4145,20 @@ def init_db_schema():
                     if 'last_activity_date' not in columns:
                         print("Running migration: Adding last_activity_date to user table...")
                         conn.execute(text("ALTER TABLE user ADD COLUMN last_activity_date DATE"))
+                    
+                # 3. Check for Todo table updates
+                if 'todo' in inspector.get_table_names():
+                    columns = [c['name'] for c in inspector.get_columns('todo')]
+                    if 'completed_at' not in columns:
+                         print("Running migration: Adding completed_at to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at DATETIME"))
+                
+                # 4. Create Habit tables if missing (Standard approach)
+                # Since we use db.create_all() at startup, this is mainly for verification or alter
+                if 'habit' not in inspector.get_table_names():
+                    print("Creating habit table...")
+                    print("Creating habit table...")
+                    db.create_all() 
                         
                 conn.commit()
             print("Migration checks completed.")
@@ -3915,4 +4170,4 @@ init_db_schema()
 
 if __name__ == '__main__':
     # Use socketio.run instead of app.run
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=False, host='0.0.0.0', port=5000)

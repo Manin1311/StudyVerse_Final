@@ -125,41 +125,6 @@
         </div>
     </div>
 
-    <!-- Knowledge Heatmap -->
-    <div class="card" style="margin-bottom: 32px; border-color: hsla(280, 100%, 73%, 0.2);">
-        <div style="margin-bottom: 16px;">
-            <h3 style="font-size: 18px; font-weight: 600;">Knowledge Heatmap</h3>
-            <p class="text-sm text-muted">Visualizing your confidence across chapters.</p>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            {% if chapters and chapters|length > 0 %}
-            {% for ch in chapters %}
-            <div class="heatmap-cell" style="width: 42px; height: 42px; border-radius: 8px; 
-                            background: hsl({{ (ch.proficiency|default(0)) * 1.2 }}, 70%, 45%);
-                            border: 1px solid rgba(255,255,255,0.1);
-                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                            display: flex; align-items: center; justify-content: center;
-                            cursor: help; position: relative; transition: transform 0.2s;"
-                title="{{ ch.name }}: {{ ch.proficiency|default(0) }}% Confidence"
-                onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                <span style="font-size: 11px; color: rgba(255,255,255,0.95); font-weight: 700;">{{
-                    ch.proficiency|default(0) }}</span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <span class="text-muted text-sm">Upload a syllabus to see your heatmap!</span>
-            {% endif %}
-        </div>
-        <div
-            style="margin-top: 16px; display: flex; align-items: center; gap: 12px; font-size: 0.75rem; color: var(--text-muted);">
-            <span>Low Confidence</span>
-            <div
-                style="width: 100px; height: 6px; background: linear-gradient(90deg, hsl(0,70%,45%), hsl(120,70%,45%)); border-radius: 3px;">
-            </div>
-            <span>High Confidence</span>
-        </div>
-    </div>
-
     <!-- Visual Roadmap -->
     <div class="roadmap-container">
         <div class="roadmap-line"></div>

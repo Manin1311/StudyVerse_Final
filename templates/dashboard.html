@@ -3,383 +3,494 @@
 {% block title %}Dashboard - StudyVerse{% endblock %}
 
 {% block content %}
-<!-- Pixel Banner -->
-<!-- <div class="pixel-banner" style="background-image: url('{{ url_for('static', filename=current_user.cover_image) if current_user.cover_image else url_for('static', filename='img/bg.jpg') }}'); background-size: cover; background-position: center;"> -->
-<div class="pixel-banner" style="overflow: hidden; position: relative;">
-    <video autoplay loop muted playsinline
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
-        <source src="{{ url_for('static', filename='img/bg3.mp4') }}" type="video/mp4">
-    </video>
-    <div class="banner-overlay" style="z-index: 1;">
-        <!-- Optional Icon overlay -->
-        <i class="fa-solid fa-graduation-cap" style="font-size: 2rem; color: #fbbf24; display: none;"></i>
+<div style="max-width: 1300px; margin: 0 auto; padding: 0 20px;">
+    <!-- Hero Banner (Maintain Original) -->
+    <div class="pixel-banner"
+        style="overflow: hidden; position: relative; height: 260px; border-radius: 20px; margin-bottom: 24px;">
+        <video autoplay loop muted playsinline
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+            <source src="{{ url_for('static', filename='img/bg3.mp4') }}" type="video/mp4">
+        </video>
+        <div class="banner-overlay" style="z-index: 1;">
+            <h1
+                style="font-size: 2.8rem; font-family: var(--font-heading); color: #fff; margin: 0; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+                Ultimate Student Planner
+            </h1>
+        </div>
     </div>
-</div>
 
-<div class="page-header">
-    <h1 class="page-title">Ultimate Student Planner</h1>
-    <p class="text-muted">Welcome back, {{ current_user.first_name or 'Student' }}</p>
-</div>
+    <!-- TOP STATS ROW (Ultra Mini) -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div class="bento-card glass"
+            style="padding: 10px; text-align: center; border-bottom: 2px solid var(--accent-green);">
+            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">XP
+            </div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ current_user.total_xp }}</div>
+        </div>
+        <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #60a5fa;">
+            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+                Hours</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{% if weekly_hours > 0 %}{{ weekly_hours
+                }}h{% else %}&lt;1h{% endif %}</div>
+        </div>
+        <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #fbbf24;">
+            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+                Tasks</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ completed_todos or 0 }}</div>
+        </div>
+        <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #a78bfa;">
+            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+                Level</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ avg_proficiency or 0 }}%</div>
+        </div>
+    </div>
 
-<!-- Home Layout Grid -->
-<div class="layout-home">
+    <!-- NEW DASHBOARD GRID -->
+    <div class="dashboard-grid-container">
 
-    <!-- Left Column: Clock & Battle Status -->
-    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- ROW 1: CLOCK, FOCUS, IMPORTANT -->
 
-        <!-- Daily Quests Widget -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Daily Quests</div>
+        <!-- 1. Green Clock Card -->
+        <!-- 1. Green Clock Card (Flip Style) -->
+        <div class="card-clock-green">
+            <div class="flip-clock">
+                <!-- Hours -->
+                <div class="clock-group">
+                    <div class="flip-digit green-tint" id="flip-h1">0</div>
+                    <div class="flip-digit green-tint" id="flip-h2">0</div>
+                </div>
+                <div class="clock-divider">:</div>
+                <!-- Minutes -->
+                <div class="clock-group">
+                    <div class="flip-digit green-tint" id="flip-m1">0</div>
+                    <div class="flip-digit green-tint" id="flip-m2">0</div>
+                </div>
+                <div class="clock-divider">:</div>
+                <!-- Seconds -->
+                <div class="clock-group">
+                    <div class="flip-digit green-tint" id="flip-s1">0</div>
+                    <div class="flip-digit green-tint" id="flip-s2">0</div>
+                </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                {% if quests %}
-                {% for quest in quests %}
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <div style="width: 40px; height: 40px; background: rgba(var(--accent-green-rgb), 0.1); 
-                        color: var(--accent-green); border-radius: 12px; display: grid; place-items: center; font-size: 1.1rem;
-                        {{ 'opacity: 0.5; filter: grayscale(1);' if quest.completed else '' }}">
-                        <i class="fa-solid {{ quest.icon }}"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <span
-                                style="font-weight: 600; font-size: 0.9rem; {{ 'text-decoration: line-through; color: var(--text-secondary);' if quest.completed else '' }}">
-                                {{ quest.description }}
-                            </span>
-                            <span style="font-size: 0.8rem; color: var(--accent-purple); font-weight: 700;">+{{
-                                quest.xp_reward }} XP</span>
-                        </div>
+            <div class="card-clock-date" id="clock-day">DATE</div>
 
-                        <!-- Progress Bar -->
-                        <div
-                            style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                            <div
-                                style="height: 100%; width: {{ (quest.progress / quest.target * 100)|int }}%; 
-                                background: {{ 'var(--accent-green)' if quest.completed else 'var(--accent-blue)' }}; transition: width 0.5s;">
-                            </div>
-                        </div>
-                        <div
-                            style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
-                            {{ quest.progress }} / {{ quest.target }}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div style="color: var(--text-secondary); font-style: italic;">All quests completed! come back tomorrow.
-                </div>
-                {% endif %}
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <div class="clock-ampm-badge" id="badge-am">AM</div>
+                <div class="clock-ampm-badge" id="badge-pm">PM</div>
             </div>
         </div>
 
-        <!-- Clock Widget -->
-        <div class="card clock-widget" style="height: 180px; flex-direction: column; gap: 4px;">
-            <div style="display: flex; gap: 8px;">
-                <div id="clock-hour">00</div>
-                <span style="font-size: 2rem; align-self: flex-start;">:</span>
-                <div id="clock-min">00</div>
-            </div>
-            <div style="font-size: 1rem; font-family: var(--font-body); opacity: 0.8; font-weight: 500;" id="clock-day">
-                SUNDAY</div>
-            <span id="clock-ampm"
-                style="position: absolute; bottom: 10px; left: 10px; font-size: 0.8rem; opacity: 0.7;">AM</span>
-        </div>
-
-        <!-- Live Global Activity Widget (Replaces Battle Arena) -->
-        <div class="card"
-            style="height: 300px; padding: 0; background: linear-gradient(135deg, rgba(82, 82, 91, 0.1), #18181b); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative;">
-
-            <div style="position: absolute; top: 16px; left: 16px; z-index: 10; pointer-events: none;">
-                <h3
-                    style="display: flex; align-items: center; gap: 10px; color: white; font-size: 1.1rem; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
-                    <i class="fa-solid fa-earth-americas" style="color: #60a5fa;"></i> Live Activity
+        <!-- 2. Productivity Chart Card (Circular 24h) -->
+        <div class="card-focus-wide"
+            style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px;">
+            <div style="flex: 1;">
+                <div class="focus-header" style="margin-bottom: 12px;">
+                    <div class="focus-badge">
+                        <i class="fa-solid fa-chart-pie"></i> Daily Productivity
+                    </div>
+                </div>
+                <h3 class="focus-title" style="font-size: 1.8rem; margin-bottom: 8px;">
+                    {{ (today_study_mins / 60)|round(1) }}<span style="font-size: 1rem; color: #888;">h</span>
                 </h3>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px;">
-                    <span
-                        style="display: inline-block; width: 8px; height: 8px; background: #4ade80; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #4ade80; animation: pulse 2s infinite;"></span>
-                    {{ online_users }} User{% if online_users != 1 %}s{% endif %} Online
-                </p>
-            </div>
-
-            <div id="activity-globe" style="width: 100%; height: 100%;"></div>
-
-            <style>
-                @keyframes pulse {
-                    0% {
-                        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
-                    }
-
-                    70% {
-                        box-shadow: 0 0 0 6px rgba(74, 222, 128, 0);
-                    }
-
-                    100% {
-                        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
-                    }
-                }
-            </style>
-
-            <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; z-index: 10;">
-                <a href="/battle" class="btn-primary"
-                    style="display: block; width: 100%; text-align: center; text-decoration: none; backdrop-filter: blur(4px); background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5);">
-                    Find Study Partner
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Middle Column: Stats & Current Focus -->
-    <div style="display: flex; flex-direction: column; gap: 24px;">
-
-        <!-- Streak Widget (New) -->
-        <div class="card"
-            style="background: linear-gradient(135deg, rgba(255, 157, 0, 0.1), rgba(0,0,0,0)); border: 1px solid rgba(255, 157, 0, 0.3); padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; flex-direction: column;">
-                    <span
-                        style="font-size: 0.8rem; color: #ff9d00; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Daily
-                        Streak</span>
-                    <div class="streak-counter">
-                        <i class="fa-solid fa-fire"></i> {{ current_user.current_streak }} Days
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Longest: {{
-                        current_user.longest_streak }} Days</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Current Focus Widget -->
-        <div class="card"
-            style="background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-green);">
-            <div class="card-header">
-                <div class="card-title" style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-bolt" style="color: var(--accent-green);"></i> Current Focus
-                </div>
-                <span class="badge badge-progress">In Progress</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <div style="flex: 1;">
-                    {% if recent_todos and recent_todos[0] %}
-                    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">{{ recent_todos[0].title }}</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">{{ recent_todos[0].category or 'General
-                        Task' }}</p>
+                <p class="focus-subtitle" style="margin: 0;">of 24h Goal</p>
+                <div style="margin-top: 16px; font-size: 0.8rem; color: var(--text-muted);">
+                    {% if today_study_mins > 0 %}
+                    Keep going! Every minute counts.
                     {% else %}
-                    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Ready to Start?</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Add a task to begin your session.</p>
+                    Start your first session today!
                     {% endif %}
                 </div>
-                <div class="flex-center"
-                    style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid var(--accent-green); font-weight: 700; font-size: 1.2rem;">
-                    GO
+            </div>
+
+            <!-- Circular Chart -->
+            <div style="width: 140px; height: 140px; position: relative; display: grid; place-items: center;">
+                <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                    <!-- Background Circle -->
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#222" stroke-width="8"></circle>
+                    <!-- Progress Circle -->
+                    {% set per_24h = (today_study_mins / 1440 * 100) %}
+                    <!-- Cap at 100% for visual sanity, though 24h study is unlikely -->
+                    {% if per_24h > 100 %}{% set per_24h = 100 %}{% endif %}
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--accent-green)" stroke-width="8"
+                        stroke-dasharray="282.7" stroke-dashoffset="{{ 282.7 - (282.7 * (per_24h / 100)) }}"
+                        stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;">
+                    </circle>
+                </svg>
+                <div style="position: absolute; text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ per_24h|round(1) }}%</div>
                 </div>
             </div>
-            <div style="margin-top: 16px; display: flex; gap: 10px;">
-                <a href="/pomodoro" class="btn-primary"
-                    style="flex: 1; text-align: center; text-decoration: none;">Continue Session</a>
-                <button
-                    style="background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
-                    <i class="fa-solid fa-pause"></i>
+        </div>
+
+        <!-- 3. Important Card (Red) -->
+        <div class="card-important-red">
+            <div class="important-label">
+                <i class="fa-solid fa-bullhorn"></i> Important
+            </div>
+            {% if upcoming_todos and upcoming_todos|length > 0 %}
+            <div class="important-item">
+                <div class="important-title">{{ upcoming_todos[0].task }}</div>
+                <div class="important-meta">Due {{ upcoming_todos[0].due_date }} • High Priority</div>
+            </div>
+            {% else %}
+            <div class="important-item">
+                <div class="important-title">Review Backend Integration</div>
+                <div class="important-meta">Due Tomorrow • Development</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ROW 2: IMAGE, SCHEDULE, TODOS -->
+
+        <!-- 1. Active Tasks Widget -->
+        <div class="active-tasks-card">
+            <div class="active-tasks-header">
+                <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-list-check" style="color: #ef4444;"></i> Active Tasks
+                </div>
+                <div class="task-count-badge">{{ upcoming_todos|length }} TASKS</div>
+            </div>
+
+            <div class="active-task-list">
+                {% for todo in upcoming_todos[:5] %}
+                <div class="active-task-item" onclick="window.location.href='/todos'">
+                    <div class="task-item-left">
+                        <div
+                            class="task-status-dot {% if todo.priority == 'high' %}status-dot-red{% elif todo.priority == 'medium' %}status-dot-orange{% else %}status-dot-green{% endif %}">
+                        </div>
+                        <div class="task-item-content">
+                            <h4>{{ todo.title }}</h4>
+                            <p>0% complete • Priority {{ todo.priority|upper }}</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right task-item-arrow"></i>
+                </div>
+                {% else %}
+                <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No active tasks
+                </div>
+                {% endfor %}
+            </div>
+
+            <button class="btn-add-new-task" onclick="window.location.href='/todos'">
+                ADD NEW TASK <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- 2. Temporal Grid (Calendar & Events) -->
+        <div class="temporal-grid-card">
+            <div class="temporal-header">
+                <div><i class="fa-regular fa-calendar"></i> Temporal Grid</div>
+                <div style="color: var(--destructive); opacity: 0.8;"><i class="fa-solid fa-circle"
+                        style="font-size: 6px; vertical-align: middle;"></i> LIVE</div>
+            </div>
+
+            <!-- Left: Calendar Widget -->
+            <div class="calendar-widget">
+                <div class="cal-header">
+                    <button class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span>January 2026</span>
+                    <button class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-days-grid">
+                    <div class="cal-day-label">SU</div>
+                    <div class="cal-day-label">MO</div>
+                    <div class="cal-day-label">TU</div>
+                    <div class="cal-day-label">WE</div>
+                    <div class="cal-day-label">TH</div>
+                    <div class="cal-day-label">FR</div>
+                    <div class="cal-day-label">SA</div>
+
+                    <!-- Week 1 -->
+                    <div class="cal-day empty"></div>
+                    <div class="cal-day empty"></div>
+                    <div class="cal-day empty"></div>
+                    <div class="cal-day empty"></div>
+                    <div class="cal-day">1</div>
+                    <div class="cal-day">2</div>
+                    <div class="cal-day">3</div>
+
+                    <!-- Week 2 -->
+                    <div class="cal-day">4</div>
+                    <div class="cal-day">5</div>
+                    <div class="cal-day">6</div>
+                    <div class="cal-day">7</div>
+                    <div class="cal-day">8</div>
+                    <div class="cal-day">9</div>
+                    <div class="cal-day">10</div>
+
+                    <!-- Week 3 -->
+                    <div class="cal-day">11</div>
+                    <div class="cal-day">12</div>
+                    <div class="cal-day">13</div>
+                    <div class="cal-day">14</div>
+                    <div class="cal-day">15</div>
+                    <div class="cal-day">16</div>
+                    <div class="cal-day">17</div>
+
+                    <!-- Week 4 -->
+                    <div class="cal-day">18</div>
+                    <div class="cal-day">19</div>
+                    <div class="cal-day">20</div>
+                    <div class="cal-day">21</div>
+                    <div class="cal-day">22</div>
+                    <div class="cal-day">23</div>
+                    <div class="cal-day">24</div>
+
+                    <!-- Week 5 -->
+                    <div class="cal-day active" style="position: relative;">
+                        25
+                        <div
+                            style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #000; border-radius: 50%;">
+                        </div>
+                    </div>
+                    <div class="cal-day">26</div>
+                    <div class="cal-day">27</div>
+                    <div class="cal-day">28</div>
+                    <div class="cal-day">29</div>
+                    <div class="cal-day">30</div>
+                    <div class="cal-day">31</div>
+                </div>
+            </div>
+
+            <!-- Right: Event Manager -->
+            <div class="events-widget">
+                <div class="timeline-info">
+                    <i class="fa-regular fa-clock"></i> Timeline // Jan 25
+                </div>
+
+                <div class="event-placeholder">
+                    <i class="fa-regular fa-clock"></i>
+                    <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
+                    <div style="font-size: 0.7rem;">No scheduled events for today</div>
+                </div>
+
+                <button class="btn-init-event">
+                    <i class="fa-solid fa-plus"></i> Initialize Event
                 </button>
             </div>
         </div>
 
-        <!-- Weekly Schedule Grid (Stats) -->
-        <div class="schedule-grid">
-            <div class="schedule-day">
-                <div class="day-header">
-                    <i class="fa-solid fa-star"></i> Total XP
+        <!-- 3. Weekly To-Dos & Small Image -->
+        <div class="card-todos-right">
+            <div>
+                <h3 class="weekly-todos-header">Weekly To-Dos</h3>
+                <div style="font-size: 0.9rem; margin-bottom: 12px; color: #fff; font-weight: 700;">
+                    <i class="fa-solid fa-caret-right"></i> This Week
                 </div>
-                <ul class="task-list">
-                    <li class="task-item">
-                        <span style="font-size: 1.5rem; font-weight: 700; color: #fbbf24;">{{ current_user.total_xp
-                            }}</span>
-                    </li>
+                <ul class="todos-list-minimal">
+                    {% for todo in upcoming_todos[:5] %}
+                    <li>{{ todo.task }}</li>
+                    {% else %}
+                    <li>Digital Electronics Project</li>
+                    <li>Math Assignment 3</li>
+                    <li>Physics Lab Report</li>
+                    {% endfor %}
                 </ul>
             </div>
 
-            <div class="schedule-day">
-                <div class="day-header">
-                    <i class="fa-solid fa-clock"></i> Study Hours
-                </div>
-                <ul class="task-list">
-                    <li class="task-item">
-                        <span style="font-size: 1.5rem; font-weight: 700;">
-                            {% if weekly_hours > 0 %}{{ weekly_hours }}h{% else %}<span style="font-size: 1.2rem">&lt;
-                                1h</span>{% endif %}
-                        </span>
-                        <span class="text-muted" style="font-size: 0.8rem;">This Week</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="schedule-day">
-                <div class="day-header">
-                    <i class="fa-solid fa-list-check"></i> Tasks Done
-                </div>
-                <ul class="task-list">
-                    <li class="task-item">
-                        <span style="font-size: 1.5rem; font-weight: 700;">{{ completed_todos or 0 }}</span>
-                        <span class="text-muted" style="font-size: 0.8rem;">/ {{ total_todos or 0 }} Total</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="schedule-day">
-                <div class="day-header">
-                    <i class="fa-solid fa-chart-line"></i> Proficiency
-                </div>
-                <ul class="task-list">
-                    <li class="task-item">
-                        <span style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">{{
-                            avg_proficiency or 0 }}%</span>
-                        <span class="text-muted" style="font-size: 0.8rem;">Average</span>
-                    </li>
-                </ul>
+            <div class="card-image-small">
+                <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=300&h=200"
+                    style="width: 100%; height: 100%; object-fit: cover;" alt="Book">
             </div>
         </div>
+
     </div>
 
-    <!-- Right Column: High Priority & To-Dos -->
-    <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- ROW 3: Banner + Weekly Stats -->
+    <div style="margin-top: 24px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+        <!-- Left: Habit Tracker (Chart Only) -->
+        <div class="weekly-stats-card" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">Habit Consistency</h3>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #888;">
+                    <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>
+                    <span>Completion %</span>
+                </div>
+            </div>
 
-        <!-- High Priority -->
-        <div class="card"
-            style="border: 1px solid rgba(239, 68, 68, 0.3); background: linear-gradient(to bottom, rgba(239, 68, 68, 0.05), transparent);">
-            <h3
-                style="color: #ef4444; font-family: var(--font-heading); margin-bottom: 16px; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-bullhorn"></i> Important
-            </h3>
-            <div id="high-priority-list" style="display: flex; flex-direction: column; gap: 12px;">
-                {% if upcoming_todos and upcoming_todos|length > 0 %}
-                {% for t in upcoming_todos[:3] %}
-                <div
-                    style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid #ef4444;">
-                    <div style="font-weight: 500; font-size: 0.95rem; margin-bottom: 4px;">{{ t.title }}</div>
-                    <div style="font-size: 0.8rem; color: #ef4444;">Due: {{ t.due_date }}</div>
+            <div id="dashboard-habit-chart"
+                style="height: 200px; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a;">
+                <!-- JS will populate this from LocalStorage -->
+                <div style="color: var(--text-muted); align-self: center;">Loading habit data...</div>
+            </div>
+        </div>
+
+        <!-- Right: Weekly Stats -->
+        <div class="weekly-stats-card">
+            <div class="w-stats-header">
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; color: #fff;">Weekly Stats</h3>
+                </div>
+                <div style="font-size: 0.7rem; color: #888; display: flex; gap: 8px; align-items: center;">
+                    <span><span class="legend-dot" style="background: #ef4444;"></span> Focus Time</span>
+                </div>
+            </div>
+
+            <div class="stats-row-3">
+                <div class="mini-stat-box" style="background: rgba(239, 68, 68, 0.1);">
+                    <div class="stat-label" style="color: #ef4444;">Focus Time</div>
+                    <div class="stat-val">{{ weekly_stats.total_focus }} <span style="font-size: 0.7rem;">mins</span>
+                    </div>
+                </div>
+                <div class="mini-stat-box" style="background: rgba(16, 185, 129, 0.1);">
+                    <div class="stat-label" style="color: #10b981;">Tasks Done</div>
+                    <div class="stat-val">{{ weekly_stats.total_tasks }}</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                {% if weekly_stats.chart %}
+                {% for day in weekly_stats.chart %}
+                <div class="chart-col">
+                    <div class="bar-group">
+                        <div class="bar bar-red" style="height: {{ day.focus_pct }}%;"></div>
+                    </div>
+                    <div class="day-label">{{ day.day }}</div>
                 </div>
                 {% endfor %}
                 {% else %}
-                <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">No urgent deadlines.
-                </div>
+                <div style="width: 100%; text-align: center; color: #555; align-self: center;">No data</div>
                 {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- Weekly To-Dos -->
-        <div class="weekly-todo">
-            <!-- Heading with AI Button -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="color: var(--accent-green); font-family: var(--font-heading); font-size: 1.5rem; margin: 0;">
-                    Recent Tasks
-                </h3>
-                <button onclick="openAIPlanModal()" class="btn-secondary"
-                    style="font-size: 0.85rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Plan
-                </button>
-            </div>
+    <!-- Maintain Original Globe/Stats if desired, or remove. For now, removing to match "Clean" look of reference. -->
 
-            <div id="weekly-todo-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <details open style="cursor: pointer;">
-                    <summary
-                        style="list-style: none; display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-primary);">
-                        <i class="fa-solid fa-caret-right" style="color: var(--text-secondary);"></i> Active Tasks
-                    </summary>
-                    <div style="padding-left: 20px; margin-top: 8px; color: var(--text-secondary); font-size: 0.9rem;">
-                        {% if recent_todos %}
-                        {% for t in recent_todos[:5] %}
-                        <form action="{{ url_for('todos_toggle', todo_id=t.id) }}" method="POST" style="margin:0;">
-                            <input type="hidden" name="next" value="{{ url_for('dashboard') }}">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;"
-                                onclick="this.parentNode.submit()">
-                                <div class="task-checkbox {% if t.completed %}checked{% endif %}"></div>
-                                <span
-                                    style="{% if t.completed %}text-decoration: line-through; opacity: 0.6;{% endif %}">{{
-                                    t.title }}</span>
-                            </div>
-                        </form>
-                        {% endfor %}
-                        {% else %}
-                        <div>No recent tasks found.</div>
-                        {% endif %}
-                    </div>
-                </details>
-            </div>
-        </div>
-
-        <!-- Image Widget sidebar bottom -->
-        <div style="border-radius: 12px; overflow: hidden; height: 150px; margin-top: auto;">
-            <img src="{{ url_for('static', filename='img/bg.jpg') }}"
-                style="width: 100%; height: 100%; object-fit: cover;" alt="Aesthetic">
-        </div>
-
+    <!-- Quick Navigation (Floating Minimal) -->
+    <div
+        style="position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 1000; background: rgba(15,15,15,0.9); backdrop-filter: blur(20px); padding: 10px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1);">
+        <a href="/pomodoro" class="btn-primary"
+            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: var(--accent-green); color: #000;">Focus
+            Mode</a>
+        <a href="/todos" class="btn-secondary"
+            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: transparent; color: #fff; border: 1px solid #444;">Tasks</a>
+        <a href="/chat" class="btn-secondary"
+            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: #8b5cf6; color: #fff; border: none; display: inline-block; text-align: center;">AI
+            Coach</a>
     </div>
 </div>
 
-<!-- AI Plan Modal -->
+<!-- AI Plan Modal (Maintain Original Logic) -->
 <div id="aiPlanModal" class="modal-overlay"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center;">
     <div class="modal-content"
-        style="background: var(--bg-card); padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="font-family: var(--font-heading); display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-robot" style="color: var(--accent-green);"></i> AI Focus Plan
+        style="background: var(--bg-card); padding: 30px; border-radius: 20px; width: 90%; max-width: 650px; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2
+                style="font-family: var(--font-heading); font-size: 1.6rem; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-robot" style="color: var(--accent-green);"></i> StudyVerse AI
             </h2>
             <button onclick="document.getElementById('aiPlanModal').style.display='none'"
-                style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                style="background: none; border: none; color: #888; font-size: 1.8rem; cursor: pointer;">&times;</button>
         </div>
-
         <div id="aiPlanLoading" style="text-align: center; padding: 40px;">
-            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-green);"></i>
-            <p style="margin-top: 16px; color: var(--text-secondary);">Generating your personalized plan...</p>
+            <div
+                style="width: 50px; height: 50px; border: 4px solid rgba(74, 222, 128, 0.1); border-top-color: var(--accent-green); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;">
+            </div>
+            <p style="color: var(--text-secondary);">Analyzing your progress...</p>
         </div>
-
         <div id="aiPlanContent"
-            style="display: none; line-height: 1.6; color: var(--text-primary); max-height: 400px; overflow-y: auto;">
-            <!-- Content goes here -->
+            style="display: none; line-height: 1.7; color: var(--text-primary); max-height: 400px; overflow-y: auto;">
         </div>
-
-        <div style="margin-top: 24px; text-align: right;">
-            <button onclick="document.getElementById('aiPlanModal').style.display='none'" class="btn-primary">Got
-                it!</button>
+        <div style="margin-top: 30px; text-align: right;">
+            <button onclick="document.getElementById('aiPlanModal').style.display='none'" class="btn-primary"
+                style="padding: 10px 25px; border-radius: 10px;">Got it</button>
         </div>
     </div>
 </div>
+
+<style>
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    #aiPlanContent h3 {
+        color: var(--accent-green);
+        margin-top: 20px;
+        font-size: 1.1rem;
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard_calendar.js') }}"></script>
 <script>
-    function updateClock() {
+    function updateFlipClock() {
         const now = new Date();
-        const hours = now.getHours();
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        const hours24 = now.getHours();
+        const hours12 = hours24 % 12 || 12;
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const isPm = hours24 >= 12;
+        const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const hoursStr = String(hours).padStart(2, '0');
+        // Split digits
+        const h1 = Math.floor(hours12 / 10);
+        const h2 = hours12 % 10;
+        const m1 = Math.floor(minutes / 10);
+        const m2 = minutes % 10;
+        const s1 = Math.floor(seconds / 10);
+        const s2 = seconds % 10;
 
-        document.getElementById('clock-hour').textContent = hoursStr;
-        document.getElementById('clock-min').textContent = minutes;
-        document.getElementById('clock-day').textContent = days[now.getDay()];
-        const ampmElement = document.getElementById('clock-ampm');
-        if (ampmElement) {
-            ampmElement.textContent = ampm;
+        updateDigit('flip-h1', h1);
+        updateDigit('flip-h2', h2);
+        updateDigit('flip-m1', m1);
+        updateDigit('flip-m2', m2);
+        updateDigit('flip-s1', s1);
+        updateDigit('flip-s2', s2);
+
+        // Date & AM/PM
+        document.getElementById('clock-day').textContent = dayNames[now.getDay()];
+
+        const amBadge = document.getElementById('badge-am');
+        const pmBadge = document.getElementById('badge-pm');
+        if (isPm) {
+            pmBadge.classList.add('active');
+            amBadge.classList.remove('active');
+        } else {
+            amBadge.classList.add('active');
+            pmBadge.classList.remove('active');
         }
     }
-    setInterval(updateClock, 1000);
-    updateClock();
+
+    function updateDigit(id, newVal) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.textContent !== String(newVal)) {
+            el.classList.add('flip-animate');
+            setTimeout(() => {
+                el.textContent = newVal;
+                el.classList.remove('flip-animate');
+            }, 300); // Change text halfway through animation
+        }
+    }
+
+    setInterval(updateFlipClock, 1000);
+    updateFlipClock();
 
     document.querySelector('[data-nav="dashboard"]').classList.add('active');
 
-    // AI Plan Logic
     function openAIPlanModal() {
         const modal = document.getElementById('aiPlanModal');
         const loading = document.getElementById('aiPlanLoading');
         const content = document.getElementById('aiPlanContent');
-
         modal.style.display = 'flex';
         loading.style.display = 'block';
         content.style.display = 'none';
@@ -390,69 +501,93 @@
                 loading.style.display = 'none';
                 content.style.display = 'block';
                 if (data.status === 'success') {
-                    // Simple markdown check
-                    content.innerHTML = marked.parse(data.plan);
+                    content.innerHTML = typeof marked !== 'undefined' ? marked.parse(data.plan) : data.plan;
                 } else {
-                    content.innerHTML = `<p style="color: #ef4444;">Error: ${data.message}</p>`;
+                    content.innerHTML = `<p style="color: #f87171;">Error: ${data.message}</p>`;
                 }
             })
             .catch(err => {
                 loading.style.display = 'none';
                 content.style.display = 'block';
-                content.innerHTML = `<p style="color: #ef4444;">Failed to reach AI service.</p>`;
+                content.innerHTML = `<p style="color: #f87171;">Failed to reach AI.</p>`;
             });
     }
 </script>
-<!-- Markdown Parser for AI response -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<!-- Globe.gl -->
 <script src="//unpkg.com/globe.gl"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Activity Globe Logic ---
         const globeElem = document.getElementById('activity-globe');
         if (globeElem) {
-            // No activity points when only you are online
-            const N = 0; // Will only show points when multiple users are online
-            const gData = [...Array(N).keys()].map(() => ({
-                lat: (Math.random() - 0.5) * 160,
-                lng: (Math.random() - 0.5) * 360,
-                size: Math.random() / 3,
-                color: ['#60a5fa', '#4ade80', '#fbbf24', '#f43f5e'][Math.floor(Math.random() * 4)]
-            }));
-
-            try {
-                const Globe = window.Globe()
-                    (globeElem)
-                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-                    .pointsData(gData)
-                    .pointAltitude('size')
-                    .pointColor('color')
-                    .pointRadius(0.8)
-                    .pointsMerge(true)
-                    .pointResolution(2)
-                    .backgroundColor('rgba(0,0,0,0)')
-                    .width(globeElem.offsetWidth)
-                    .height(globeElem.offsetHeight)
-                    .showAtmosphere(true)
-                    .atmosphereColor('#3b82f6')
-                    .atmosphereAltitude(0.2);
-
-                // Auto-rotate
-                Globe.controls().autoRotate = true;
-                Globe.controls().autoRotateSpeed = 1.2;
-                Globe.controls().enableZoom = false;
-                Globe.controls().enablePan = false;
-
-                // Responsive resize
-                window.addEventListener('resize', () => {
-                    Globe.width(globeElem.offsetWidth);
-                    Globe.height(globeElem.offsetHeight);
-                });
-            } catch (err) {
-                console.error("Globe init failed:", err);
-            }
+            const Globe = window.Globe()(globeElem)
+                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+                .pointsData([...Array(10).keys()].map(() => ({
+                    lat: (Math.random() - 0.5) * 160,
+                    lng: (Math.random() - 0.5) * 360,
+                    size: Math.random() / 3,
+                    color: ['#60a5fa', '#4ade80', '#fbbf24', '#f43f5e'][Math.floor(Math.random() * 4)]
+                })))
+                .pointAltitude('size').pointColor('color').pointRadius(0.8)
+                .backgroundColor('rgba(0,0,0,0)').width(globeElem.offsetWidth).height(globeElem.offsetHeight)
+                .showAtmosphere(true).atmosphereColor('#3b82f6').atmosphereAltitude(0.2);
+            Globe.controls().autoRotate = true;
+            Globe.controls().autoRotateSpeed = 1.2;
+            Globe.controls().enableZoom = false;
         }
+
+        // --- HABIT CHART SYNC (LocalStorage) ---
+        renderHabitChart();
     });
+
+    function renderHabitChart() {
+        const container = document.getElementById('dashboard-habit-chart');
+        if (!container) return;
+
+        // 1. Get Habits from LocalStorage
+        let habitList = [];
+        try {
+            const stored = localStorage.getItem('StudyVerse_habits');
+            if (stored) habitList = JSON.parse(stored);
+        } catch (e) {
+            console.error("Habit read error", e);
+        }
+
+        // 2. Determine Week Dates (Mon-Sun)
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const curr = new Date();
+        const day = curr.getDay(); // 0=Sun, 1=Mon
+        // Adjust to get Monday of current week
+        const diff = curr.getDate() - day + (day === 0 ? -6 : 1);
+
+        let html = '';
+
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(curr);
+            d.setDate(diff + i);
+            const dateStr = d.toISOString().split('T')[0];
+            const dayName = days[i];
+
+            let pct = 0;
+            if (habitList.length > 0) {
+                let checks = 0;
+                habitList.forEach(h => {
+                    const key = `check_${h.id}_${dateStr}`;
+                    if (localStorage.getItem(key) === 'true') checks++;
+                });
+                pct = Math.round((checks / habitList.length) * 100);
+            }
+
+            // Generate Bar HTML
+            html += `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; height: 100%; justify-content: flex-end;">
+                <div style="position: relative; width: 45px; height: ${pct}%; background: linear-gradient(to bottom, #ef4444, #991b1b); border-radius: 8px 8px 0 0; min-height: 4px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); transition: height 1s ease;">
+                    ${pct > 15 ? `<span style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #ef4444; font-weight: 700;">${pct}%</span>` : ''}
+                </div>
+                <span style="color: #666; font-size: 0.8rem; font-weight: 600;">${dayName}</span>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+    }
 </script>
 {% endblock %}
