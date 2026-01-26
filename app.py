@@ -27,17 +27,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Allow OAuth over HTTP for local testing
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Check for required API Key
 if not os.getenv("AI_API_KEY"):
-    print("\n" + "!" * 80)
-    print(" ERROR: AI_API_KEY is missing!")
-    print("!" * 80)
-    print(" Please create a .env file in the project root directory with the following content:")
-    print(" AI_API_KEY=your_api_key_here")
-    print(" AI_API_TYPE=google  # or openai, anthropic, lovable")
-    print("!" * 80 + "\n")
+    pass 
 
 try:
     import google.generativeai as genai
@@ -48,8 +42,11 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db')
+# Production: Must use DATABASE_URL from environment (e.g. Render)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
 
 # Connection pool settings for cloud PostgreSQL (Render, Heroku, etc.)
 # Optimized for concurrent users - prevents crashes and SSL errors
@@ -4116,7 +4113,7 @@ def init_db_schema():
                         conn.execute(text("ALTER TABLE user ADD COLUMN is_public_profile BOOLEAN DEFAULT 1"))
                     if 'last_seen' not in columns:
                         print("Running migration: Adding last_seen to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN last_seen DATETIME"))
+                        conn.execute(text("ALTER TABLE user ADD COLUMN last_seen TIMESTAMP"))
                     
                     # Existing checks
                     if 'cover_image' not in columns:
@@ -4151,7 +4148,7 @@ def init_db_schema():
                     columns = [c['name'] for c in inspector.get_columns('todo')]
                     if 'completed_at' not in columns:
                          print("Running migration: Adding completed_at to todo table...")
-                         conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at DATETIME"))
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
                 
                 # 4. Create Habit tables if missing (Standard approach)
                 # Since we use db.create_all() at startup, this is mainly for verification or alter
@@ -4170,4 +4167,5 @@ init_db_schema()
 
 if __name__ == '__main__':
     # Use socketio.run instead of app.run
-    socketio.run(app, debug=False, host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, debug=False, host='0.0.0.0', port=port)
