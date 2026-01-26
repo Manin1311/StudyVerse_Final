@@ -1,6 +1,7 @@
-# import eventlet
-# eventlet.monkey_patch()
+import eventlet
+eventlet.monkey_patch()
 
+from sqlalchemy.pool import NullPool
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
@@ -60,11 +61,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Connection pool settings for cloud PostgreSQL (Render, Heroku, etc.)
 # Optimized for concurrent users - prevents crashes and SSL errors
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_recycle': 240,       # Lower than Render's 300s timeout
+    'poolclass': NullPool,      # Disable pooling to fix "un-acquired lock" with eventlet
     'pool_pre_ping': True,     # Validate connections
-    'pool_size': 5,            # Lower pool size per worker
-    'max_overflow': 10,        # Allow burst
-    'pool_timeout': 30,
 }
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 
