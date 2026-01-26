@@ -4114,9 +4114,21 @@ def handle_events():
 @login_required
 def check_event_warnings():
     # Helper to check for today's events that haven't been notified
-    today_str = datetime.utcnow().strftime('%Y-%m-%d')
-    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False).first()
+    # We use local time for comparison as the user sets events in their browser's time
+    now_local = datetime.now()
+    today_str = now_local.strftime('%Y-%m-%d')
+    current_time_str = now_local.strftime('%H:%M')
     
+    # Filter for events today, not yet notified, and where time has passed or is now
+    # We use a secondary filter for time to ensure alerts trigger at the right moment
+    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False).filter(Event.time <= current_time_str).first()
+    
+    # If no timed event matches, check for all-day events (time empty)
+    if not active_event:
+        active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False, time="All Day").first()
+    if not active_event:
+        active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False, time="").first()
+
     return jsonify({
         'status': 'success',
         'has_warning': bool(active_event),
