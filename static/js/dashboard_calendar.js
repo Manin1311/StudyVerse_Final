@@ -3,7 +3,7 @@
    CALENDAR & EVENT LOGIC
    ======================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     // --- 1. Global State ---
     const today = new Date();
     let currentMonth = today.getMonth(); // 0-11
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedDate = formatDate(today); // "YYYY-MM-DD"
 
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    
+
     // Elements
     const monthLabel = document.querySelector('.cal-header span');
     const dayGrid = document.querySelector('.cal-days-grid');
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timelineInfo = document.querySelector('.timeline-info');
     const eventPlaceholder = document.querySelector('.event-placeholder');
     const initEventBtn = document.querySelector('.btn-init-event');
-    
+
     // --- 2. Helper Functions ---
     function formatDate(date) {
         // Returns YYYY-MM-DD local
@@ -33,35 +33,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCalendar(month, year) {
         // Update header
         monthLabel.textContent = `${monthNames[month]} ${year}`;
-        
+
         // Clear old days (keep labels)
         const labels = Array.from(dayGrid.children).slice(0, 7);
         dayGrid.innerHTML = '';
         labels.forEach(l => dayGrid.appendChild(l));
-        
+
         const firstDay = new Date(year, month, 1).getDay(); // 0 (Sun) - 6 (Sat)
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
+
         // Empty slots for previous month
         for (let i = 0; i < firstDay; i++) {
             const empty = document.createElement('div');
             empty.className = 'cal-day empty';
             dayGrid.appendChild(empty);
         }
-        
+
         // Days
         for (let d = 1; d <= daysInMonth; d++) {
             const cell = document.createElement('div');
             cell.className = 'cal-day';
             cell.textContent = d;
-            
+
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             cell.dataset.date = dateStr;
-            
+
             if (dateStr === selectedDate) {
                 cell.classList.add('active');
             }
-            
+
             // Interaction
             cell.addEventListener('click', () => {
                 document.querySelectorAll('.cal-day.active').forEach(el => el.classList.remove('active'));
@@ -69,24 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedDate = dateStr;
                 updateTimelineForDate(dateStr);
             });
-            
+
             dayGrid.appendChild(cell);
         }
     }
-    
+
     function updateTimelineForDate(dateStr) {
         // Update header info "Timeline // Jan 25"
         const d = new Date(dateStr);
         // Fix timezone offset issue for pure display logic or just parse manually
         const parts = dateStr.split('-');
-        const displayDate = new Date(parts[0], parts[1]-1, parts[2]);
-        
+        const displayDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
         const dayName = displayDate.toLocaleString('default', { month: 'short', day: 'numeric' });
         timelineInfo.innerHTML = `<i class="fa-regular fa-clock"></i> Timeline // ${dayName}`;
-        
+
         // Fetch events from API
         eventPlaceholder.innerHTML = `<div style="padding: 20px; text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
-        
+
         fetch(`/api/events?date=${dateStr}`)
             .then(r => r.json())
             .then(data => {
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `</div>`;
                     eventPlaceholder.innerHTML = html;
                     // remove placeholder styling if full
-                    eventPlaceholder.style.border = 'none'; 
+                    eventPlaceholder.style.border = 'none';
                 }
             });
     }
@@ -122,13 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCreateEventModal() {
         const title = prompt("Event Title:");
         if (!title) return;
-        
+
         const desc = prompt("Description (optional):");
         const time = prompt("Time (HH:MM) optional:", "12:00");
-        
+
         fetch('/api/events', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 title: title,
                 description: desc,
@@ -136,14 +136,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 time: time
             })
         })
-        .then(r => r.json())
-        .then(data => {
-            if (data.status === 'success') {
-                updateTimelineForDate(selectedDate);
-            } else {
-                alert("Failed to create event");
-            }
-        });
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateTimelineForDate(selectedDate);
+                } else {
+                    alert("Failed to create event");
+                }
+            });
     }
 
     // --- 4. Event Reminder Popup Check ---
@@ -161,14 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create custom modal matching system UI
         const modalId = 'event-popup-' + event.id;
         if (document.getElementById(modalId)) return; // already showing
-        
+
         const modal = document.createElement('div');
         modal.id = modalId;
         modal.className = 'modal-overlay';
         modal.style.display = 'flex';
         modal.style.background = 'rgba(0,0,0,0.85)';
         modal.style.zIndex = '3000';
-        
+
         modal.innerHTML = `
             <div class="modal-content" style="background: #111; border: 1px solid var(--accent-green); padding: 30px; border-radius: 20px; width: 400px; text-align: center; position: relative; box-shadow: 0 0 50px rgba(74, 222, 128, 0.2);">
                 <div style="background: rgba(74, 222, 128, 0.1); width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--accent-green); display: grid; place-items: center; margin: 0 auto 20px;">
@@ -183,9 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Dismiss Logic
         document.getElementById(`btn-dismiss-${event.id}`).addEventListener('click', () => {
             fetch(`/api/events/${event.id}/dismiss`, { method: 'POST' })
@@ -199,19 +199,22 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCalendar(currentMonth, currentYear);
     updateTimelineForDate(selectedDate); // Load today's events initially
     checkReminders(); // Check for warnings on load
-    
+
+    // Poll for reminders every minute
+    setInterval(checkReminders, 60000);
+
     // Listeners
     prevBtn.addEventListener('click', () => {
         currentMonth--;
         if (currentMonth < 0) { currentMonth = 11; currentYear--; }
         renderCalendar(currentMonth, currentYear);
     });
-    
+
     nextBtn.addEventListener('click', () => {
         currentMonth++;
         if (currentMonth > 11) { currentMonth = 0; currentYear++; }
         renderCalendar(currentMonth, currentYear);
     });
-    
+
     initEventBtn.addEventListener('click', openCreateEventModal);
 });

@@ -2510,7 +2510,51 @@ def habits_delete(habit_id):
     HabitLog.query.filter_by(habit_id=habit.id).delete()
     db.session.delete(habit)
     db.session.commit()
+    db.session.commit()
     return redirect(url_for('dashboard'))
+
+@app.route('/api/habits/stats', methods=['GET'])
+@login_required
+def api_habit_stats():
+    """Return this week's habit completion for the chart."""
+    today = datetime.now()
+    start_of_week = today - timedelta(days=today.weekday()) # Monday
+    
+    # Get all user habits
+    habits = Habit.query.filter_by(user_id=current_user.id).all()
+    total_habits = len(habits)
+    
+    stats = []
+    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    
+    if total_habits == 0:
+        # Return empty stats if no habits
+        for i in range(7):
+            stats.append({'day': days[i], 'pct': 0})
+        return jsonify(stats)
+
+    for i in range(7):
+        date_obj = start_of_week + timedelta(days=i)
+        date_only = date_obj.date()
+        
+        # Count logs on this day for user's habits
+        # Join HabitLog with Habit to ensure it belongs to user
+        logs_count = (
+            HabitLog.query
+            .join(Habit)
+            .filter(Habit.user_id == current_user.id)
+            .filter(HabitLog.completed_date == date_only)
+            .count()
+        )
+        
+        pct = int((logs_count / total_habits) * 100)
+        stats.append({
+            'day': days[i],
+            'pct': pct,
+            'date': date_only.isoformat()
+        })
+        
+    return jsonify(stats)
 
 
 @app.route('/syllabus')
