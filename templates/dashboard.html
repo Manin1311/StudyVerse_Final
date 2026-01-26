@@ -255,18 +255,20 @@
             </div>
 
             <!-- Right: Event Manager -->
-            <div class="events-widget">
-                <div class="timeline-info">
+            <!-- Right: Event Manager -->
+            <div class="events-widget" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+                <div class="timeline-info" style="flex-shrink: 0;">
                     <i class="fa-regular fa-clock"></i> Timeline // Jan 25
                 </div>
 
-                <div class="event-placeholder">
+                <div class="event-placeholder" style="flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px;">
+                    <!-- JS populates this -->
                     <i class="fa-regular fa-clock"></i>
                     <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
                     <div style="font-size: 0.7rem;">No scheduled events for today</div>
                 </div>
 
-                <button class="btn-init-event">
+                <button class="btn-init-event" style="flex-shrink: 0; margin-top: 10px;">
                     <i class="fa-solid fa-plus"></i> Initialize Event
                 </button>
             </div>
