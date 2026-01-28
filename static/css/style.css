@@ -155,11 +155,18 @@ body.theme_cyberpunk .nav-item:hover {
 }
 
 body.theme_cyberpunk .page-title {
-    background: linear-gradient(135deg, #d946ef, #a78bfa, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* Fallback first: keep titles readable even if gradient text isn't supported */
+    color: var(--text-primary);
     text-shadow: 0 0 30px rgba(217, 70, 239, 0.5);
+}
+
+@supports (-webkit-background-clip: text) {
+    body.theme_cyberpunk .page-title {
+        background: linear-gradient(135deg, #d946ef, #a78bfa, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 }
 
 /* Neon glow on buttons */
@@ -303,10 +310,30 @@ body.theme_sunset {
 }
 
 body.theme_sunset .page-title {
-    background: linear-gradient(135deg, #fb923c, #f97316, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* Fallback first: keep titles readable even if gradient text isn't supported */
+    color: var(--text-primary);
+}
+
+@supports (-webkit-background-clip: text) {
+    body.theme_sunset .page-title {
+        background: linear-gradient(135deg, #fb923c, #f97316, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+/* Utility: gradient text with a safe fallback (used in templates where inline styles existed) */
+.sv-gradient-text {
+    color: var(--text-primary);
+}
+
+@supports (-webkit-background-clip: text) {
+    .sv-gradient-text {
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 }
 
 /* ========================================
