@@ -333,28 +333,17 @@
             <div class="stats-row-3">
                 <div class="mini-stat-box" style="background: rgba(239, 68, 68, 0.1);">
                     <div class="stat-label" style="color: #ef4444;">Focus Time</div>
-                    <div class="stat-val">{{ weekly_stats.total_focus }} <span style="font-size: 0.7rem;">mins</span>
+                    <div class="stat-val" id="total-focus-time">0 <span style="font-size: 0.7rem;">mins</span>
                     </div>
                 </div>
                 <div class="mini-stat-box" style="background: rgba(16, 185, 129, 0.1);">
                     <div class="stat-label" style="color: #10b981;">Tasks Done</div>
-                    <div class="stat-val">{{ weekly_stats.total_tasks }}</div>
+                    <div class="stat-val" id="total-tasks-done">0</div>
                 </div>
             </div>
 
-            <div class="chart-container">
-                {% if weekly_stats.chart %}
-                {% for day in weekly_stats.chart %}
-                <div class="chart-col">
-                    <div class="bar-group">
-                        <div class="bar bar-red" style="height: {{ day.focus_pct }}%;"></div>
-                    </div>
-                    <div class="day-label">{{ day.day }}</div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div style="width: 100%; text-align: center; color: #555; align-self: center;">No data</div>
-                {% endif %}
+            <div class="chart-container" id="weekly-stats-chart">
+                <div style="width: 100%; text-align: center; color: #555; align-self: center;">Loading...</div>
             </div>
         </div>
     </div>
@@ -577,5 +566,55 @@
                 container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No data available</div>';
             });
     };
+
+    // Make globally accessible for real-time updates
+    window.renderWeeklyStats = function () {
+        const chartContainer = document.getElementById('weekly-stats-chart');
+        const focusTimeEl = document.getElementById('total-focus-time');
+        const tasksEl = document.getElementById('total-tasks-done');
+
+        if (!chartContainer) return;
+
+        // Fetch from Backend
+        fetch('/api/weekly_stats')
+            .then(r => r.json())
+            .then(data => {
+                // Update totals
+                if (focusTimeEl) {
+                    focusTimeEl.innerHTML = `${data.total_focus} <span style="font-size: 0.7rem;">mins</span>`;
+                }
+                if (tasksEl) {
+                    tasksEl.textContent = data.total_tasks;
+                }
+
+                // Render chart
+                let html = '';
+                if (data.chart && data.chart.length > 0) {
+                    data.chart.forEach(day => {
+                        html += `
+                        <div class="chart-col">
+                            <div class="bar-group">
+                                <div class="bar bar-red" style="height: ${day.focus_pct}%;"></div>
+                            </div>
+                            <div class="day-label">${day.day}</div>
+                        </div>`;
+                    });
+                } else {
+                    html = '<div style="width: 100%; text-align: center; color: #555; align-self: center;">No data</div>';
+                }
+                chartContainer.innerHTML = html;
+            })
+            .catch(err => {
+                console.error(err);
+                chartContainer.innerHTML = '<div style="color: #666; font-size: 0.9rem;">Failed to load stats</div>';
+            });
+    };
+
+    // Initial load and auto-refresh every 30 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+        renderWeeklyStats();
+        setInterval(renderWeeklyStats, 30000); // Refresh every 30 seconds
+    });
+
 </script>
 {% endblock %}

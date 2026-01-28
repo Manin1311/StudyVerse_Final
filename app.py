@@ -2621,6 +2621,67 @@ def api_habit_stats():
         
     return jsonify(stats)
 
+@app.route('/api/weekly_stats', methods=['GET'])
+@login_required
+def api_weekly_stats():
+    """Return weekly focus time and tasks for the dashboard chart."""
+    today = datetime.now()
+    start_of_week = today - timedelta(days=today.weekday())  # Monday
+    
+    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    chart_data = []
+    max_focus = 0
+    total_focus_mins = 0
+    total_tasks = 0
+    
+    for i in range(7):
+        date_obj = start_of_week + timedelta(days=i)
+        date_only = date_obj.date()
+        start_dt = datetime.combine(date_only, datetime.min.time())
+        end_dt = datetime.combine(date_only, datetime.max.time())
+        
+        # Get focus minutes for this day
+        focus_mins = (
+            db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
+            .filter(StudySession.user_id == current_user.id)
+            .filter(StudySession.completed_at >= start_dt)
+            .filter(StudySession.completed_at <= end_dt)
+            .scalar()
+        ) or 0
+        
+        # Get completed tasks for this day
+        tasks_count = (
+            Todo.query
+            .filter(Todo.user_id == current_user.id)
+            .filter(Todo.completed == True)
+            .filter(Todo.completed_at >= start_dt)
+            .filter(Todo.completed_at <= end_dt)
+            .count()
+        )
+        
+        max_focus = max(max_focus, focus_mins)
+        total_focus_mins += focus_mins
+        total_tasks += tasks_count
+        
+        chart_data.append({
+            'day': days[i],
+            'focus_mins': focus_mins,
+            'tasks': tasks_count,
+            'date': date_only.isoformat()
+        })
+    
+    # Calculate percentages for bar heights
+    for day in chart_data:
+        if max_focus > 0:
+            day['focus_pct'] = int((day['focus_mins'] / max_focus) * 100)
+        else:
+            day['focus_pct'] = 0
+    
+    return jsonify({
+        'chart': chart_data,
+        'total_focus': total_focus_mins,
+        'total_tasks': total_tasks
+    })
 
 @app.route('/syllabus')
 @login_required
