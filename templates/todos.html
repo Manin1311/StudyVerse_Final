@@ -58,11 +58,25 @@
                 {% endfor %}
 
                 {% for cat in categories %}
+                {% set ns_cat = namespace(total=0, done=0) %}
+                {% for t in personal_todos %}
+                {% if t.category == cat %}
+                {% set ns_cat.total = ns_cat.total + 1 %}
+                {% if t.completed %}
+                {% set ns_cat.done = ns_cat.done + 1 %}
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+                {% set percent = (ns_cat.done / ns_cat.total * 100)|int if ns_cat.total > 0 else 0 %}
+                {% set cat_finished = (ns_cat.done == ns_cat.total and ns_cat.total > 0) %}
+
                 <!-- Category Header -->
                 <div class="task-row parent">
                     <div class="flex-center">
-                        <button class="toggle-btn expanded" onclick="toggleGroup(this)">
-                            <i class="fa-solid fa-chevron-right" style="transform: rotate(90deg);"></i>
+                        <button class="toggle-btn {% if not cat_finished %}expanded{% endif %}"
+                            onclick="toggleGroup(this)">
+                            <i class="fa-solid fa-chevron-right"
+                                style="transition: transform 0.2s; {% if not cat_finished %}transform: rotate(90deg);{% endif %}"></i>
                         </button>
                     </div>
                     <div class="task-title" style="font-weight: 600; color: var(--accent-green);">
@@ -74,22 +88,14 @@
                         <i class="fa-solid fa-layer-group" style="margin-right: 8px;"></i>
                         {% endif %}
                         {{ cat }}
-                        {% set cat_todos = [] %}
-                        {% for t in personal_todos %}{% if t.category == cat %}{% if cat_todos.append(t) %}{% endif %}{%
-                        endif %}{% endfor %}
                         <span
                             style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; margin-left: 10px; color: var(--text-secondary);">{{
-                            cat_todos|length }}</span>
+                            ns_cat.total }}</span>
                     </div>
                     <div>-</div>
                     <div>-</div>
                     <div>-</div>
                     <div>
-                        {% set completed = [] %}
-                        {% for t in cat_todos %}{% if t.completed %}{% if completed.append(t) %}{% endif %}{% endif %}{%
-                        endfor %}
-                        {% set percent = (completed|length / cat_todos|length * 100)|int if cat_todos|length > 0 else 0
-                        %}
                         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
                             <div class="grid-progress" style="flex: 1;">
                                 <div class="grid-progress-bar" style="width: {{ percent }}%;"></div>
@@ -102,7 +108,7 @@
                 </div>
 
                 <!-- Subtasks -->
-                <div class="task-group" style="display: block;">
+                <div class="task-group" style="display: {% if cat_finished %}none{% else %}block{% endif %};">
                     {% for t in personal_todos %}
                     {% if t.category == cat %}
                     <div class="task-row subtask">
@@ -153,10 +159,24 @@
                 endfor %}
 
                 {% if has_uncategorized %}
+                {% set ns_uncat = namespace(total=0, done=0) %}
+                {% for t in personal_todos %}
+                {% if not t.category %}
+                {% set ns_uncat.total = ns_uncat.total + 1 %}
+                {% if t.completed %}
+                {% set ns_uncat.done = ns_uncat.done + 1 %}
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+                {% set uncategorized_pct = (ns_uncat.done / ns_uncat.total * 100)|int if ns_uncat.total > 0 else 0 %}
+                {% set uncat_finished = (ns_uncat.done == ns_uncat.total and ns_uncat.total > 0) %}
+
                 <div class="task-row parent">
                     <div class="flex-center">
-                        <button class="toggle-btn expanded" onclick="toggleGroup(this)">
-                            <i class="fa-solid fa-chevron-right" style="transform: rotate(90deg);"></i>
+                        <button class="toggle-btn {% if not uncat_finished %}expanded{% endif %}"
+                            onclick="toggleGroup(this)">
+                            <i class="fa-solid fa-chevron-right"
+                                style="transition: transform 0.2s; {% if not uncat_finished %}transform: rotate(90deg);{% endif %}"></i>
                         </button>
                     </div>
                     <div class="task-title" style="font-weight: 600; color: var(--text-secondary);">
@@ -166,10 +186,18 @@
                     <div>-</div>
                     <div>-</div>
                     <div>-</div>
-                    <div>-</div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                            <div class="grid-progress" style="flex: 1;">
+                                <div class="grid-progress-bar" style="width: {{ uncategorized_pct }}%;"></div>
+                            </div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 30px;">{{
+                                uncategorized_pct }}%</span>
+                        </div>
+                    </div>
                     <div></div>
                 </div>
-                <div class="task-group" style="display: block;">
+                <div class="task-group" style="display: {% if uncat_finished %}none{% else %}block{% endif %};">
                     {% for t in personal_todos %}
                     {% if not t.category %}
                     <div class="task-row subtask">
@@ -224,20 +252,40 @@
             <!-- Group Tasks Container -->
             <div id="group-tasks-container" style="display: none;">
                 {% if group_todos and group_todos|length > 0 %}
+                {% set ns_group = namespace(total=0, done=0) %}
+                {% for t in group_todos %}
+                {% set ns_group.total = ns_group.total + 1 %}
+                {% if t.completed %}
+                {% set ns_group.done = ns_group.done + 1 %}
+                {% endif %}
+                {% endfor %}
+                {% set group_pct = (ns_group.done / ns_group.total * 100)|int if ns_group.total > 0 else 0 %}
+                {% set group_finished = (ns_group.done == ns_group.total and ns_group.total > 0) %}
+
                 <div class="task-row parent">
                     <div class="flex-center">
-                        <button class="toggle-btn expanded" onclick="toggleGroup(this)">
-                            <i class="fa-solid fa-chevron-right" style="transform: rotate(90deg);"></i>
+                        <button class="toggle-btn {% if not group_finished %}expanded{% endif %}"
+                            onclick="toggleGroup(this)">
+                            <i class="fa-solid fa-chevron-right"
+                                style="transition: transform 0.2s; {% if not group_finished %}transform: rotate(90deg);{% endif %}"></i>
                         </button>
                     </div>
                     <div class="task-title" style="color: var(--purple);">Shared Group Tasks</div>
                     <div>-</div>
                     <div>-</div>
                     <div>-</div>
-                    <div>-</div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                            <div class="grid-progress" style="flex: 1;">
+                                <div class="grid-progress-bar" style="width: {{ group_pct }}%;"></div>
+                            </div>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 30px;">{{
+                                group_pct }}%</span>
+                        </div>
+                    </div>
                     <div></div>
                 </div>
-                <div class="task-group" style="display: block;">
+                <div class="task-group" style="display: {% if group_finished %}none{% else %}block{% endif %};">
                     {% for t in group_todos %}
                     <div class="task-row subtask">
                         <div class="flex-center"></div>
@@ -319,7 +367,8 @@
             <!-- Subtasks Section -->
             <div class="form-group">
                 <label>Subtasks</label>
-                <div id="subtaskList" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <div id="subtaskList"
+                    style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
                     <!-- Subtasks will appear here -->
                 </div>
                 <button type="button" class="btn-secondary" onclick="promptSubtask()"
@@ -412,6 +461,25 @@
     .subtask-remove:hover {
         color: var(--destructive);
     }
+
+    /* Custom Scrollbar for SubtaskList */
+    #subtaskList::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    #subtaskList::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+    }
+
+    #subtaskList::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    #subtaskList::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -502,6 +570,9 @@
             `;
             list.appendChild(div);
         });
+
+        // Auto-scroll to bottom
+        list.scrollTop = list.scrollHeight;
 
         // Toggle Done button
         const btnDone = document.getElementById('btnDone');

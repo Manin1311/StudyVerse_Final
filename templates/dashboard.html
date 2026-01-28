@@ -255,20 +255,21 @@
             </div>
 
             <!-- Right: Event Manager -->
-            <!-- Right: Event Manager -->
-            <div class="events-widget" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-                <div class="timeline-info" style="flex-shrink: 0;">
+            <div class="events-widget">
+                <div class="timeline-info">
                     <i class="fa-regular fa-clock"></i> Timeline // Jan 25
                 </div>
 
-                <div class="event-placeholder" style="flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px;">
-                    <!-- JS populates this -->
-                    <i class="fa-regular fa-clock"></i>
-                    <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
-                    <div style="font-size: 0.7rem;">No scheduled events for today</div>
+                <div id="eventListContainer"
+                    style="flex: 1; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; max-height: 300px;">
+                    <div class="event-placeholder" id="eventPlaceholder">
+                        <i class="fa-regular fa-clock"></i>
+                        <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
+                        <div style="font-size: 0.7rem;">No scheduled events for today</div>
+                    </div>
                 </div>
 
-                <button class="btn-init-event" style="flex-shrink: 0; margin-top: 10px;">
+                <button class="btn-init-event" onclick="openCreateEventModal()">
                     <i class="fa-solid fa-plus"></i> Initialize Event
                 </button>
             </div>
@@ -313,8 +314,8 @@
             </div>
 
             <div id="dashboard-habit-chart"
-                style="height: 200px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: flex-end; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a;">
-                <!-- JS will populate this -->
+                style="height: 200px; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a;">
+                <!-- JS will populate this from LocalStorage -->
                 <div style="color: var(--text-muted); align-self: center;">Loading habit data...</div>
             </div>
         </div>
@@ -333,17 +334,58 @@
             <div class="stats-row-3">
                 <div class="mini-stat-box" style="background: rgba(239, 68, 68, 0.1);">
                     <div class="stat-label" style="color: #ef4444;">Focus Time</div>
-                    <div class="stat-val" id="total-focus-time">0 <span style="font-size: 0.7rem;">mins</span>
+                    <div class="stat-val">{{ weekly_stats.total_focus }} <span style="font-size: 0.7rem;">mins</span>
                     </div>
                 </div>
                 <div class="mini-stat-box" style="background: rgba(16, 185, 129, 0.1);">
                     <div class="stat-label" style="color: #10b981;">Tasks Done</div>
-                    <div class="stat-val" id="total-tasks-done">0</div>
+                    <div class="stat-val">{{ weekly_stats.total_tasks }}</div>
                 </div>
             </div>
 
-            <div class="chart-container" id="weekly-stats-chart">
-                <div style="width: 100%; text-align: center; color: #555; align-self: center;">Loading...</div>
+            <!-- Weekly Stats Dual Chart -->
+            <div
+                style="display: flex; justify-content: space-around; align-items: flex-end; height: 180px; margin-top: 20px; padding: 20px 10px; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                {% if weekly_stats and weekly_stats.chart %}
+                {% for day in weekly_stats.chart %}
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; gap: 8px;">
+                    <!-- Bars Container - Always show both bars side by side -->
+                    <div style="display: flex; align-items: flex-end; justify-content: center; height: 100%; gap: 6px;">
+                        <!-- Red bar for focus time - Show if focus_mins > 0 -->
+                        {% if day.focus_mins > 0 %}
+                        <div
+                            style="width: 18px; height: {% if day.focus_pct > 10 %}{{ day.focus_pct }}{% else %}10{% endif %}%; background: linear-gradient(to bottom, #ef4444, #b91c1c); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4); position: relative;">
+                            <span
+                                style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #ef4444; font-weight: 800; white-space: nowrap;">{{
+                                day.focus_mins }}m</span>
+                        </div>
+                        {% else %}
+                        <div style="width: 18px; height: 2%; background: transparent;"></div>
+                        {% endif %}
+
+                        <!-- Green bar for tasks - Show if task_count > 0 -->
+                        {% if day.task_count > 0 %}
+                        <div
+                            style="width: 18px; height: {% if day.task_pct > 10 %}{{ day.task_pct }}{% else %}10{% endif %}%; background: linear-gradient(to bottom, #4ade80, #16a34a); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(74, 222, 128, 0.4); position: relative;">
+                            <span
+                                style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #4ade80; font-weight: 800; white-space: nowrap;">{{
+                                day.task_count }}</span>
+                        </div>
+                        {% else %}
+                        <div style="width: 18px; height: 2%; background: transparent;"></div>
+                        {% endif %}
+                    </div>
+                    <!-- Day label -->
+                    <div style="color: #888; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">{{ day.day
+                        }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="width: 100%; text-align: center; color: #888; padding: 20px;">
+                    No activity data this week
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -393,11 +435,70 @@
     </div>
 </div>
 
+<!-- Create Event Modal -->
+<div id="createEventModal" class="modal-overlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <div class="modal-content"
+        style="background: #111; padding: 30px; border-radius: 20px; width: 90%; max-width: 450px; border: 1px solid rgba(74, 222, 128, 0.3); box-shadow: 0 0 40px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 id="eventModalTitle"
+                style="color: #fff; font-family: var(--font-heading); font-size: 1.5rem; margin: 0;">Initialize Event
+            </h2>
+            <button onclick="document.getElementById('createEventModal').style.display='none'"
+                style="background: none; border: none; color: #888; font-size: 1.8rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <input type="hidden" id="editEventId" value="">
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="form-group">
+                <label
+                    style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.85rem;">Event
+                    Title</label>
+                <input type="text" id="eventTitle" placeholder="e.g. Meeting, Study Session"
+                    style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; outline: none; transition: border-color 0.3s;">
+            </div>
+
+            <div class="form-group">
+                <label
+                    style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.85rem;">Description
+                    (Optional)</label>
+                <textarea id="eventDescription" placeholder="What's this event about?" rows="3"
+                    style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; outline: none; transition: border-color 0.3s; resize: none;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 2;">
+                    <label
+                        style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.85rem;">Time</label>
+                    <input type="time" id="eventTime"
+                        style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; outline: none; transition: border-color 0.3s;">
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button id="btnSaveEvent" onclick="saveEvent()" class="btn-primary"
+                    style="flex: 1; padding: 14px; border-radius: 12px; background: var(--accent-green); color: #000; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.2);">
+                    Initialize Event
+                </button>
+                <button onclick="document.getElementById('createEventModal').style.display='none'" class="btn-secondary"
+                    style="flex: 1; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-weight: 600; border: 1px solid var(--border); cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     @keyframes spin {
         to {
             transform: rotate(360deg);
         }
+    }
+
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
     }
 
     #aiPlanContent h3 {
@@ -416,6 +517,32 @@
         50% {
             opacity: 0;
         }
+    }
+    #eventListContainer::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    #eventListContainer::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+    }
+
+    #eventListContainer::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    #eventListContainer::-webkit-scrollbar-thumb:hover {
+        background: var(--accent-green);
+    }
+
+    .event-item {
+        transition: all 0.3s ease;
+    }
+
+    .event-item:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        transform: scale(1.01);
     }
 </style>
 {% endblock %}
@@ -508,113 +635,159 @@
 <script src="//unpkg.com/globe.gl"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const globeElem = document.getElementById('activity-globe');
-        if (globeElem) {
-            const Globe = window.Globe()(globeElem)
-                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-                .pointsData([...Array(10).keys()].map(() => ({
-                    lat: (Math.random() - 0.5) * 160,
-                    lng: (Math.random() - 0.5) * 360,
-                    size: Math.random() / 3,
-                    color: ['#60a5fa', '#4ade80', '#fbbf24', '#f43f5e'][Math.floor(Math.random() * 4)]
-                })))
-                .pointAltitude('size').pointColor('color').pointRadius(0.8)
-                .backgroundColor('rgba(0,0,0,0)').width(globeElem.offsetWidth).height(globeElem.offsetHeight)
-                .showAtmosphere(true).atmosphereColor('#3b82f6').atmosphereAltitude(0.2);
-            Globe.controls().autoRotate = true;
-            Globe.controls().autoRotateSpeed = 1.2;
-            Globe.controls().enableZoom = false;
+        try {
+            const globeElem = document.getElementById('activity-globe');
+            if (globeElem && typeof window.Globe === 'function') {
+                const Globe = window.Globe()(globeElem)
+                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+                    .pointsData([...Array(10).keys()].map(() => ({
+                        lat: (Math.random() - 0.5) * 160,
+                        lng: (Math.random() - 0.5) * 360,
+                        size: Math.random() / 3,
+                        color: ['#60a5fa', '#4ade80', '#fbbf24', '#f43f5e'][Math.floor(Math.random() * 4)]
+                    })))
+                    .pointAltitude('size').pointColor('color').pointRadius(0.8)
+                    .backgroundColor('rgba(0,0,0,0)').width(globeElem.offsetWidth).height(globeElem.offsetHeight)
+                    .showAtmosphere(true).atmosphereColor('#3b82f6').atmosphereAltitude(0.2);
+                Globe.controls().autoRotate = true;
+                Globe.controls().autoRotateSpeed = 1.2;
+                Globe.controls().enableZoom = false;
+            }
+        } catch (e) {
+            console.error("Globe init failed:", e);
         }
 
-        // --- HABIT CHART SYNC (Database) ---
-        renderHabitChart();
+        // --- HABIT CHART SYNC (LocalStorage) ---
+        try {
+            renderHabitChart();
+        } catch (e) {
+            console.error("Habit chart render failed:", e);
+        }
+
+        // Listen for custom habitChanged event (same page/component)
+        window.addEventListener('habitChanged', function (e) {
+            console.log("Dashboard detected habit change via event:", e.detail);
+            renderHabitChart();
+        });
+
+        // Listen for localStorage changes from other tabs/pages
+        window.addEventListener('storage', function (e) {
+            if (e.key && e.key.startsWith('check_')) {
+                console.log("Dashboard detected habit change from another tab, refreshing chart...");
+                renderHabitChart();
+            }
+        });
+
+        // Also refresh periodically (every 5 seconds) to catch any missed changes
+        setInterval(() => {
+            renderHabitChart();
+        }, 5000);
     });
 
-    // Make globally accessible so progress page can trigger updates
-    window.renderHabitChart = function () {
+    function renderHabitChart() {
         const container = document.getElementById('dashboard-habit-chart');
-        if (!container) return;
+        if (!container) {
+            console.error("Dashboard habit chart container not found!");
+            return;
+        }
 
-        // Fetch from Backend
-        fetch('/api/habits/stats')
-            .then(r => r.json())
-            .then(stats => {
-                let html = '';
-                stats.forEach(s => {
-                    const pct = s.pct;
-                    const dayName = s.day;
+        // Use a consistent day order: Monday to Sunday
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-                    // Grid Layout Item: Standard width: 100% since grid handles the slots
-                    html += `
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; width: 100%; min-width: 0;">
-                        <div style="position: relative; width: 60%; max-width: 25px; height: ${pct}%; 
-                                    background: linear-gradient(to bottom, #ef4444, #991b1b); 
-                                    border-radius: 6px 6px 0 0; min-height: 4px; 
-                                    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); 
-                                    transition: height 1s ease;">
-                            ${pct > 15 ? `<span style="position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: #ef4444; font-weight: 700;">${pct}%</span>` : ''}
-                        </div>
-                        <div style="color: #888; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${dayName}
-                        </div>
-                    </div>`;
-                });
-                container.innerHTML = html;
-            })
-            .catch(err => {
-                console.error(err);
-                container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No data available</div>';
+        // Match Progress Tracker's default habits exactly
+        const defaultHabits = [
+            { id: 'h1', name: 'Reading' },
+            { id: 'h2', name: 'Coding' },
+            { id: 'h3', name: 'Exercise' },
+            { id: 'h4', name: 'Meditate' }
+        ];
+
+        let habitList = defaultHabits;
+        try {
+            const stored = localStorage.getItem('StudyVerse_habits');
+            const parsed = stored ? JSON.parse(stored) : null;
+            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                habitList = parsed;
+            }
+            console.log("Dashboard - Loaded habits:", habitList);
+        } catch (e) { console.error("Habit sync error:", e); }
+
+        // Date helper - EXACT MATCH to progress.html
+        function getLocalDateString(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Get this week's dates (Mon - Sun) - EXACT MATCH to progress.html
+        function getWeekDates() {
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(now);
+            monday.setDate(diff);
+
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(diff + i);
+                weekDates.push(getLocalDateString(d));
+            }
+            return weekDates;
+        }
+
+        const weekDates = getWeekDates();
+        console.log("Dashboard - Week dates:", weekDates);
+
+        let html = '';
+        let totalChecks = 0;
+        let totalPossible = 0;
+
+        for (let i = 0; i < 7; i++) {
+            const dateStr = weekDates[i];
+
+            let completed = 0;
+            habitList.forEach(h => {
+                const key = `check_${h.id}_${dateStr}`;
+                const isChecked = localStorage.getItem(key) === 'true';
+
+                if (isChecked) {
+                    completed++;
+                    totalChecks++;
+                    console.log(`Dashboard - Found check: ${key}`);
+                }
+                totalPossible++;
             });
-    };
 
-    // Make globally accessible for real-time updates
-    window.renderWeeklyStats = function () {
-        const chartContainer = document.getElementById('weekly-stats-chart');
-        const focusTimeEl = document.getElementById('total-focus-time');
-        const tasksEl = document.getElementById('total-tasks-done');
+            const total = habitList.length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const dayName = dayNames[i];
 
-        if (!chartContainer) return;
+            // Dynamic color: Green for high consistency, Red for low
+            const barColor = pct >= 50 ? 'linear-gradient(to bottom, #4ade80, #166534)' : 'linear-gradient(to bottom, #ef4444, #991b1b)';
+            const shadowColor = pct >= 50 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)';
 
-        // Fetch from Backend
-        fetch('/api/weekly_stats')
-            .then(r => r.json())
-            .then(data => {
-                // Update totals
-                if (focusTimeEl) {
-                    focusTimeEl.innerHTML = `${data.total_focus} <span style="font-size: 0.7rem;">mins</span>`;
-                }
-                if (tasksEl) {
-                    tasksEl.textContent = data.total_tasks;
-                }
+            html += `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; min-width: 0; height: 100%; justify-content: flex-end;">
+                <div style="position: relative; width: 60%; max-width: 32px; height: ${Math.max(pct, 2)}%; 
+                            background: ${barColor}; 
+                            border-radius: 6px 6px 0 0; 
+                            box-shadow: 0 4px 15px ${shadowColor}; 
+                            transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                    ${pct > 0 ? `<span style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #fff; font-weight: 800; white-space: nowrap;">${pct}%</span>` : ''}
+                </div>
+                <span style="color: #666; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">${dayName}</span>
+            </div>`;
+        }
 
-                // Render chart
-                let html = '';
-                if (data.chart && data.chart.length > 0) {
-                    data.chart.forEach(day => {
-                        html += `
-                        <div class="chart-col">
-                            <div class="bar-group">
-                                <div class="bar bar-red" style="height: ${day.focus_pct}%;"></div>
-                            </div>
-                            <div class="day-label">${day.day}</div>
-                        </div>`;
-                    });
-                } else {
-                    html = '<div style="width: 100%; text-align: center; color: #555; align-self: center;">No data</div>';
-                }
-                chartContainer.innerHTML = html;
-            })
-            .catch(err => {
-                console.error(err);
-                chartContainer.innerHTML = '<div style="color: #666; font-size: 0.9rem;">Failed to load stats</div>';
-            });
-    };
+        const totalPct = totalPossible > 0 ? Math.round((totalChecks / totalPossible) * 100) : 0;
+        console.log(`Dashboard - Total: ${totalChecks}/${totalPossible} = ${totalPct}%`);
 
-    // Initial load and auto-refresh every 30 seconds
-    document.addEventListener('DOMContentLoaded', () => {
-        renderWeeklyStats();
-        setInterval(renderWeeklyStats, 30000); // Refresh every 30 seconds
-    });
+        container.innerHTML = html;
+    }
 
+    // Make renderHabitChart globally accessible for manual refresh
+    window.renderHabitChart = renderHabitChart;
 </script>
 {% endblock %}

@@ -437,16 +437,6 @@ class HabitLog(db.Model):
     completed_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.String(500))
-    date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD
-    time = db.Column(db.String(10)) # HH:MM 24h format
-    is_notified = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -505,7 +495,15 @@ class SyllabusDocument(db.Model):
     extracted_text = db.Column(db.Text, nullable=True) # AI Context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    date = db.Column(db.String(50), nullable=False) # Format: YYYY-MM-DD
+    time = db.Column(db.String(50), nullable=True)
+    is_notified = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ------------------------------
 # Data Structures (DS) Utilities
@@ -1332,7 +1330,9 @@ def dashboard():
         daily_stats.append({
             'day': d.strftime('%a'),
             'focus_pct': int(focus_pct),
-            'task_pct': int(task_pct)
+            'task_pct': int(task_pct),
+            'focus_mins': d_focus,
+            'task_count': d_tasks
         })
 
     weekly_stats = {
@@ -2478,29 +2478,16 @@ def habits_add():
         db.session.add(habit)
         db.session.commit()
         flash('Habit added!', 'success')
-    
-    # Return JSON if requested via AJAX
-    if request.headers.get('Accept') == 'application/json' or request.is_json:
-        return jsonify({'status': 'success'})
     return redirect(url_for('dashboard'))
 
 @app.route('/habits/toggle/<int:habit_id>', methods=['POST'])
 @login_required
 def habits_toggle(habit_id):
     habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first_or_404()
+    today = datetime.utcnow().date()
     
-    # Get date from form or use today
-    date_str = request.form.get('date')
-    if date_str:
-        try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            target_date = datetime.utcnow().date()
-    else:
-        target_date = datetime.utcnow().date()
-    
-    # Check if logged for this date
-    log = HabitLog.query.filter_by(habit_id=habit.id, completed_date=target_date).first()
+    # Check if logged for today
+    log = HabitLog.query.filter_by(habit_id=habit.id, completed_date=today).first()
     
     if log:
         # Uncheck
@@ -2508,17 +2495,13 @@ def habits_toggle(habit_id):
         db.session.commit()
     else:
         # Check
-        log = HabitLog(habit_id=habit.id, completed_date=target_date)
+        log = HabitLog(habit_id=habit.id, completed_date=today)
         db.session.add(log)
         db.session.commit()
         
-        # Gamification: Small XP for habit (only for today)
-        if target_date == datetime.utcnow().date():
-            GamificationService.add_xp(current_user.id, 'habit', 5)
-    
-    # Return JSON if requested via AJAX
-    if request.headers.get('Accept') == 'application/json' or request.is_json:
-        return jsonify({'status': 'success'})
+        # Gamification: Small XP for habit
+        GamificationService.add_xp(current_user.id, 'habit', 5)
+
     return redirect(url_for('dashboard'))
 
 @app.route('/habits/delete/<int:habit_id>', methods=['GET'])
@@ -2530,55 +2513,7 @@ def habits_delete(habit_id):
     db.session.delete(habit)
     db.session.commit()
     db.session.commit()
-    # Return JSON if requested via AJAX
-    if request.headers.get('Accept') == 'application/json' or request.is_json:
-        return jsonify({'status': 'success'})
     return redirect(url_for('dashboard'))
-
-@app.route('/api/habits/list', methods=['GET'])
-@login_required
-def api_habits_list():
-    """Return all habits for the current user with their logs for the current week."""
-    # Get all user habits
-    habits = Habit.query.filter_by(user_id=current_user.id).all()
-    
-    # Get current week dates
-    today = datetime.now()
-    start_of_week = today - timedelta(days=today.weekday())  # Monday
-    
-    # Fetch all logs for this week
-    logs = {}
-    for i in range(7):
-        date_obj = start_of_week + timedelta(days=i)
-        date_only = date_obj.date()
-        
-        # Get all logs for this date
-        day_logs = (
-            HabitLog.query
-            .join(Habit)
-            .filter(Habit.user_id == current_user.id)
-            .filter(HabitLog.completed_date == date_only)
-            .all()
-        )
-        
-        for log in day_logs:
-            key = f"{log.habit_id}_{date_only.isoformat()}"
-            logs[key] = True
-    
-    # Format habits for frontend
-    habits_data = [
-        {
-            'id': h.id,
-            'title': h.title,
-            'created_at': h.created_at.isoformat() if h.created_at else None
-        }
-        for h in habits
-    ]
-    
-    return jsonify({
-        'habits': habits_data,
-        'logs': logs
-    })
 
 @app.route('/api/habits/stats', methods=['GET'])
 @login_required
@@ -2623,178 +2558,11 @@ def api_habit_stats():
         
     return jsonify(stats)
 
-@app.route('/api/weekly_stats', methods=['GET'])
+
+@app.route('/habit-debugger')
 @login_required
-def api_weekly_stats():
-    """Return weekly focus time and tasks for the dashboard chart."""
-    today = datetime.now()
-    start_of_week = today - timedelta(days=today.weekday())  # Monday
-    
-    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    chart_data = []
-    max_focus = 0
-    total_focus_mins = 0
-    total_tasks = 0
-    
-    for i in range(7):
-        date_obj = start_of_week + timedelta(days=i)
-        date_only = date_obj.date()
-        start_dt = datetime.combine(date_only, datetime.min.time())
-        end_dt = datetime.combine(date_only, datetime.max.time())
-        
-        # Get focus minutes for this day
-        focus_mins = (
-            db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
-            .filter(StudySession.user_id == current_user.id)
-            .filter(StudySession.completed_at >= start_dt)
-            .filter(StudySession.completed_at <= end_dt)
-            .scalar()
-        ) or 0
-        
-        # Get completed tasks for this day
-        tasks_count = (
-            Todo.query
-            .filter(Todo.user_id == current_user.id)
-            .filter(Todo.completed == True)
-            .filter(Todo.completed_at >= start_dt)
-            .filter(Todo.completed_at <= end_dt)
-            .count()
-        )
-        
-        max_focus = max(max_focus, focus_mins)
-        total_focus_mins += focus_mins
-        total_tasks += tasks_count
-        
-        chart_data.append({
-            'day': days[i],
-            'focus_mins': focus_mins,
-            'tasks': tasks_count,
-            'date': date_only.isoformat()
-        })
-    
-    # Calculate percentages for bar heights
-    for day in chart_data:
-        if max_focus > 0:
-            day['focus_pct'] = int((day['focus_mins'] / max_focus) * 100)
-        else:
-            day['focus_pct'] = 0
-    
-    return jsonify({
-        'chart': chart_data,
-        'total_focus': total_focus_mins,
-        'total_tasks': total_tasks
-    })
-
-@app.route('/api/events', methods=['GET', 'POST'])
-@login_required
-def api_events():
-    if request.method == 'POST':
-        data = request.get_json()
-        title = data.get('title')
-        date_str = data.get('date') # YYYY-MM-DD
-        time_str = data.get('time') # HH:MM (optional)
-
-        if not title or not date_str:
-            return jsonify({'status': 'error', 'message': 'Missing title or date'}), 400
-        
-        event = Event(
-            user_id=current_user.id,
-            title=title,
-            description=data.get('description', ''),
-            date=date_str,
-            time=time_str
-        )
-        db.session.add(event)
-        db.session.commit()
-        return jsonify({'status': 'success', 'event': {'id': event.id, 'title': event.title}})
-
-    # GET
-    date_filter = request.args.get('date')
-    if date_filter:
-        events = Event.query.filter_by(user_id=current_user.id, date=date_filter).order_by(Event.time).all()
-        return jsonify({
-            'events': [
-                {
-                    'id': e.id, 
-                    'title': e.title, 
-                    'description': e.description,
-                    'time': e.time
-                } for e in events
-            ]
-        })
-    
-    return jsonify({'events': []})
-
-@app.route('/api/events/check-warnings', methods=['GET'])
-@login_required
-def api_check_event_warnings():
-    # Helper to get current IST time
-    now_utc = datetime.utcnow()
-    ist_offset = timedelta(hours=5, minutes=30)
-    now_ist = now_utc + ist_offset
-    
-    current_date = now_ist.strftime('%Y-%m-%d')
-    current_time = now_ist.strftime('%H:%M')
-    
-    # Check for events matching date and time that haven't been dismissed
-    # Note: frontend polls every minute, so exact HH:MM match works
-    
-    events = Event.query.filter_by(
-        user_id=current_user.id, 
-        date=current_date, 
-        is_notified=False
-    ).all()
-    
-    # Current time as datetime for comparison
-    current_dt = datetime.strptime(f"{current_date} {current_time}", "%Y-%m-%d %H:%M")
-    
-    warning_event = None
-    for e in events:
-        try:
-            # Handle user input variations like "9:30" (len 4) vs "12:30" (len 5)
-            # and ensure comparison works even if polled a bit late
-            if not e.time: continue
-            
-            clean_time = e.time.strip()
-            # Normalize "9:30" to "09:30" for parsing
-            if len(clean_time) == 4 and clean_time[1] == ':':
-                 clean_time = '0' + clean_time
-            
-            event_dt = datetime.strptime(f"{current_date} {clean_time}", "%Y-%m-%d %H:%M")
-            
-            # Minute difference: calculated as (Now - Event)
-            # Positive means event happened in the past.
-            diff_mins = (current_dt - event_dt).total_seconds() / 60
-            
-            # Show alert if event is happening NOW or happened within last 30 mins
-            # (Allows for late logins or missed polls)
-            if 0 <= diff_mins <= 30:
-                warning_event = e
-                break
-        except Exception:
-            # Skip invalid time formats
-            continue
-            
-    if warning_event:
-        return jsonify({
-            'has_warning': True,
-            'event': {
-                'id': warning_event.id,
-                'title': warning_event.title,
-                'description': warning_event.description,
-                'time': warning_event.time
-            }
-        })
-        
-    return jsonify({'has_warning': False})
-
-@app.route('/api/events/<int:event_id>/dismiss', methods=['POST'])
-@login_required
-def api_dismiss_event(event_id):
-    event = Event.query.filter_by(id=event_id, user_id=current_user.id).first_or_404()
-    event.is_notified = True
-    db.session.commit()
-    return jsonify({'status': 'success'})
+def habit_debugger():
+    return render_template('habit-debugger.html')
 
 @app.route('/syllabus')
 @login_required
@@ -4329,7 +4097,7 @@ def handle_events():
         )
         db.session.add(new_event)
         db.session.commit()
-        return jsonify({'status': 'success', 'message': 'Event created successfully!'})
+        return jsonify({'status': 'success', 'message': 'Event created successfully!', 'id': new_event.id})
 
     date_filter = request.args.get('date')
     query = Event.query.filter_by(user_id=current_user.id)
@@ -4349,25 +4117,41 @@ def handle_events():
         } for e in events]
     })
 
+@app.route('/api/events/<int:event_id>', methods=['PUT', 'DELETE'])
+@login_required
+def single_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    if request.method == 'DELETE':
+        db.session.delete(event)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event deleted'})
+        
+    if request.method == 'PUT':
+        data = request.json
+        event.title = data.get('title', event.title)
+        event.description = data.get('description', event.description)
+        event.date = data.get('date', event.date)
+        event.time = data.get('time', event.time)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event updated'})
+
 @app.route('/api/events/check-warnings', methods=['GET'])
 @login_required
 def check_event_warnings():
-    # Helper to check for today's events that haven't been notified
-    # We use local time for comparison as the user sets events in their browser's time
-    now_local = datetime.now()
-    today_str = now_local.strftime('%Y-%m-%d')
-    current_time_str = now_local.strftime('%H:%M')
+    # Get current IST time
+    now_ist = datetime.now(IST)
+    today_str = now_ist.strftime('%Y-%m-%d')
+    current_time_str = now_ist.strftime('%H:%M')
     
-    # Filter for events today, not yet notified, and where time has passed or is now
-    # We use a secondary filter for time to ensure alerts trigger at the right moment
-    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False).filter(Event.time <= current_time_str).first()
+    # Find active events for today that have arrived but not notified
+    # We check if event.time <= current_time_str
+    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False)\
+        .filter(Event.time <= current_time_str)\
+        .order_by(Event.time.desc()).first()
     
-    # If no timed event matches, check for all-day events (time empty)
-    if not active_event:
-        active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False, time="All Day").first()
-    if not active_event:
-        active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False, time="").first()
-
     return jsonify({
         'status': 'success',
         'has_warning': bool(active_event),
