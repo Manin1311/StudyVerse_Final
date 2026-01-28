@@ -200,8 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTimelineForDate(selectedDate); // Load today's events initially
     checkReminders(); // Check for warnings on load
 
-    // Poll for reminders every minute
-    setInterval(checkReminders, 60000);
+    // Poll for reminders every 30 seconds
+    setInterval(checkReminders, 30000);
 
     // Listeners
     prevBtn.addEventListener('click', () => {

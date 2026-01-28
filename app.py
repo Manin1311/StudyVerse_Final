@@ -437,6 +437,16 @@ class HabitLog(db.Model):
     completed_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500))
+    date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD
+    time = db.Column(db.String(10)) # HH:MM 24h format
+    is_dismissed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -2682,6 +2692,93 @@ def api_weekly_stats():
         'total_focus': total_focus_mins,
         'total_tasks': total_tasks
     })
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@login_required
+def api_events():
+    if request.method == 'POST':
+        data = request.get_json()
+        title = data.get('title')
+        date_str = data.get('date') # YYYY-MM-DD
+        time_str = data.get('time') # HH:MM (optional)
+
+        if not title or not date_str:
+            return jsonify({'status': 'error', 'message': 'Missing title or date'}), 400
+        
+        event = Event(
+            user_id=current_user.id,
+            title=title,
+            description=data.get('description', ''),
+            date=date_str,
+            time=time_str
+        )
+        db.session.add(event)
+        db.session.commit()
+        return jsonify({'status': 'success', 'event': {'id': event.id, 'title': event.title}})
+
+    # GET
+    date_filter = request.args.get('date')
+    if date_filter:
+        events = Event.query.filter_by(user_id=current_user.id, date=date_filter).order_by(Event.time).all()
+        return jsonify({
+            'events': [
+                {
+                    'id': e.id, 
+                    'title': e.title, 
+                    'description': e.description,
+                    'time': e.time
+                } for e in events
+            ]
+        })
+    
+    return jsonify({'events': []})
+
+@app.route('/api/events/check-warnings', methods=['GET'])
+@login_required
+def api_check_event_warnings():
+    # Helper to get current IST time
+    now_utc = datetime.utcnow()
+    ist_offset = timedelta(hours=5, minutes=30)
+    now_ist = now_utc + ist_offset
+    
+    current_date = now_ist.strftime('%Y-%m-%d')
+    current_time = now_ist.strftime('%H:%M')
+    
+    # Check for events matching date and time that haven't been dismissed
+    # Note: frontend polls every minute, so exact HH:MM match works
+    
+    events = Event.query.filter_by(
+        user_id=current_user.id, 
+        date=current_date, 
+        is_dismissed=False
+    ).all()
+    
+    warning_event = None
+    for e in events:
+        if e.time == current_time:
+            warning_event = e
+            break
+            
+    if warning_event:
+        return jsonify({
+            'has_warning': True,
+            'event': {
+                'id': warning_event.id,
+                'title': warning_event.title,
+                'description': warning_event.description,
+                'time': warning_event.time
+            }
+        })
+        
+    return jsonify({'has_warning': False})
+
+@app.route('/api/events/<int:event_id>/dismiss', methods=['POST'])
+@login_required
+def api_dismiss_event(event_id):
+    event = Event.query.filter_by(id=event_id, user_id=current_user.id).first_or_404()
+    event.is_dismissed = True
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 @app.route('/syllabus')
 @login_required
