@@ -130,23 +130,10 @@
         const navItem = document.querySelector('[data-nav="progress"]');
         if (navItem) navItem.classList.add('active');
 
-        // --- Habit Matrix Logic ---
-        const defaultHabits = [
-            { id: 'h1', name: 'Reading' },
-            { id: 'h2', name: 'Coding' },
-            { id: 'h3', name: 'Exercise' },
-            { id: 'h4', name: 'Meditate' }
-        ];
-
+        // --- Habit Matrix Logic (Database-backed) ---
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        let habitList = defaultHabits;
-
-        try {
-            const stored = localStorage.getItem('StudyVerse_habits');
-            if (stored) habitList = JSON.parse(stored);
-        } catch (e) {
-            console.error("Error parsing habit data:", e);
-        }
+        let habitList = [];
+        let habitLogs = {}; // Store habit logs by date
 
         function getWeekDates() {
             const curr = new Date();
@@ -162,33 +149,80 @@
             return weekDates;
         }
 
-        window.addHabit = function () {
+        // Fetch habits from backend
+        async function loadHabits() {
+            try {
+                const response = await fetch('/api/habits/list');
+                if (response.ok) {
+                    const data = await response.json();
+                    habitList = data.habits || [];
+                    habitLogs = data.logs || {};
+                    renderMatrix();
+                }
+            } catch (e) {
+                console.error("Failed to load habits:", e);
+            }
+        }
+
+        window.addHabit = async function () {
             const name = prompt("Enter new habit name:");
             if (name && name.trim()) {
-                const newId = 'h' + Date.now();
-                habitList.push({ id: newId, name: name.trim() });
-                saveHabits();
+                try {
+                    const formData = new FormData();
+                    formData.append('title', name.trim());
+
+                    const response = await fetch('/habits/add', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        await loadHabits(); // Reload habits
+                    }
+                } catch (e) {
+                    console.error("Failed to add habit:", e);
+                }
             }
         };
 
-        window.deleteHabit = function (id) {
+        window.deleteHabit = async function (id) {
             if (confirm("Delete this habit?")) {
-                habitList = habitList.filter(h => h.id !== id);
-                saveHabits();
+                try {
+                    const response = await fetch(`/habits/delete/${id}`, {
+                        method: 'GET'
+                    });
+
+                    if (response.ok) {
+                        await loadHabits(); // Reload habits
+                    }
+                } catch (e) {
+                    console.error("Failed to delete habit:", e);
+                }
             }
         };
 
-        window.toggleCheck = function (habitId, dateStr) {
-            const key = `check_${habitId}_${dateStr}`;
-            const current = localStorage.getItem(key) === 'true';
-            localStorage.setItem(key, !current);
-            renderMatrix();
-        };
+        window.toggleCheck = async function (habitId, dateStr) {
+            try {
+                const formData = new FormData();
+                formData.append('date', dateStr);
 
-        function saveHabits() {
-            localStorage.setItem('StudyVerse_habits', JSON.stringify(habitList));
-            renderMatrix();
-        }
+                const response = await fetch(`/habits/toggle/${habitId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    await loadHabits(); // Reload to get updated state
+
+                    // Trigger dashboard update if on dashboard page
+                    if (window.renderHabitChart) {
+                        window.renderHabitChart();
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to toggle habit:", e);
+            }
+        };
 
         function renderMatrix() {
             const grid = document.getElementById('habit-matrix');
@@ -223,7 +257,7 @@
                 // Name
                 const nameCell = document.createElement('div');
                 nameCell.className = 'habit-name-cell';
-                nameCell.innerHTML = `<span style="font-weight: 500;">${habit.name}</span> <button onclick="deleteHabit('${habit.id}')" class="delete-btn" style="opacity: 0; transition: opacity 0.2s; background: none; border: none; color: var(--destructive); cursor: pointer; padding: 4px;"><i class="fa-solid fa-trash"></i></button>`;
+                nameCell.innerHTML = `<span style="font-weight: 500;">${habit.title}</span> <button onclick="deleteHabit(${habit.id})" class="delete-btn" style="opacity: 0; transition: opacity 0.2s; background: none; border: none; color: var(--destructive); cursor: pointer; padding: 4px;"><i class="fa-solid fa-trash"></i></button>`;
                 nameCell.style.cssText = `padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); color: var(--text-primary); background: var(--bg-card);`;
                 nameCell.onmouseenter = () => { const btn = nameCell.querySelector('.delete-btn'); if (btn) btn.style.opacity = '1'; };
                 nameCell.onmouseleave = () => { const btn = nameCell.querySelector('.delete-btn'); if (btn) btn.style.opacity = '0'; };
@@ -231,14 +265,14 @@
 
                 // Checks
                 weekDates.forEach((dateStr, index) => {
-                    const key = `check_${habit.id}_${dateStr}`;
-                    const isChecked = localStorage.getItem(key) === 'true';
+                    const key = `${habit.id}_${dateStr}`;
+                    const isChecked = habitLogs[key] === true;
                     if (isChecked) { totalChecks++; dailyCounts[index]++; }
                     totalPossible++;
 
                     const cell = document.createElement('div');
                     cell.style.cssText = `display: flex; justify-content: center; align-items: center; border-bottom: 1px solid var(--border); border-right: ${index === 6 ? 'none' : '1px solid var(--border)'}; padding: 8px; background: var(--bg-card);`;
-                    cell.innerHTML = `<div onclick="toggleCheck('${habit.id}', '${dateStr}')" style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid ${isChecked ? 'var(--accent-green)' : 'var(--text-muted)'}; background: ${isChecked ? 'var(--accent-green)' : 'transparent'}; color: ${isChecked ? '#000' : 'transparent'}; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fa-solid fa-check" style="font-size: 0.8rem;"></i></div>`;
+                    cell.innerHTML = `<div onclick="toggleCheck(${habit.id}, '${dateStr}')" style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid ${isChecked ? 'var(--accent-green)' : 'var(--text-muted)'}; background: ${isChecked ? 'var(--accent-green)' : 'transparent'}; color: ${isChecked ? '#000' : 'transparent'}; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fa-solid fa-check" style="font-size: 0.8rem;"></i></div>`;
                     grid.appendChild(cell);
                 });
             });
@@ -286,12 +320,8 @@
             }
         }
 
-        // Try to render immediately
-        try {
-            renderMatrix();
-        } catch (e) {
-            console.error("Matrix render failed:", e);
-        }
+        // Load habits on page load
+        loadHabits();
 
         // --- Charts Logic ---
         try {

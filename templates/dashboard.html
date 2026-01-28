@@ -537,11 +537,12 @@
             Globe.controls().enableZoom = false;
         }
 
-        // --- HABIT CHART SYNC (LocalStorage) ---
+        // --- HABIT CHART SYNC (Database) ---
         renderHabitChart();
     });
 
-    function renderHabitChart() {
+    // Make globally accessible so progress page can trigger updates
+    window.renderHabitChart = function () {
         const container = document.getElementById('dashboard-habit-chart');
         if (!container) return;
 
@@ -575,6 +576,6 @@
                 console.error(err);
                 container.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No data available</div>';
             });
-    }
+    };
 </script>
 {% endblock %}

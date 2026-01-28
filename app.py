@@ -2476,16 +2476,29 @@ def habits_add():
         db.session.add(habit)
         db.session.commit()
         flash('Habit added!', 'success')
+    
+    # Return JSON if requested via AJAX
+    if request.headers.get('Accept') == 'application/json' or request.is_json:
+        return jsonify({'status': 'success'})
     return redirect(url_for('dashboard'))
 
 @app.route('/habits/toggle/<int:habit_id>', methods=['POST'])
 @login_required
 def habits_toggle(habit_id):
     habit = Habit.query.filter_by(id=habit_id, user_id=current_user.id).first_or_404()
-    today = datetime.utcnow().date()
     
-    # Check if logged for today
-    log = HabitLog.query.filter_by(habit_id=habit.id, completed_date=today).first()
+    # Get date from form or use today
+    date_str = request.form.get('date')
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            target_date = datetime.utcnow().date()
+    else:
+        target_date = datetime.utcnow().date()
+    
+    # Check if logged for this date
+    log = HabitLog.query.filter_by(habit_id=habit.id, completed_date=target_date).first()
     
     if log:
         # Uncheck
@@ -2493,13 +2506,17 @@ def habits_toggle(habit_id):
         db.session.commit()
     else:
         # Check
-        log = HabitLog(habit_id=habit.id, completed_date=today)
+        log = HabitLog(habit_id=habit.id, completed_date=target_date)
         db.session.add(log)
         db.session.commit()
         
-        # Gamification: Small XP for habit
-        GamificationService.add_xp(current_user.id, 'habit', 5)
-
+        # Gamification: Small XP for habit (only for today)
+        if target_date == datetime.utcnow().date():
+            GamificationService.add_xp(current_user.id, 'habit', 5)
+    
+    # Return JSON if requested via AJAX
+    if request.headers.get('Accept') == 'application/json' or request.is_json:
+        return jsonify({'status': 'success'})
     return redirect(url_for('dashboard'))
 
 @app.route('/habits/delete/<int:habit_id>', methods=['GET'])
@@ -2511,7 +2528,55 @@ def habits_delete(habit_id):
     db.session.delete(habit)
     db.session.commit()
     db.session.commit()
+    # Return JSON if requested via AJAX
+    if request.headers.get('Accept') == 'application/json' or request.is_json:
+        return jsonify({'status': 'success'})
     return redirect(url_for('dashboard'))
+
+@app.route('/api/habits/list', methods=['GET'])
+@login_required
+def api_habits_list():
+    """Return all habits for the current user with their logs for the current week."""
+    # Get all user habits
+    habits = Habit.query.filter_by(user_id=current_user.id).all()
+    
+    # Get current week dates
+    today = datetime.now()
+    start_of_week = today - timedelta(days=today.weekday())  # Monday
+    
+    # Fetch all logs for this week
+    logs = {}
+    for i in range(7):
+        date_obj = start_of_week + timedelta(days=i)
+        date_only = date_obj.date()
+        
+        # Get all logs for this date
+        day_logs = (
+            HabitLog.query
+            .join(Habit)
+            .filter(Habit.user_id == current_user.id)
+            .filter(HabitLog.completed_date == date_only)
+            .all()
+        )
+        
+        for log in day_logs:
+            key = f"{log.habit_id}_{date_only.isoformat()}"
+            logs[key] = True
+    
+    # Format habits for frontend
+    habits_data = [
+        {
+            'id': h.id,
+            'title': h.title,
+            'created_at': h.created_at.isoformat() if h.created_at else None
+        }
+        for h in habits
+    ]
+    
+    return jsonify({
+        'habits': habits_data,
+        'logs': logs
+    })
 
 @app.route('/api/habits/stats', methods=['GET'])
 @login_required
