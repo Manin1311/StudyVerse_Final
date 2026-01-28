@@ -2745,11 +2745,35 @@ def api_check_event_warnings():
         is_notified=False
     ).all()
     
+    # Current time as datetime for comparison
+    current_dt = datetime.strptime(f"{current_date} {current_time}", "%Y-%m-%d %H:%M")
+    
     warning_event = None
     for e in events:
-        if e.time == current_time:
-            warning_event = e
-            break
+        try:
+            # Handle user input variations like "9:30" (len 4) vs "12:30" (len 5)
+            # and ensure comparison works even if polled a bit late
+            if not e.time: continue
+            
+            clean_time = e.time.strip()
+            # Normalize "9:30" to "09:30" for parsing
+            if len(clean_time) == 4 and clean_time[1] == ':':
+                 clean_time = '0' + clean_time
+            
+            event_dt = datetime.strptime(f"{current_date} {clean_time}", "%Y-%m-%d %H:%M")
+            
+            # Minute difference: calculated as (Now - Event)
+            # Positive means event happened in the past.
+            diff_mins = (current_dt - event_dt).total_seconds() / 60
+            
+            # Show alert if event is happening NOW or happened within last 30 mins
+            # (Allows for late logins or missed polls)
+            if 0 <= diff_mins <= 30:
+                warning_event = e
+                break
+        except Exception:
+            # Skip invalid time formats
+            continue
             
     if warning_event:
         return jsonify({
