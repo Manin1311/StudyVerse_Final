@@ -5866,3 +5866,66 @@ body.sidebar-collapsed .nav-item i {
     color: #9ca3af !important;
     /* Ensure secondary text is visible (gray-400) */
 }
+
+
+/* GLOBAL VISIBILITY OVERRIDES */
+.text-muted,
+.text-secondary {
+    color: var(--text-muted) !important;
+}
+
+.text-primary {
+    color: var(--text-primary) !important;
+}
+
+/* Ensure headings in dark cards are visible */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    color: var(--text-primary) !important;
+}
+
+/* Specific fix for badge descriptions and labels */
+.badge-label,
+.card-title,
+.section-title {
+    color: var(--text-primary) !important;
+}
+
+/* Fix active row text in leaderboard */
+tr[style*="background: rgba"] {
+    color: #ffffff !important;
+}
+
+tr[style*="background: rgba"] .text-secondary,
+tr[style*="background: rgba"] i {
+    color: #ffffff !important;
+}
+
+/* Fix Input placeholders */
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 1;
+}
+
+/* Fix small labels */
+small,
+.small {
+    color: var(--text-muted) !important;
+}
+
+/* Fix for Course Card titles specifically */
+.course-card-title,
+.topic-title {
+    color: var(--text-primary) !important;
+}
