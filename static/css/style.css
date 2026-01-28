@@ -5211,11 +5211,10 @@ body.sidebar-collapsed .nav-item i {
     border: 1px solid #222;
     border-radius: 24px;
     padding: 24px;
-    height: 400px;
+    min-height: 450px;
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 24px;
-    overflow: hidden;
     position: relative;
 }
 
@@ -5370,10 +5369,9 @@ body.sidebar-collapsed .nav-item i {
     border: 1px solid #222;
     border-radius: 24px;
     padding: 24px;
-    height: 400px;
+    min-height: 450px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .active-tasks-header {

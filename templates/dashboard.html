@@ -260,8 +260,7 @@
                     <i class="fa-regular fa-clock"></i> Timeline // Jan 25
                 </div>
 
-                <div id="eventListContainer"
-                    style="flex: 1; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; max-height: 300px;">
+                <div id="eventListContainer" style="flex: 1; overflow-y: auto; padding-right: 5px; max-height: 250px;">
                     <div class="event-placeholder" id="eventPlaceholder">
                         <i class="fa-regular fa-clock"></i>
                         <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
@@ -269,7 +268,7 @@
                     </div>
                 </div>
 
-                <button class="btn-init-event" onclick="openCreateEventModal()">
+                <button class="btn-init-event" onclick="openCreateEventModal()" style="margin-top: 20px;">
                     <i class="fa-solid fa-plus"></i> Initialize Event
                 </button>
             </div>
@@ -283,14 +282,38 @@
                     <i class="fa-solid fa-caret-right"></i> This Week
                 </div>
                 <ul class="todos-list-minimal">
-                    {% for todo in upcoming_todos[:5] %}
-                    <li>{{ todo.task }}</li>
-                    {% else %}
+                    {% for todo in upcoming_todos[:3] %}
+                    <li>{{ todo.title }}</li>
+                    {% endfor %}
+
+                    {% for parent in completed_parent_tasks[:2] %}
+                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                        {{ parent }}
+                    </li>
+                    {% endfor %}
+
+                    {% if not upcoming_todos and not completed_parent_tasks %}
                     <li>Digital Electronics Project</li>
                     <li>Math Assignment 3</li>
                     <li>Physics Lab Report</li>
+                    {% endif %}
+                </ul>
+
+                {% if completed_events_week %}
+                <div
+                    style="font-size: 0.9rem; margin-top: 20px; margin-bottom: 12px; color: var(--accent-green); font-weight: 700;">
+                    <i class="fa-solid fa-check-double"></i> Completed (Events)
+                </div>
+                <ul class="todos-list-minimal">
+                    {% for event in completed_events_week[:3] %}
+                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                        {{ event.title }}
+                    </li>
                     {% endfor %}
                 </ul>
+                {% endif %}
             </div>
 
             <div class="card-image-small">
@@ -518,6 +541,7 @@
             opacity: 0;
         }
     }
+
     #eventListContainer::-webkit-scrollbar {
         width: 4px;
     }
@@ -548,7 +572,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard_calendar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard_calendar.js') }}?v={{ range(1, 10000) | random }}"></script>
 <script>
     function updateFlipClock() {
         const now = new Date();

@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentMonth = today.getMonth(); // 0-11
     let currentYear = today.getFullYear();
     let selectedDate = formatDate(today); // "YYYY-MM-DD"
+    let todaysEventsQueue = []; // Local cache for precise timing
 
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -90,6 +91,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(data => {
                 const events = data.events;
+                // Update local queue for precise triggering
+                if (dateStr === formatDate(new Date())) {
+                    const now = new Date();
+                    const nowStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+                    todaysEventsQueue = events.map(e => {
+                        // If current time is past or equal to event time, mark as notified 
+                        // so refresh doesn't trigger it.
+                        if (e.time <= nowStr) {
+                            e.is_notified = true;
+                        }
+                        return e;
+                    }).filter(e => !e.is_notified);
+                }
                 if (events.length === 0) {
                     eventListContainer.innerHTML = `
                         <div class="event-placeholder" id="eventPlaceholder">
@@ -211,13 +226,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 4. Event Reminder Popup Check ---
     function checkReminders() {
-        fetch('/api/events/check-warnings')
-            .then(r => r.json())
-            .then(data => {
-                if (data.has_warning && data.event) {
-                    showEventPopup(data.event);
-                }
-            });
+        // 1. Check local queue first for second-level precision (19:02:00)
+        const now = new Date();
+        const currentTimeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+        const triggerableIndex = todaysEventsQueue.findIndex(e => e.time === currentTimeStr && !e.is_notified);
+
+        if (triggerableIndex !== -1) {
+            const event = todaysEventsQueue[triggerableIndex];
+            event.is_notified = true; // Mark locally so it doesn't fire multiple times in same minute
+            showEventPopup(event);
+            return; // Exit to avoid double fire if server check also returns it
+        }
+
+        // 2. Fallback: Periodic server check for missed events or sync
+        // We only do the server hit every 10 iterations to save bandwidth
+        if (window._reminderTick === undefined) window._reminderTick = 0;
+        window._reminderTick++;
+
+        if (window._reminderTick % 10 === 0) {
+            fetch('/api/events/check-warnings')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.has_warning && data.event) {
+                        // Ensure we haven't already shown this locally
+                        if (!document.getElementById('event-popup-' + data.event.id)) {
+                            showEventPopup(data.event);
+                        }
+                    }
+                });
+        }
     }
 
     function showEventPopup(event) {
@@ -232,64 +270,57 @@ document.addEventListener('DOMContentLoaded', () => {
             audio.play().catch(e => console.log("Audio play blocked"));
         } catch (e) { }
 
-        // Format time for display (24h to 12h)
-        let displayTime = event.time;
-        try {
-            if (event.time && event.time.includes(':')) {
-                let [h, m] = event.time.split(':');
-                let hh = parseInt(h);
-                let ampm = hh >= 12 ? 'PM' : 'AM';
-                hh = hh % 12 || 12;
-                displayTime = `${hh}:${m} ${ampm}`;
-            }
-        } catch (e) { }
-
         const modal = document.createElement('div');
         modal.id = modalId;
-        modal.className = 'modal-overlay';
+        modal.style.position = 'fixed';
+        modal.style.top = '30px';
+        modal.style.left = '0';
+        modal.style.right = '0';
+        modal.style.zIndex = '100000';
         modal.style.display = 'flex';
-        modal.style.background = 'rgba(0,0,0,0.85)';
-        modal.style.zIndex = '3000';
-        modal.style.backdropFilter = 'blur(10px)';
+        modal.style.justifyContent = 'center';
+        modal.style.pointerEvents = 'none';
 
         modal.innerHTML = `
-            <div class="modal-content" style="background: linear-gradient(135deg, #111 0%, #0a0a0a 100%); border: 1px solid rgba(74, 222, 128, 0.3); padding: 40px; border-radius: 24px; width: 420px; text-align: center; position: relative; box-shadow: 0 0 60px rgba(74, 222, 128, 0.15); animation: popupReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div class="alert shadow-lg d-flex align-items-center" role="alert" 
+                 style="width: 95%; max-width: 650px; border-radius: 16px; padding: 18px 24px; pointer-events: auto; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: #ffffff !important; border: 2px solid #198754 !important; border-left: 10px solid #198754 !important; color: #333 !important;">
                 
-                <div style="background: linear-gradient(45deg, rgba(74, 222, 128, 0.1), rgba(74, 222, 128, 0.05)); width: 80px; height: 80px; border-radius: 50%; border: 1px solid rgba(74, 222, 128, 0.5); display: grid; place-items: center; margin: 0 auto 24px; box-shadow: 0 0 20px rgba(74, 222, 128, 0.1); animation: pulseGreen 2s infinite;">
-                    <i class="fa-solid fa-bolt-lightning" style="font-size: 2rem; color: var(--accent-green);"></i>
-                </div>
-
-                <div style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; color: var(--accent-green); font-weight: 800; margin-bottom: 12px;">Active Event Arrived</div>
-                
-                <h2 style="color: #fff; font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 15px; font-weight: 800; line-height: 1.2;">${event.title}</h2>
-                
-                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <i class="fa-regular fa-clock" style="color: var(--accent-green);"></i>
-                    <span style="color: #fff; font-weight: 600; font-size: 0.9rem;">${displayTime || 'All Day'}</span>
-                </div>
-
-                <div style="color: var(--text-secondary); margin-bottom: 30px; font-size: 1rem; line-height: 1.6; min-height: 50px;">
-                    ${event.description || 'It\'s time for your scheduled event!'}
+                <!-- Fixed Logo Section -->
+                <div class="d-flex align-items-center justify-content-center me-3 flex-shrink-0" 
+                     style="width: 45px; height: 45px; background-color: #198754 !important; border-radius: 50%; box-shadow: 0 4px 10px rgba(25, 135, 84, 0.3);">
+                    <i class="fa-solid fa-graduation-cap" style="font-size: 1.4rem; color: #ffffff !important;"></i>
                 </div>
                 
-                <button id="btn-dismiss-${event.id}" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 14px; background: var(--accent-green); color: #000; font-weight: 800; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.2); transition: all 0.3s ease;">
-                    Dismis & Acknowledge
-                </button>
-
+                <!-- Content Section -->
+                <div class="flex-grow-1 overflow-hidden" style="margin-right: 15px;">
+                    <div style="font-size: 0.85rem; font-weight: 800; color: #198754 !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+                        Event Arrived
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #000000 !important; line-height: 1.2;" class="text-truncate">
+                        ${event.title}
+                    </div>
+                    <div style="font-size: 0.95rem; color: #555555 !important; margin-top: 4px; font-weight: 500;" class="text-truncate">
+                        ${event.description || "Time to start your scheduled activity!"}
+                    </div>
+                </div>
+                
+                <!-- Action Section -->
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" id="btn-dismiss-${event.id}" class="btn" 
+                            style="background-color: #f8f9fa !important; border: 1px solid #dee2e6 !important; color: #333 !important; font-weight: 600; padding: 8px 16px; border-radius: 10px; font-size: 0.9rem; transition: all 0.2s;">
+                        Dismiss
+                    </button>
+                    <button type="button" id="btn-close-icon-${event.id}" class="btn-close" aria-label="Close" style="filter: brightness(0); font-size: 0.8rem;"></button>
+                </div>
+                
                 <style>
-                    @keyframes popupReveal {
-                        from { opacity: 0; transform: scale(0.9) translateY(20px); }
-                        to { opacity: 1; transform: scale(1) translateY(0); }
-                    }
-                    @keyframes pulseGreen {
-                        0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
-                        70% { box-shadow: 0 0 0 20px rgba(74, 222, 128, 0); }
-                        100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+                    @keyframes slideDown {
+                        from { transform: translateY(-120px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
                     }
                     #btn-dismiss-${event.id}:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 20px rgba(74, 222, 128, 0.3);
-                        filter: brightness(1.1);
+                        background-color: #e9ecef !important;
+                        transform: translateY(-1px);
                     }
                 </style>
             </div>
@@ -297,24 +328,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.appendChild(modal);
 
+        // Attempt Browser Notification
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`🔔 ${event.title}`, {
+                body: event.description || "Event starting now!",
+                icon: "/static/img/logo.png"
+            });
+        }
+
+        // Trigger confetti
+        if (window.triggerConfetti) {
+            window.triggerConfetti();
+        }
+
         // Dismiss Logic
-        document.getElementById(`btn-dismiss-${event.id}`).addEventListener('click', () => {
+        const dismissHandler = () => {
             fetch(`/api/events/${event.id}/dismiss`, { method: 'POST' })
                 .then(() => {
                     modal.style.opacity = '0';
-                    modal.style.transition = 'opacity 0.3s ease';
+                    modal.style.transform = 'translateY(-20px)';
+                    modal.style.transition = 'all 0.3s ease';
                     setTimeout(() => modal.remove(), 300);
-                });
-        });
+                })
+                .catch(() => modal.remove());
+        };
+
+        document.getElementById(`btn-dismiss-${event.id}`).addEventListener('click', dismissHandler);
+        document.getElementById(`btn-close-icon-${event.id}`).addEventListener('click', dismissHandler);
+
+        // Auto-dismiss after 45 seconds
+        setTimeout(() => {
+            if (document.getElementById(modalId)) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'translateY(-20px)';
+                modal.style.transition = 'all 0.5s ease';
+                setTimeout(() => modal.remove(), 500);
+            }
+        }, 45000);
     }
 
     // --- 5. Initializers ---
     renderCalendar(currentMonth, currentYear);
     updateTimelineForDate(selectedDate); // Load today's events initially
-    checkReminders(); // Check for warnings on load
+    // checkReminders(); // Removed: No alert on refresh, wait for scheduled time transition
 
-    // Poll for reminders every 15 seconds
-    setInterval(checkReminders, 15000);
+    // Poll for reminders every 1 second for precision (19:02:00)
+    setInterval(checkReminders, 1000);
 
     // Listeners
     prevBtn.addEventListener('click', () => {
