@@ -444,7 +444,7 @@ class Event(db.Model):
     description = db.Column(db.String(500))
     date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD
     time = db.Column(db.String(10)) # HH:MM 24h format
-    is_dismissed = db.Column(db.Boolean, default=False)
+    is_notified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatMessage(db.Model):
@@ -505,15 +505,7 @@ class SyllabusDocument(db.Model):
     extracted_text = db.Column(db.Text, nullable=True) # AI Context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    date = db.Column(db.String(50), nullable=False) # Format: YYYY-MM-DD
-    time = db.Column(db.String(50), nullable=True)
-    is_notified = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 # ------------------------------
 # Data Structures (DS) Utilities
@@ -2750,7 +2742,7 @@ def api_check_event_warnings():
     events = Event.query.filter_by(
         user_id=current_user.id, 
         date=current_date, 
-        is_dismissed=False
+        is_notified=False
     ).all()
     
     warning_event = None
@@ -2776,7 +2768,7 @@ def api_check_event_warnings():
 @login_required
 def api_dismiss_event(event_id):
     event = Event.query.filter_by(id=event_id, user_id=current_user.id).first_or_404()
-    event.is_dismissed = True
+    event.is_notified = True
     db.session.commit()
     return jsonify({'status': 'success'})
 
