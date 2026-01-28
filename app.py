@@ -251,14 +251,14 @@ class GamificationService:
     """Central logic for XP, Levels, Ranks, and Badges."""
     
     RANKS = {
-        (1, 5): ('Bronze', 'fa-shield-halved', '#CD7F32'),
-        (6, 10): ('Silver', 'fa-shield-halved', '#C0C0C0'),
-        (11, 20): ('Gold', 'fa-shield-halved', '#FFD700'),
-        (21, 35): ('Platinum', 'fa-gem', '#E5E4E2'),
-        (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),
-        (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),
-        (76, 100): ('Master', 'fa-crown', '#ff0000'),
-        (101, 9999): ('Grandmaster', 'fa-dragon', '#800080')
+        (1, 5): ('Bronze', 'fa-shield-halved', '#fdba74'),
+        (6, 10): ('Silver', 'fa-shield-halved', '#e2e8f0'),
+        (11, 20): ('Gold', 'fa-shield-halved', '#fde047'),
+        (21, 35): ('Platinum', 'fa-gem', '#f4f4f5'),
+        (36, 50): ('Diamond', 'fa-gem', '#67e8f9'),
+        (51, 75): ('Heroic', 'fa-crown', '#f87171'),
+        (76, 100): ('Master', 'fa-crown', '#ef4444'),
+        (101, 9999): ('Grandmaster', 'fa-dragon', '#d8b4fe')
     }
 
     @staticmethod

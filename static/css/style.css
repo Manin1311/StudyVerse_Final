@@ -5823,5 +5823,28 @@ body.sidebar-collapsed .nav-item i {
 
 .flip-clock {
     gap: 8px;
-    /* Reduced gap */
+    /* Reduced gap */        
+}
+
+/* Chat High Contrast Fixes */
+.ai-msg .msg-bubble {
+    background-color: #262626 !important; /* Lighter dark */
+    color: #f3f4f6 !important; /* White text */
+    border: 1px solid var(--border);
+}
+
+.user .msg-bubble {
+    color: #000000 !important; /* Black text on accent color */
+    font-weight: 500;
+}
+
+/* Leaderboard & Stats Visibility */
+.stat-pill, .level-badge {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    font-weight: 700;
+}
+
+.friend-item .text-secondary {
+    color: #9ca3af !important; /* Ensure secondary text is visible (gray-400) */
 }
