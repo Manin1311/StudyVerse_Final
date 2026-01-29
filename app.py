@@ -42,10 +42,13 @@ except ImportError:
 
 
 from werkzeug.middleware.proxy_fix import ProxyFix
+from whitenoise import WhiteNoise
 
 app = Flask(__name__)
 # Fix for Render/Heroku (Reverse Proxy) - Critical for OAuth and HTTPS
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+# Serve static files directly efficiently
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 # Production: Must use DATABASE_URL from environment (e.g. Render)
