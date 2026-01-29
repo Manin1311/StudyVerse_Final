@@ -6,27 +6,33 @@
 <style>
     /* Battle Specific Styles */
     :root {
-        --battle-bg: #0f0f0f;
-        --battle-card-bg: #1a1a1a;
-        --battle-border: #333;
+        --battle-bg: #0b0b0e;
+        --battle-card-bg: #13131a;
+        --battle-border: rgba(255, 255, 255, 0.08);
         --battle-accent: #3b82f6;
-        /* Blue-ish */
-        --battle-text: #e5e5e5;
-        --battle-text-dim: #a3a3a3;
+        --battle-text: #f1f5f9;
+        --battle-text-dim: #94a3b8;
     }
 
     body {
         background-color: var(--battle-bg);
         color: var(--battle-text);
-        overflow: hidden;
-        /* Prevent scrolling in battle mode */
+    }
+
+    /* Fixed height only on desktop */
+    @media (min-width: 1025px) {
+        body {
+            overflow: hidden;
+        }
+
+        #battle-wrapper {
+            height: calc(100vh - 80px);
+        }
     }
 
     #battle-wrapper {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 80px);
-        /* Adjust based on navbar height */
         max-width: 1400px;
         margin: 0 auto;
         padding: 1rem;
@@ -36,63 +42,207 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.75rem 1.5rem;
-        background: var(--battle-card-bg);
+        padding: 1rem 1.5rem;
+        background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--battle-border);
-        border-radius: 8px;
+        border-radius: 12px;
         margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .header-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
     }
 
     .battle-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr;
-        /* Editor+Problem vs Chat */
-        gap: 1rem;
+        grid-template-columns: 1.8fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        grid-template-areas:
+            "editor problem"
+            "editor chat";
+        gap: 1.25rem;
         flex: 1;
         min-height: 0;
-        /* Important for grid overflow */
+        height: calc(100vh - 180px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .panel-col {
+    .battle-grid.focus-mode {
+        grid-template-columns: 1fr 0fr;
+        gap: 0;
+    }
+
+    .battle-grid.focus-mode .panel-problem-col,
+    .battle-grid.focus-mode .panel-chat-col {
+        display: none !important;
+    }
+
+    .panel-editor-col {
+        grid-area: editor;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
-        min-height: 0;
+        height: 100%;
+    }
+
+    .panel-problem-col {
+        grid-area: problem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-chat-col {
+        grid-area: chat;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .battle-card {
         background: var(--battle-card-bg);
         border: 1px solid var(--battle-border);
-        border-radius: 8px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        height: 100%;
+        transition: all 0.3s ease;
     }
 
-    .card-header {
-        padding: 0.75rem 1rem;
-        background: rgba(255, 255, 255, 0.02);
-        border-bottom: 1px solid var(--battle-border);
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--battle-text-dim);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .battle-card:hover {
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+
+    @media (max-width: 1024px) {
+        .battle-grid {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: auto auto auto;
+            grid-template-areas:
+                "problem"
+                "editor"
+                "chat";
+            overflow-y: auto;
+            height: auto;
+        }
+
+        #battle-wrapper {
+            height: auto;
+            overflow-y: auto;
+        }
+
+        .battle-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        #timer-display {
+            width: auto;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .battle-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem;
+            height: auto;
+        }
+
+        #battle-wrapper {
+            padding-bottom: 5rem;
+        }
+
+        .battle-header {
+            padding: 1.25rem;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .header-left,
+        .header-center,
+        .header-right {
+            width: 100%;
+            align-items: center;
+        }
+
+        .panel-editor-col {
+            order: 2;
+        }
+
+        .panel-problem-col {
+            order: 1;
+        }
+
+        .panel-chat-col {
+            order: 3;
+        }
+
+        .battle-card {
+            height: auto !important;
+            min-height: 300px;
+        }
+
+        #code-editor {
+            height: 400px;
+        }
+
+        #chat-log {
+            height: 350px;
+        }
     }
 
     /* Editor */
     #code-editor {
         flex: 1;
-        background: #141414;
-        color: #d4d4d4;
+        background: #0d0d12;
+        color: #e2e8f0;
         border: none;
-        padding: 1rem;
+        padding: 1.5rem;
         font-family: 'Fira Code', monospace;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        font-size: 1.05rem;
+        line-height: 1.7;
         resize: none;
         outline: none;
+        overflow: auto;
+        white-space: pre;
+        tab-size: 4;
+    }
+
+    #code-editor::placeholder {
+        color: rgba(255, 255, 255, 0.2);
+    }
+
+    #code-editor::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #code-editor::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    #code-editor::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    #code-editor::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     /* Problem Panel */
@@ -166,12 +316,90 @@
     }
 
     .entry-box {
-        background: var(--battle-card-bg);
-        border: 1px solid var(--battle-border);
-        padding: 3rem;
-        border-radius: 12px;
-        width: 100%;
-        max-width: 500px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 480px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease;
+    }
+
+    .entry-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, #fff 0%, #a3a3a3 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .join-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 1rem;
+    }
+
+    .join-input {
+        flex: 1;
+        padding: 0.85rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #444;
+        border-radius: 10px;
+        color: white;
+        text-transform: uppercase;
+        text-align: center;
+        font-family: monospace;
+        letter-spacing: 2px;
+        font-weight: 700;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .join-input:focus {
+        border-color: var(--battle-accent);
+    }
+
+    @media (max-width: 768px) {
+        .entry-box {
+            padding: 2.5rem 1.5rem;
+        }
+
+        .entry-title {
+            font-size: 2rem;
+        }
+
+        .join-group {
+            flex-direction: column;
+        }
+
+        .join-btn-battle {
+            width: 100%;
+        }
+    }
+
+    /* Status Indicator */
+    #battle-debug {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(74, 222, 128, 0.3) !important;
+        color: #4ade80 !important;
+        padding: 8px 16px !important;
+        font-family: 'Fira Code', monospace !important;
+        font-size: 11px !important;
+        border-radius: 30px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     }
 
     /* Modal */
@@ -251,19 +479,21 @@
     <!-- 1. ENTRY SCREEN -->
     <div id="screen-entry">
         <div class="entry-box">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⚔️</div>
-            <h1 style="margin-bottom: 0.5rem; font-family: var(--font-heading);">BYTE BATTLE</h1>
-            <p style="color: var(--battle-text-dim); margin-bottom: 2rem;">Host or join a live coding duel.</p>
+            <div style="font-size: 4rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));">
+                ⚔️</div>
+            <h1 class="entry-title">BYTE BATTLE</h1>
+            <p style="color: var(--battle-text-dim); margin-bottom: 2.5rem; font-size: 1.1rem;">Host or join a live
+                coding duel.</p>
 
             <button id="btn-create" class="btn-battle btn-primary"
-                style="width: 100%; font-size: 1.1rem; margin-bottom: 1.5rem;">
+                style="width: 100%; font-size: 1.2rem; margin-bottom: 2rem; border-radius: 12px; height: 56px;">
                 Create Room
             </button>
 
-            <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="join-code" placeholder="Enter Room Code"
-                    style="flex: 1; padding: 0.75rem; background: #222; border: 1px solid #444; border-radius: 6px; color: white; text-transform: uppercase; text-align: center;">
-                <button id="btn-join" class="btn-battle btn-secondary">Join</button>
+            <div class="join-group">
+                <input type="text" id="join-code" placeholder="ENTER ROOM CODE" class="join-input">
+                <button id="btn-join" class="btn-battle btn-secondary join-btn-battle"
+                    style="border-radius: 10px; height: 50px;">Join</button>
             </div>
         </div>
     </div>
@@ -273,62 +503,89 @@
 
         <!-- Header -->
         <div class="battle-header">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="font-weight: 700; font-size: 1.2rem;">⚔️ BYTE BATTLE</span>
-                <span style="color: var(--battle-text-dim); font-family: monospace;">Room: <span
-                        id="room-display">---</span></span>
+            <div class="header-left">
+                <span style="font-weight: 800; font-size: 1.25rem; color: #fff;">⚔️ BYTE BATTLE</span>
+                <span style="color: var(--battle-text-dim); font-family: monospace; font-size: 0.85rem;">Room: <span
+                        id="room-display" style="color: var(--battle-accent); font-weight: 700;">---</span></span>
             </div>
-            <div id="timer-display"
-                style="font-family: monospace; font-size: 1.5rem; font-weight: 700; width: 100px; text-align: center;">
-                --:--</div>
-            <div id="status-display" class="status-badge">WAITING</div>
+            <div class="header-center">
+                <div
+                    style="font-size: 0.7rem; color: var(--battle-text-dim); text-transform: uppercase; letter-spacing: 1px;">
+                    Estimated Time</div>
+                <div id="timer-display"
+                    style="font-family: 'Fira Code', monospace; font-size: 1.75rem; font-weight: 800; color: #fff;">
+                    --:--</div>
+            </div>
+            <div class="header-right">
+                <div id="status-display" class="status-badge">WAITING</div>
+            </div>
         </div>
 
         <div class="battle-grid">
 
             <!-- LEFT COLUMN -->
-            <div class="panel-col">
+            <div class="panel-col panel-editor-col">
                 <!-- Code Editor -->
-                <div class="battle-card" style="flex: 2;">
-                    <div class="card-header">
-                        <span>🧑‍💻 CODE EDITOR (Paste your solution here)</span>
-                        <span id="lang-display" style="color: var(--battle-accent);">Python</span>
+                <div class="battle-card" style="flex: 1;">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-code"></i> CODE
+                                EDITOR</span>
+                            <span id="lang-display"
+                                style="color: var(--battle-accent); font-weight: 800; font-size: 0.85rem; background: rgba(59, 130, 246, 0.1); padding: 2px 8px; border-radius: 4px;">Python</span>
+                        </div>
+                        <button onclick="toggleEditorFocus()" class="btn-battle"
+                            style="background: rgba(255,255,255,0.05); padding: 4px 10px; font-size: 0.8rem; border: 1px solid var(--battle-border);">
+                            <i class="fa-solid fa-expand"></i> <span id="focus-btn-text">Full Width</span>
+                        </button>
                     </div>
                     <textarea id="code-editor" placeholder="# Paste or write your code here..."></textarea>
                 </div>
+            </div>
 
-                <!-- Problem Statement -->
-                <div class="battle-card" style="flex: 1; min-height: 200px;">
+            <!-- PROBLEM COLUMN -->
+            <div class="panel-col panel-problem-col">
+                <div class="battle-card" style="flex: 1;">
                     <div class="card-header">
-                        <span>📜 PROBLEM STATEMENT</span>
+                        <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-file-lines"></i> PROBLEM
+                            STATEMENT</span>
                     </div>
                     <div class="problem-content">
-                        <h3 id="problem-title" style="margin-bottom: 0.5rem; color: white;">Waiting for host...</h3>
-                        <p id="problem-desc" style="color: var(--battle-text-dim); line-height: 1.6;">
+                        <h3 id="problem-title" style="margin-bottom: 0.75rem; color: #fff; font-size: 1.25rem;">Waiting
+                            for host...</h3>
+                        <p id="problem-desc"
+                            style="color: var(--battle-text-dim); line-height: 1.7; font-size: 0.95rem;">
                             The battle has not started yet.
                         </p>
                         <div id="problem-details" class="hidden"
-                            style="margin-top: 1rem; background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.9rem;">
-                            <div><strong>Input:</strong> <span id="prob-in"></span></div>
-                            <div style="margin-top: 0.5rem;"><strong>Output:</strong> <span id="prob-out"></span></div>
+                            style="margin-top: 1.25rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); font-family: 'Fira Code', monospace; font-size: 0.85rem;">
+                            <div style="margin-bottom: 8px;"><strong
+                                    style="color: var(--battle-accent);">Input:</strong> <span id="prob-in"
+                                    style="color: #fff;"></span></div>
+                            <div><strong style="color: var(--battle-accent);">Output:</strong> <span id="prob-out"
+                                    style="color: #fff;"></span></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT COLUMN: CHAT -->
-            <div class="panel-col">
+            <div class="panel-col panel-chat-col">
                 <div class="battle-card" style="height: 100%;">
                     <div class="card-header">
-                        <span>🤖 BYTEBOT (BATTLE CHAT)</span>
+                        <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-robot"></i> BYTEBOT
+                            (CHAT)</span>
                     </div>
                     <div id="chat-log">
                         <!-- Messages -->
                     </div>
-                    <div style="padding: 1rem; border-top: 1px solid var(--battle-border); background: #1a1a1a;">
+                    <div
+                        style="padding: 1.25rem; border-top: 1px solid var(--battle-border); background: rgba(0,0,0,0.2); flex-shrink: 0;">
                         <input type="text" id="chat-input" placeholder="Type a message..."
-                            style="width: 100%; padding: 0.75rem; background: #262626; border: 1px solid #444; border-radius: 6px; color: white; margin-bottom: 0.75rem;">
-                        <button id="btn-submit" class="btn-battle btn-primary" style="width: 100%;">
+                            style="width: 100%; padding: 0.95rem; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; color: white; margin-bottom: 0.75rem; outline: none; transition: border-color 0.2s;">
+                        <button id="btn-submit" class="btn-battle btn-primary"
+                            style="width: 100%; height: 50px; font-weight: 800; font-size: 1rem; border-radius: 10px; text-transform: uppercase; letter-spacing: 1px;">
                             SUBMIT CODE
                         </button>
                     </div>
@@ -383,4 +640,49 @@
 {% block scripts %}
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/battle.js') }}"></script>
+<script>
+    const editor = document.getElementById('code-editor');
+    const grid = document.querySelector('.battle-grid');
+    const focusBtnText = document.getElementById('focus-btn-text');
+
+    function toggleEditorFocus() {
+        if (!grid) return;
+        grid.classList.toggle('focus-mode');
+        const isFocus = grid.classList.contains('focus-mode');
+        if (focusBtnText) {
+            focusBtnText.textContent = isFocus ? 'Restore' : 'Full Width';
+        }
+
+        // Re-trigger resize
+        setTimeout(() => {
+            if (editor) editor.dispatchEvent(new Event('input'));
+        }, 400);
+    }
+
+    if (editor) {
+        editor.addEventListener('input', function () {
+            // Adaptive Height
+            this.style.height = 'auto';
+            const scrollHeight = this.scrollHeight;
+            const containerHeight = this.parentElement.clientHeight - 60;
+            this.style.height = (scrollHeight > containerHeight ? scrollHeight : containerHeight) + 'px';
+        });
+
+        // Initial resize
+        setTimeout(() => {
+            editor.dispatchEvent(new Event('input'));
+        }, 500);
+
+        // Tab support
+        editor.addEventListener('keydown', function (e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    }
+</script>
 {% endblock %}

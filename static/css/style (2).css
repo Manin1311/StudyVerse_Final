@@ -5,26 +5,19 @@
     --bg-main: #0c0c0c;
     --bg-card: #181818;
     --bg-sidebar: #121212;
-    --bg-hover: rgba(255, 255, 255, 0.08);
-    /* Increased visibility */
-    --bg-input: rgba(255, 255, 255, 0.08);
-    /* New Variable for inputs */
+    --bg-hover: rgba(255, 255, 255, 0.05);
 
     --accent-green: #4ade80;
     --accent-green-rgb: 74, 222, 128;
-    --accent-green-dim: rgba(74, 222, 128, 0.15);
+    --accent-green-dim: rgba(74, 222, 128, 0.1);
     --accent-green-bright: #22c55e;
 
-    /* High Contrast Text */
     --text-primary: #ffffff;
-    --text-secondary: #e4e4e7;
-    /* much brighter gray */
-    --text-muted: #a1a1aa;
-    /* visible gray */
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
 
-    --border: #3f3f46;
-    /* lighter border */
-    --border-light: #52525b;
+    --border: #27272a;
+    --border-light: #3f3f46;
 
     --font-heading: 'DM Serif Display', serif;
     --font-body: 'Inter', sans-serif;
@@ -38,7 +31,7 @@
     --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.7);
     --shadow-glow: 0 0 20px rgba(74, 222, 128, 0.3);
 
-    /* Legacy Variable Support */
+    /* Legacy Variable Support for existing components */
     --background: var(--bg-main);
     --foreground: var(--text-primary);
     --card: var(--bg-card);
@@ -58,27 +51,21 @@
 [data-theme="light"] {
     --bg-main: #f8fafc;
     --bg-card: #ffffff;
-    --bg-sidebar: #f1f5f9;
-    --bg-hover: rgba(0, 0, 0, 0.08);
-    --bg-input: #f1f5f9;
-    /* Solid formatting for inputs in light mode */
+    --bg-sidebar: #ffffff;
+    --bg-hover: rgba(0, 0, 0, 0.05);
 
-    --accent-green: #15803d;
-    /* Darker green for white bg */
-    --accent-green-rgb: 21, 128, 61;
-    --accent-green-dim: rgba(22, 163, 74, 0.15);
-    --accent-green-bright: #166534;
+    --accent-green: #16a34a;
+    --accent-green-rgb: 22, 163, 74;
+    --accent-green-dim: rgba(22, 163, 74, 0.1);
+    --accent-green-bright: #15803d;
 
-    /* High Contrast Text Light Mode */
-    --text-primary: #020617;
-    /* Almost black */
-    --text-secondary: #334155;
-    /* Dark gray */
-    --text-muted: #475569;
-    /* Visible medium gray */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
 
     --border: #e2e8f0;
     --border-light: #cbd5e1;
+
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.15);
     --shadow-glow: 0 0 20px rgba(22, 163, 74, 0.2);
@@ -5837,95 +5824,4 @@ body.sidebar-collapsed .nav-item i {
 .flip-clock {
     gap: 8px;
     /* Reduced gap */
-}
-
-/* Chat High Contrast Fixes */
-.ai-msg .msg-bubble {
-    background-color: #262626 !important;
-    /* Lighter dark */
-    color: #f3f4f6 !important;
-    /* White text */
-    border: 1px solid var(--border);
-}
-
-.user .msg-bubble {
-    color: #000000 !important;
-    /* Black text on accent color */
-    font-weight: 500;
-}
-
-/* Leaderboard & Stats Visibility */
-.stat-pill,
-.level-badge {
-    color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-    font-weight: 700;
-}
-
-.friend-item .text-secondary {
-    color: #9ca3af !important;
-    /* Ensure secondary text is visible (gray-400) */
-}
-
-
-/* GLOBAL VISIBILITY OVERRIDES */
-.text-muted,
-.text-secondary {
-    color: var(--text-muted) !important;
-}
-
-.text-primary {
-    color: var(--text-primary) !important;
-}
-
-/* Ensure headings in dark cards are visible */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6 {
-    color: var(--text-primary) !important;
-}
-
-/* Specific fix for badge descriptions and labels */
-.badge-label,
-.card-title,
-.section-title {
-    color: var(--text-primary) !important;
-}
-
-/* Fix active row text in leaderboard */
-tr[style*="background: rgba"] {
-    color: #ffffff !important;
-}
-
-tr[style*="background: rgba"] .text-secondary,
-tr[style*="background: rgba"] i {
-    color: #ffffff !important;
-}
-
-/* Fix Input placeholders */
-input::placeholder,
-textarea::placeholder {
-    color: var(--text-muted) !important;
-    opacity: 1;
-}
-
-/* Fix small labels */
-small,
-.small {
-    color: var(--text-muted) !important;
-}
-
-/* Fix for Course Card titles specifically */
-.course-card-title,
-.topic-title {
-    color: var(--text-primary) !important;
 }

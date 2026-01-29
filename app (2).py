@@ -251,14 +251,14 @@ class GamificationService:
     """Central logic for XP, Levels, Ranks, and Badges."""
     
     RANKS = {
-        (1, 5): ('Bronze', 'fa-shield-halved', '#fdba74'),
-        (6, 10): ('Silver', 'fa-shield-halved', '#e2e8f0'),
-        (11, 20): ('Gold', 'fa-shield-halved', '#fde047'),
-        (21, 35): ('Platinum', 'fa-gem', '#f4f4f5'),
-        (36, 50): ('Diamond', 'fa-gem', '#67e8f9'),
-        (51, 75): ('Heroic', 'fa-crown', '#f87171'),
-        (76, 100): ('Master', 'fa-crown', '#ef4444'),
-        (101, 9999): ('Grandmaster', 'fa-dragon', '#d8b4fe')
+        (1, 5): ('Bronze', 'fa-shield-halved', '#CD7F32'),
+        (6, 10): ('Silver', 'fa-shield-halved', '#C0C0C0'),
+        (11, 20): ('Gold', 'fa-shield-halved', '#FFD700'),
+        (21, 35): ('Platinum', 'fa-gem', '#E5E4E2'),
+        (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),
+        (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),
+        (76, 100): ('Master', 'fa-crown', '#ff0000'),
+        (101, 9999): ('Grandmaster', 'fa-dragon', '#800080')
     }
 
     @staticmethod
@@ -1401,24 +1401,25 @@ def dashboard():
     habit_chart = []
     total_habits_count = len(habits)
     
-    for d in dates: # Mon, Tue, ...
-        if total_habits_count > 0:
-            # Count unique habit IDs completed on this day for this user
-            logs_count = db.session.query(db.func.count(db.distinct(HabitLog.habit_id))).join(Habit).filter(
-                Habit.user_id == current_user.id,
-                HabitLog.completed_date == d
-            ).scalar() or 0
-            
-            pct = int((logs_count / total_habits_count) * 100)
-        else:
-            pct = 0
-            logs_count = 0
-            
-        habit_chart.append({
-            'day': d.strftime('%a'),
-            'pct': pct,
-            'count': logs_count
-        })
+    # -------------------------
+    # IMPORTANT ITEMS (For Important Card)
+    # -------------------------
+    now_ist = datetime.now(IST)
+    today_str = now_ist.strftime('%Y-%m-%d')
+    time_str = now_ist.strftime('%H:%M')
+
+    # Next event today or in the future
+    important_event = Event.query.filter(
+        Event.user_id == current_user.id,
+        ((Event.date > today_str) | ((Event.date == today_str) & (Event.time >= time_str)))
+    ).order_by(Event.date.asc(), Event.time.asc()).first()
+
+    # High priority uncompleted task
+    important_todo = Todo.query.filter_by(
+        user_id=current_user.id,
+        completed=False,
+        priority='high'
+    ).order_by(Todo.id.desc()).first()
              
 
     return render_template(
@@ -1441,7 +1442,9 @@ def dashboard():
         today_log_ids=today_log_ids,
         habit_chart=habit_chart,
         completed_parent_tasks=completed_parent_tasks,
-        completed_events_week=completed_events_week
+        completed_events_week=completed_events_week,
+        important_event=important_event,
+        important_todo=important_todo
     )
 
 @app.route('/chat')
@@ -2611,20 +2614,44 @@ def habit_debugger():
 @app.route('/syllabus')
 @login_required
 def syllabus():
-    doc = SyllabusDocument.query.filter_by(user_id=current_user.id).first()
+    # Get the current active syllabus doc
+    doc = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).first()
+    
+    # Get archived docs (all except the first one)
+    all_docs = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).all()
+    archived_docs = all_docs[1:] if len(all_docs) > 1 else []
+    
     chapters = SyllabusService.build_chapters_from_todos(current_user.id)
     total_topics = sum(c['total'] for c in chapters)
     completed_topics = sum(c['completed'] for c in chapters)
     avg_completion = int((completed_topics / total_topics) * 100) if total_topics else 0
+    
     return render_template(
         'syllabus.html',
         syllabus_doc=doc,
+        archived_docs=archived_docs,
         chapters=chapters,
         chapters_count=len(chapters),
         topics_count=total_topics,
         completed_count=completed_topics,
         avg_completion=avg_completion,
     )
+
+@app.route('/syllabus/restore/<int:doc_id>', methods=['POST'])
+@login_required
+def syllabus_restore(doc_id):
+    """Restore an archived syllabus by making it the most recent."""
+    doc = SyllabusDocument.query.get_or_404(doc_id)
+    if doc.user_id != current_user.id:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('syllabus'))
+    
+    # Update its created_at to now to make it 'current'
+    doc.created_at = datetime.utcnow()
+    db.session.commit()
+    
+    flash(f'Restored {doc.filename} as active syllabus.', 'success')
+    return redirect(url_for('syllabus'))
 
 @app.route('/syllabus/upload', methods=['POST'])
 @login_required
@@ -4281,6 +4308,12 @@ def init_db_schema():
                     if 'completed_at' not in columns:
                          print("Running migration: Adding completed_at to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
+                    if 'is_group' not in columns:
+                         print("Running migration: Adding is_group to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT 0"))
+                    if 'category' not in columns:
+                         print("Running migration: Adding category to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN category VARCHAR(50)"))
 
                 # 4. Check for SyllabusDocument updates
                 if 'syllabus_document' in inspector.get_table_names():
@@ -4307,4 +4340,4 @@ init_db_schema()
 if __name__ == '__main__':
     # Use socketio.run instead of app.run
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, debug=False, host='0.0.0.0', port=port)
+    socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)

@@ -7,8 +7,60 @@
     <h1 class="page-title">Focus Station</h1>
 </div>
 
+<style>
+    .focus-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        min-height: calc(100vh - 120px);
+    }
+
+    @media (max-width: 1024px) {
+        .focus-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+            gap: 20px;
+        }
+
+        .timer-card {
+            min-height: 350px !important;
+        }
+
+        .timer-digits {
+            font-size: 5rem !important;
+        }
+
+        .brain-dump-card {
+            min-height: 400px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .timer-digits {
+            font-size: 4rem !important;
+        }
+
+        .btn-timer-primary {
+            padding: 12px 30px !important;
+            font-size: 1.1rem !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 1.8rem !important;
+        }
+    }
+
+    .music-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+</style>
+
 <!-- Focus Grid -->
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; height: calc(100vh - 120px);">
+<div class="focus-grid">
 
     <!-- Left Column: Timer & Controls -->
     <div style="display: flex; flex-direction: column; gap: 24px;">
@@ -35,8 +87,8 @@
         </div>
 
         <!-- Music Player -->
-        <div class="card music-card" style="padding: 0; overflow: hidden;">
-            <iframe style="border-radius:12px"
+        <div class="card music-card" style="padding: 0; overflow: hidden; border-radius: 16px;">
+            <iframe style="border-radius:12px; display: block;"
                 src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator" width="100%"
                 height="80" frameBorder="0" allowfullscreen=""
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
@@ -45,32 +97,44 @@
     </div>
 
     <!-- Right Column: Brain Dump & Notes -->
-    <div class="card" style="display: flex; flex-direction: column;">
-        <div class="card-header">
-            <div class="card-title">Brain Dump</div>
-            <div style="display: flex; gap: 10px;">
+    <div class="card brain-dump-card" style="display: flex; flex-direction: column; overflow: hidden;">
+        <div class="card-header"
+            style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 20px;">
+            <div class="card-title" style="color: var(--accent-green); font-size: 1.1rem; letter-spacing: 0.5px;">Brain
+                Dump</div>
+            <div style="display: flex; gap: 15px; align-items: center;">
                 <span id="save-status"
-                    style="font-size: 0.8rem; color: var(--text-secondary); opacity: 0; transition: opacity 0.3s;">Saved</span>
+                    style="font-size: 0.75rem; color: var(--accent-green); opacity: 0; transition: opacity 0.3s; font-weight: 600;">SAVED</span>
                 <i class="fa-solid fa-eraser" id="clear-notes"
-                    style="cursor: pointer; color: var(--text-secondary);"></i>
+                    style="cursor: pointer; color: var(--text-secondary); transition: color 0.2s;"
+                    onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-secondary)'"></i>
             </div>
         </div>
-        <textarea id="brain-dump-area" placeholder="Type distractive thoughts here to clear your mind..."
-            style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; color: white; padding: 16px; resize: none; font-family: var(--font-body); line-height: 1.6; min-height: 200px;"></textarea>
+        <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 20px;">
+            <textarea id="brain-dump-area" placeholder="Type distractive thoughts here to clear your mind..."
+                style="width: 100%; height: 200px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; padding: 16px; resize: none; font-family: var(--font-body); line-height: 1.6; transition: border-color 0.3s;"></textarea>
 
-        <div style="margin-top: 24px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div style="font-size: 0.9rem; font-weight: 600;">Session Goals</div>
-                <div class="session-goals-input" style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <input type="text" id="new-goal-input" placeholder="Add a session goal..."
-                        style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white;">
-                    <button id="add-goal-btn" class="btn-timer-secondary" style="width: auto; padding: 0 12px;"><i
-                            class="fa-solid fa-plus"></i></button>
+            <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div
+                        style="font-size: 0.95rem; font-weight: 700; color: #fff; letter-spacing: 0.5px; text-transform: uppercase;">
+                        Session Goals</div>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);" id="goals-count">0 Active</span>
                 </div>
-            </div>
 
-            <div id="session-goals-list" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
-                <!-- Goals will be injected here via JS -->
+                <div class="session-goals-input" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <input type="text" id="new-goal-input" placeholder="What's the goal for this session?"
+                        style="flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem;">
+                    <button id="add-goal-btn" class="btn-timer-secondary"
+                        style="width: 44px; height: 44px; padding: 0; border-radius: 10px; background: var(--accent-green); color: #000; border: none;">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+
+                <div id="session-goals-list"
+                    style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 250px; padding-right: 5px;">
+                    <!-- Goals will be injected here via JS -->
+                </div>
             </div>
         </div>
     </div>

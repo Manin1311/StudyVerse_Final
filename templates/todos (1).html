@@ -3,11 +3,10 @@
 {% block title %}Assignments - StudyVerse{% endblock %}
 
 {% block content %}
-<header class="top-bar"
-    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+<header class="top-bar todos-header">
     <div class="page-title">All Assignments</div>
-    <div class="top-actions" style="display: flex; gap: 16px;">
-        <div class="mode-switcher">
+    <div class="top-actions">
+        <div class="mode-switcher-todos">
             <button class="mode-btn active" onclick="switchTab('personal')" id="btn-personal">Personal</button>
             <button class="mode-btn" onclick="switchTab('group')" id="btn-group">Group</button>
         </div>
@@ -20,29 +19,24 @@
 
 <div class="dashboard-grid" style="grid-template-columns: 1fr;">
     <div class="widget" style="min-height: 80vh; background: transparent; border: none; padding: 0;">
-        <div class="widget-header"
-            style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <div class="widget-title" style="font-size: 1.2rem; font-weight: 600; color: var(--accent-green);">Project
-                Tasks</div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" placeholder="Search tasks..."
-                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: white; padding: 8px 12px; border-radius: 6px; outline: none; min-width: 250px;">
-                <button class="btn-primary" onclick="openAddTaskModal()"
-                    style="background: var(--accent-green); color: black; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">+
-                    New Task</button>
+        <div class="widget-header-todos">
+            <div class="widget-title">Project Tasks</div>
+            <div class="header-actions-todos">
+                <input type="text" placeholder="Search tasks..." class="search-input-todos">
+                <button class="btn-primary-todos" onclick="openAddTaskModal()">+ New Task</button>
             </div>
         </div>
 
         <div class="task-list-container">
             <!-- Header -->
             <div class="task-tree-header">
-                <div></div> <!-- Checkbox/Expand -->
-                <div style="padding-left: 10px;">Task Name</div>
-                <div>Category</div>
-                <div>Priority</div>
-                <div>Status</div>
-                <div>Due Date</div>
-                <div>Action</div>
+                <div class="col-expand"></div>
+                <div class="col-name">Task Name</div>
+                <div class="col-category">Category</div>
+                <div class="col-priority">Priority</div>
+                <div class="col-status">Status</div>
+                <div class="col-due">Due Date</div>
+                <div class="col-action">Action</div>
             </div>
 
             <!-- Personal Tasks Container -->
@@ -70,7 +64,6 @@
                 {% set percent = (ns_cat.done / ns_cat.total * 100)|int if ns_cat.total > 0 else 0 %}
                 {% set cat_finished = (ns_cat.done == ns_cat.total and ns_cat.total > 0) %}
 
-                <!-- Category Header -->
                 <div class="task-row parent">
                     <div class="flex-center">
                         <button class="toggle-btn {% if not cat_finished %}expanded{% endif %}"
@@ -79,7 +72,7 @@
                                 style="transition: transform 0.2s; {% if not cat_finished %}transform: rotate(90deg);{% endif %}"></i>
                         </button>
                     </div>
-                    <div class="task-title" style="font-weight: 600; color: var(--accent-green);">
+                    <div class="task-title col-name">
                         {% if 'python' in cat.lower() %}
                         <i class="fa-brands fa-python" style="margin-right: 8px; color: #3b82f6;"></i>
                         {% elif 'web' in cat.lower() or 'design' in cat.lower() %}
@@ -88,23 +81,20 @@
                         <i class="fa-solid fa-layer-group" style="margin-right: 8px;"></i>
                         {% endif %}
                         {{ cat }}
-                        <span
-                            style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; margin-left: 10px; color: var(--text-secondary);">{{
-                            ns_cat.total }}</span>
+                        <span class="task-count-badge">{{ ns_cat.total }}</span>
                     </div>
-                    <div>-</div>
-                    <div>-</div>
-                    <div>-</div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            <div class="grid-progress" style="flex: 1;">
+                    <div class="col-category">-</div>
+                    <div class="col-priority">-</div>
+                    <div class="col-status">-</div>
+                    <div class="col-due">
+                        <div class="progress-container-todos">
+                            <div class="grid-progress">
                                 <div class="grid-progress-bar" style="width: {{ percent }}%;"></div>
                             </div>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 30px;">{{ percent
-                                }}%</span>
+                            <span class="progress-text">{{ percent }}%</span>
                         </div>
                     </div>
-                    <div></div>
+                    <div class="col-action"></div>
                 </div>
 
                 <!-- Subtasks -->
@@ -113,7 +103,7 @@
                     {% if t.category == cat %}
                     <div class="task-row subtask">
                         <div class="flex-center"></div> <!-- Indent -->
-                        <div class="task-cell">
+                        <div class="task-cell col-name">
                             <form method="POST" action="{{ url_for('todos_toggle', todo_id=t.id) }}" style="margin:0;">
                                 <input type="checkbox" class="task-checkbox {% if t.completed %}checked{% endif %}"
                                     onchange="this.form.submit()" {% if t.completed %}checked{% endif %}>
@@ -123,26 +113,25 @@
                                 {{ t.title }}
                             </div>
                         </div>
-                        <div class="task-cell" style="color: var(--text-muted); font-size: 0.85rem;">Self</div>
-                        <div class="task-cell">
+                        <div class="task-cell col-category">Self</div>
+                        <div class="task-cell col-priority">
                             <span
                                 class="badge {% if t.priority == 'High' %}badge-high{% elif t.priority == 'Medium' %}badge-med{% else %}badge-low{% endif %}">
                                 {{ t.priority }}
                             </span>
                         </div>
-                        <div class="task-cell">
+                        <div class="task-cell col-status">
                             {% if t.completed %}
                             <span class="badge badge-done">Done</span>
                             {% else %}
                             <span class="badge badge-todo">Todo</span>
                             {% endif %}
                         </div>
-                        <div class="task-cell" style="color: var(--text-secondary); font-size: 0.85rem;">{{ t.due_date
+                        <div class="task-cell col-due">{{ t.due_date
                             or '-' }}</div>
-                        <div class="task-cell">
+                        <div class="task-cell col-action">
                             <form method="POST" action="{{ url_for('todos_delete', todo_id=t.id) }}" style="margin:0;">
-                                <button class="btn-icon" type="submit"
-                                    style="background: transparent; border: 1px solid transparent; color: var(--text-secondary); cursor: pointer; transition: 0.2s; border-radius: 6px;">
+                                <button class="btn-icon-delete" type="submit">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </form>
@@ -390,8 +379,183 @@
         </div>
     </div>
 </div>
-
 <style>
+    .todos-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .mode-switcher-todos {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 5px;
+        border-radius: 30px;
+        gap: 5px;
+    }
+
+    .widget-header-todos {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .header-actions-todos {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+        justify-content: flex-end;
+        min-width: 300px;
+    }
+
+    .search-input-todos {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 10px 16px;
+        border-radius: 12px;
+        outline: none;
+        flex: 1;
+        max-width: 300px;
+        transition: all 0.3s ease;
+        font-family: var(--font-body);
+    }
+
+    .search-input-todos:focus {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--accent-green);
+        box-shadow: 0 0 15px rgba(74, 222, 128, 0.1);
+    }
+
+    .btn-primary-todos {
+        background: var(--accent-green);
+        color: black;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(74, 222, 128, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary-todos:hover {
+        background: var(--accent-green-bright);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(74, 222, 128, 0.3);
+    }
+
+    .btn-primary-todos:active {
+        transform: translateY(0);
+    }
+
+    .task-tree-header,
+    .task-row {
+        display: grid;
+        grid-template-columns: 40px 2.5fr 1fr 1fr 1fr 1fr 50px;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .task-count-badge {
+        font-size: 0.7rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-left: 8px;
+        color: var(--text-secondary);
+        font-weight: 400;
+    }
+
+    .progress-container-todos {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .btn-icon-delete {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: 0.2s;
+        border-radius: 6px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-icon-delete:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    @media (max-width: 1024px) {
+
+        .task-tree-header,
+        .task-row {
+            grid-template-columns: 40px 1.5fr 1fr 80px 50px;
+        }
+
+        .col-category,
+        .col-status {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 1.5rem;
+            width: 100%;
+        }
+
+        .top-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .header-actions-todos {
+            min-width: 100%;
+        }
+
+        .task-tree-header,
+        .task-row {
+            grid-template-columns: 30px 1fr 100px 40px;
+            padding: 12px 8px;
+            gap: 10px;
+        }
+
+        .col-priority,
+        .col-due {
+            display: none !important;
+        }
+
+        .task-title {
+            font-size: 0.85rem !important;
+        }
+
+        .progress-text {
+            display: none;
+        }
+
+        .grid-progress {
+            height: 4px;
+        }
+    }
+
     .priority-selector {
         display: flex;
         gap: 10px;
