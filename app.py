@@ -2149,6 +2149,12 @@ def group_clear_chat():
     GroupChatMessage.query.filter_by(group_id=group.id).delete()
     db.session.commit()
     
+    # Notify all members in the room via SocketIO
+    try:
+        socketio.emit('chat_cleared', {'group_id': group.id}, room=str(group.id))
+    except Exception as e:
+        print(f"Socket emit failed: {e}")
+    
     flash('All chat messages have been cleared.', 'success')
     return redirect(url_for('group_chat'))
 

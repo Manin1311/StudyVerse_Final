@@ -140,7 +140,7 @@
                 </div>
 
                 {% if group.admin_id == current_user.id %}
-                <form action="{{ url_for('group_clear_chat') }}" method="POST" style="margin: 0;">
+                <form id="clearChatForm" action="{{ url_for('group_clear_chat') }}" method="POST" style="margin: 0;">
                     <button type="submit" class="btn-clear-chat" title="Clear All Messages"
                         style="width: auto; padding: 0 12px; gap: 8px; display: flex;"
                         onclick="return confirm('WARNING: Are you sure you want to PERMANENTLY clear all chat history? This cannot be undone.');">

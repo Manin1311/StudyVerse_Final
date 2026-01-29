@@ -147,6 +147,53 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage(data);
         });
 
+        socket.on('chat_cleared', (data) => {
+            console.log('🗑️ Chat cleared remotely');
+            if (messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--text-secondary); margin-top: 40px;">
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                `;
+                seenMessageIds.clear();
+                lastMessageId = 0;
+            }
+        });
+
+        const clearForm = document.getElementById('clearChatForm');
+        if (clearForm) {
+            clearForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('🗑️ Clearing chat via AJAX...');
+                try {
+                    const response = await fetch(clearForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    });
+                    if (response.ok) {
+                        console.log('✅ Chat cleared successfully');
+                        // No need to manually clear here if SocketIO works, 
+                        // but good for instant local feedback:
+                        if (messagesContainer) {
+                            messagesContainer.innerHTML = `
+                                <div style="text-align: center; color: var(--text-secondary); margin-top: 40px;">
+                                    <p>No messages yet. Start the conversation!</p>
+                                </div>
+                            `;
+                            seenMessageIds.clear();
+                            lastMessageId = 0;
+                        }
+                    } else {
+                        console.error('❌ Failed to clear chat');
+                    }
+                } catch (err) {
+                    console.error('❌ Error:', err);
+                }
+            });
+        }
+
         if (chatForm) {
             chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
