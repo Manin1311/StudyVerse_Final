@@ -19,10 +19,20 @@
         <p class="friends-subtitle">Collaborate with your study squad in real-time.</p>
     </div>
 
+<<<<<<< HEAD
     <div class="friends-actions">
         <div class="mode-switcher-friends">
             <a href="/friends" class="mode-btn-friends">Friends</a>
             <a href="/group" class="mode-btn-friends active">Group</a>
+=======
+    <div class="top-actions" style="display: flex; gap: 16px;">
+        <div class="mode-switcher"
+            style="display: flex; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; border: 1px solid var(--border);">
+            <a href="/friends" class="mode-btn"
+                style="padding: 8px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); border: none; text-decoration: none;">Friends</a>
+            <a href="/group" class="mode-btn active"
+                style="padding: 8px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--accent-green); color: var(--primary-foreground); border: none; text-decoration: none;">Group</a>
+>>>>>>> 7d55aceaf9b6c3b3a94160f871e40ee4e343557b
         </div>
     </div>
 </header>
@@ -42,7 +52,7 @@
         <div style="display: flex; flex-direction: column; gap: 16px;">
             <form method="POST" action="{{ url_for('group_create') }}" style="display: flex; gap: 8px;">
                 <input class="input" type="text" name="name" placeholder="New Group Name" required
-                    style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    style="flex: 1; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
                 <button class="btn btn-primary" type="submit">Create</button>
             </form>
 
@@ -55,7 +65,7 @@
 
             <form method="POST" action="{{ url_for('group_join') }}" style="display: flex; gap: 8px;">
                 <input class="input" type="text" name="invite_code" placeholder="Invite Code" required
-                    style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    style="flex: 1; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
                 <button class="btn btn-secondary" type="submit">Join</button>
             </form>
         </div>
@@ -81,7 +91,7 @@
         <!-- Search (Client-side filter) -->
         <div style="padding: 16px;">
             <input type="text" id="memberSearch" placeholder="Search members..."
-                style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
         </div>
 
         <!-- List -->
@@ -107,7 +117,14 @@
             {% endfor %}
         </div>
 
+<<<<<<< HEAD
 
+=======
+        <div
+            style="padding: 16px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
+            Invite Code: <strong style="color: var(--text-primary); user-select: all;">{{ group.invite_code }}</strong>
+        </div>
+>>>>>>> 7d55aceaf9b6c3b3a94160f871e40ee4e343557b
     </div>
 
     <!-- Right Panel: Chat -->
@@ -166,7 +183,7 @@
                     </div>
                     <div
                         style="background: {% if m.user_id == current_user.id %}var(--accent-green){% elif m.role == 'assistant' %}rgba(59, 130, 246, 0.2){% else %}rgba(255,255,255,0.1){% endif %}; 
-                                            color: {% if m.user_id == current_user.id %}black{% else %}white{% endif %}; 
+                                            color: {% if m.user_id == current_user.id %}var(--primary-foreground){% else %}var(--text-primary){% endif %}; 
                                             padding: 12px; 
                                             border-radius: {% if m.user_id == current_user.id %}12px 0 12px 12px{% else %}0 12px 12px 12px{% endif %}; 
                                             font-weight: 500; font-size: 0.95rem; border: 1px solid {% if m.role == 'assistant' %}rgba(59, 130, 246, 0.3){% else %}transparent{% endif %};">
@@ -250,7 +267,7 @@
                 </button>
 
                 <input type="text" id="groupChatInput" name="message" placeholder="Type a message..."
-                    style="flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none;">
+                    style="flex: 1; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); outline: none;">
 
                 <button id="groupSendButton" type="submit" class="btn btn-primary" style="width: 46px; height: 40px;">
                     <i class="fa-solid fa-paper-plane"></i>
