@@ -142,11 +142,18 @@ body.theme_cyberpunk .nav-item:hover {
 }
 
 body.theme_cyberpunk .page-title {
-    background: linear-gradient(135deg, #d946ef, #a78bfa, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* Fallback first: keep titles readable even if gradient text isn't supported */
+    color: var(--text-primary);
     text-shadow: 0 0 30px rgba(217, 70, 239, 0.5);
+}
+
+@supports (-webkit-background-clip: text) {
+    body.theme_cyberpunk .page-title {
+        background: linear-gradient(135deg, #d946ef, #a78bfa, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 }
 
 /* Neon glow on buttons */
@@ -290,10 +297,30 @@ body.theme_sunset {
 }
 
 body.theme_sunset .page-title {
-    background: linear-gradient(135deg, #fb923c, #f97316, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* Fallback first: keep titles readable even if gradient text isn't supported */
+    color: var(--text-primary);
+}
+
+@supports (-webkit-background-clip: text) {
+    body.theme_sunset .page-title {
+        background: linear-gradient(135deg, #fb923c, #f97316, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+/* Utility: gradient text with a safe fallback (used in templates where inline styles existed) */
+.sv-gradient-text {
+    color: var(--text-primary);
+}
+
+@supports (-webkit-background-clip: text) {
+    .sv-gradient-text {
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 }
 
 /* ========================================
@@ -4881,6 +4908,7 @@ body.sidebar-collapsed .nav-item i {
         font-size: 1.5rem;
     }
 }
+
 /* ========================================
    DASHBOARD REDESIGN (NEW CARD LAYOUT)
    ======================================== */
@@ -4888,21 +4916,24 @@ body.sidebar-collapsed .nav-item i {
 .dashboard-grid-container {
     display: grid;
     grid-template-columns: 280px 1fr 300px;
-    grid-template-rows: auto auto; /* Two main rows */
+    grid-template-rows: auto auto;
+    /* Two main rows */
     gap: 20px;
     margin-top: 24px;
 }
 
 /* TOP ROW */
 .card-clock-green {
-    background: #4ade80; /* Bright Green */
+    background: #4ade80;
+    /* Bright Green */
     border-radius: 20px;
     padding: 24px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: #052e16; /* Dark Green Text */
+    color: #052e16;
+    /* Dark Green Text */
     position: relative;
     height: 200px;
     box-shadow: 0 10px 30px rgba(74, 222, 128, 0.2);
@@ -4914,7 +4945,7 @@ body.sidebar-collapsed .nav-item i {
     font-family: var(--font-heading);
     line-height: 1;
     color: #ffffff;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .card-clock-date {
@@ -4932,7 +4963,7 @@ body.sidebar-collapsed .nav-item i {
     left: 24px;
     font-size: 1rem;
     font-weight: 900;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .card-focus-wide {
@@ -5036,7 +5067,7 @@ body.sidebar-collapsed .nav-item i {
 
 .card-important-red {
     background: #0f0505;
-    border: 1px solid #450a0a; 
+    border: 1px solid #450a0a;
     border-radius: 20px;
     padding: 24px;
     height: 200px;
@@ -5187,16 +5218,17 @@ body.sidebar-collapsed .nav-item i {
     .dashboard-grid-container {
         grid-template-columns: 1fr;
     }
-    
+
     .schedule-grid {
         height: auto;
         grid-template-columns: 1fr;
     }
-    
+
     .card-image-large {
         height: 300px;
     }
 }
+
 /* ========================================
    TEMPORAL GRID (CALENDAR & EVENTS)
    ======================================== */
@@ -5206,11 +5238,10 @@ body.sidebar-collapsed .nav-item i {
     border: 1px solid #222;
     border-radius: 24px;
     padding: 24px;
-    height: 400px;
+    min-height: 450px;
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 24px;
-    overflow: hidden;
     position: relative;
 }
 
@@ -5356,6 +5387,7 @@ body.sidebar-collapsed .nav-item i {
         height: auto;
     }
 }
+
 /* ========================================
    ACTIVE TASKS WIDGET
    ======================================== */
@@ -5364,10 +5396,9 @@ body.sidebar-collapsed .nav-item i {
     border: 1px solid #222;
     border-radius: 24px;
     padding: 24px;
-    height: 400px;
+    min-height: 450px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .active-tasks-header {
@@ -5488,6 +5519,7 @@ body.sidebar-collapsed .nav-item i {
     color: #fff;
     border-color: #555;
 }
+
 /* ========================================
    WEEKLY STATS WIDGET
    ======================================== */
@@ -5496,8 +5528,8 @@ body.sidebar-collapsed .nav-item i {
     border: 1px solid #222;
     border-radius: 24px;
     padding: 24px;
-    height: 300px;
-    /* Match the banner height */
+    min-height: 420px;
+    height: auto;
     display: flex;
     flex-direction: column;
 }
@@ -5519,26 +5551,35 @@ body.sidebar-collapsed .nav-item i {
 
 .stats-row-3 {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr;
+    /* Changed from 1fr 1fr 1fr to make boxes wider */
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
 .mini-stat-box {
-    padding: 10px;
-    border-radius: 12px;
+    padding: 16px 12px;
+    border-radius: 16px;
     text-align: center;
     color: #fff;
+    transition: transform 0.2s;
+}
+
+.mini-stat-box:hover {
+    transform: translateY(-2px);
 }
 
 .stat-label {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     opacity: 0.8;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .stat-val {
-    font-size: 1rem;
+    font-size: 1.4rem;
     font-weight: 800;
 }
 
@@ -5588,6 +5629,7 @@ body.sidebar-collapsed .nav-item i {
     color: var(--text-muted);
     margin-top: 6px;
 }
+
 /* ========================================
    FLIP CLOCK WIDGET
    ======================================== */
@@ -5756,6 +5798,7 @@ body.sidebar-collapsed .nav-item i {
         transform: rotateX(-180deg);
     }
 }
+
 /* Refined Flip Digit with Split Line */
 .flip-digit {
     position: relative;
@@ -5789,6 +5832,7 @@ body.sidebar-collapsed .nav-item i {
     color: var(--accent-green);
     text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
 }
+
 /* Update Flip Digit for Seconds Width */
 .flip-digit {
     width: 35px;
