@@ -1,0 +1,19 @@
+/* Update Flip Digit for Seconds Width */
+.flip-digit {
+    width: 35px;
+    /* Reduced from 50px */
+    height: 55px;
+    /* Reduced from 70px */
+    font-size: 1.8rem;
+    /* Reduced from 2.5rem */
+    line-height: 55px;
+}
+
+.clock-divider {
+    font-size: 1.5rem;
+}
+
+.flip-clock {
+    gap: 8px;
+    /* Reduced gap */
+}
