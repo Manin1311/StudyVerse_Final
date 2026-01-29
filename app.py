@@ -1234,6 +1234,48 @@ def dashboard():
         .limit(5)
         .all()
     )
+
+    # -------------------------
+    # COMPLETED PARENT TASKS
+    # (Categories where every subtask is done)
+    # -------------------------
+    all_user_todos = Todo.query.filter_by(user_id=current_user.id).all()
+    cat_map = {}
+    for t in all_user_todos:
+        cat = t.category if (t.category and t.category.strip()) else None
+        if not cat: continue
+        if cat not in cat_map:
+            cat_map[cat] = []
+        cat_map[cat].append(t)
+    
+    completed_parent_tasks = []
+    today_utc = datetime.utcnow()
+    start_of_week = today_utc - timedelta(days=today_utc.weekday())
+    start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for cat, tasks in cat_map.items():
+        if all(tk.completed for tk in tasks):
+            # Check if at least one was completed this week
+            # Or if it's a recently finished project
+            recent_completion = any(tk.completed_at and tk.completed_at >= start_of_week for tk in tasks)
+            if recent_completion:
+                completed_parent_tasks.append(cat)
+
+    # -------------------------
+    # WEEKLY COMPLETED EVENTS
+    # -------------------------
+    today_date = datetime.utcnow().date()
+    start_of_week_date = today_date - timedelta(days=today_date.weekday())
+    week_date_strs = [(start_of_week_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
+    
+    completed_events_week = (
+        Event.query
+        .filter_by(user_id=current_user.id, is_notified=True)
+        .filter(Event.date.in_(week_date_strs))
+        .order_by(Event.date.desc(), Event.time.desc())
+        .all()
+    )
+    
     
     # Count online users (active in last 5 minutes)
     online_threshold = datetime.utcnow() - timedelta(minutes=5)
@@ -1330,7 +1372,9 @@ def dashboard():
         daily_stats.append({
             'day': d.strftime('%a'),
             'focus_pct': int(focus_pct),
-            'task_pct': int(task_pct)
+            'task_pct': int(task_pct),
+            'focus_mins': d_focus,
+            'task_count': d_tasks
         })
 
     weekly_stats = {
@@ -1357,24 +1401,25 @@ def dashboard():
     habit_chart = []
     total_habits_count = len(habits)
     
-    for d in dates: # Mon, Tue, ...
-        if total_habits_count > 0:
-            # Count unique habit IDs completed on this day for this user
-            logs_count = db.session.query(db.func.count(db.distinct(HabitLog.habit_id))).join(Habit).filter(
-                Habit.user_id == current_user.id,
-                HabitLog.completed_date == d
-            ).scalar() or 0
-            
-            pct = int((logs_count / total_habits_count) * 100)
-        else:
-            pct = 0
-            logs_count = 0
-            
-        habit_chart.append({
-            'day': d.strftime('%a'),
-            'pct': pct,
-            'count': logs_count
-        })
+    # -------------------------
+    # IMPORTANT ITEMS (For Important Card)
+    # -------------------------
+    now_ist = datetime.now(IST)
+    today_str = now_ist.strftime('%Y-%m-%d')
+    time_str = now_ist.strftime('%H:%M')
+
+    # Next event today or in the future
+    important_event = Event.query.filter(
+        Event.user_id == current_user.id,
+        ((Event.date > today_str) | ((Event.date == today_str) & (Event.time >= time_str)))
+    ).order_by(Event.date.asc(), Event.time.asc()).first()
+
+    # High priority uncompleted task
+    important_todo = Todo.query.filter_by(
+        user_id=current_user.id,
+        completed=False,
+        priority='high'
+    ).order_by(Todo.id.desc()).first()
              
 
     return render_template(
@@ -1395,7 +1440,11 @@ def dashboard():
         weekly_stats=weekly_stats,
         habits=habits,
         today_log_ids=today_log_ids,
-        habit_chart=habit_chart
+        habit_chart=habit_chart,
+        completed_parent_tasks=completed_parent_tasks,
+        completed_events_week=completed_events_week,
+        important_event=important_event,
+        important_todo=important_todo
     )
 
 @app.route('/chat')
@@ -2557,23 +2606,52 @@ def api_habit_stats():
     return jsonify(stats)
 
 
+@app.route('/habit-debugger')
+@login_required
+def habit_debugger():
+    return render_template('habit-debugger.html')
+
 @app.route('/syllabus')
 @login_required
 def syllabus():
-    doc = SyllabusDocument.query.filter_by(user_id=current_user.id).first()
+    # Get the current active syllabus doc
+    doc = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).first()
+    
+    # Get archived docs (all except the first one)
+    all_docs = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).all()
+    archived_docs = all_docs[1:] if len(all_docs) > 1 else []
+    
     chapters = SyllabusService.build_chapters_from_todos(current_user.id)
     total_topics = sum(c['total'] for c in chapters)
     completed_topics = sum(c['completed'] for c in chapters)
     avg_completion = int((completed_topics / total_topics) * 100) if total_topics else 0
+    
     return render_template(
         'syllabus.html',
         syllabus_doc=doc,
+        archived_docs=archived_docs,
         chapters=chapters,
         chapters_count=len(chapters),
         topics_count=total_topics,
         completed_count=completed_topics,
         avg_completion=avg_completion,
     )
+
+@app.route('/syllabus/restore/<int:doc_id>', methods=['POST'])
+@login_required
+def syllabus_restore(doc_id):
+    """Restore an archived syllabus by making it the most recent."""
+    doc = SyllabusDocument.query.get_or_404(doc_id)
+    if doc.user_id != current_user.id:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('syllabus'))
+    
+    # Update its created_at to now to make it 'current'
+    doc.created_at = datetime.utcnow()
+    db.session.commit()
+    
+    flash(f'Restored {doc.filename} as active syllabus.', 'success')
+    return redirect(url_for('syllabus'))
 
 @app.route('/syllabus/upload', methods=['POST'])
 @login_required
@@ -4090,7 +4168,7 @@ def handle_events():
         )
         db.session.add(new_event)
         db.session.commit()
-        return jsonify({'status': 'success', 'message': 'Event created successfully!'})
+        return jsonify({'status': 'success', 'message': 'Event created successfully!', 'id': new_event.id})
 
     date_filter = request.args.get('date')
     query = Event.query.filter_by(user_id=current_user.id)
@@ -4110,12 +4188,40 @@ def handle_events():
         } for e in events]
     })
 
+@app.route('/api/events/<int:event_id>', methods=['PUT', 'DELETE'])
+@login_required
+def single_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    if request.method == 'DELETE':
+        db.session.delete(event)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event deleted'})
+        
+    if request.method == 'PUT':
+        data = request.json
+        event.title = data.get('title', event.title)
+        event.description = data.get('description', event.description)
+        event.date = data.get('date', event.date)
+        event.time = data.get('time', event.time)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Event updated'})
+
 @app.route('/api/events/check-warnings', methods=['GET'])
 @login_required
 def check_event_warnings():
-    # Helper to check for today's events that haven't been notified
-    today_str = datetime.utcnow().strftime('%Y-%m-%d')
-    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False).first()
+    # Get current IST time
+    now_ist = datetime.now(IST)
+    today_str = now_ist.strftime('%Y-%m-%d')
+    current_time_str = now_ist.strftime('%H:%M')
+    
+    # Find active events for today that have arrived but not notified
+    # We check if event.time <= current_time_str
+    active_event = Event.query.filter_by(user_id=current_user.id, date=today_str, is_notified=False)\
+        .filter(Event.time <= current_time_str)\
+        .order_by(Event.time.desc()).first()
     
     return jsonify({
         'status': 'success',
@@ -4202,6 +4308,12 @@ def init_db_schema():
                     if 'completed_at' not in columns:
                          print("Running migration: Adding completed_at to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
+                    if 'is_group' not in columns:
+                         print("Running migration: Adding is_group to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT 0"))
+                    if 'category' not in columns:
+                         print("Running migration: Adding category to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN category VARCHAR(50)"))
 
                 # 4. Check for SyllabusDocument updates
                 if 'syllabus_document' in inspector.get_table_names():
@@ -4228,4 +4340,4 @@ init_db_schema()
 if __name__ == '__main__':
     # Use socketio.run instead of app.run
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, debug=False, host='0.0.0.0', port=port)
+    socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)

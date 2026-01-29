@@ -3,30 +3,29 @@
 {% block title %}Group Chat - StudyVerse{% endblock %}
 
 {% block content %}
-<div class="page-header"
-    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-    <div style="display: flex; align-items: center; gap: 16px;">
-        {% if group %}
-        <form action="{{ url_for('group_leave') }}" method="POST" style="margin: 0;">
-            <button type="submit" class="btn btn-secondary btn-icon" title="Leave Group"
-                onclick="return confirm('Leave this group?');">
-                <i class="fa-solid fa-arrow-left"></i>
-            </button>
-        </form>
-        {% endif %}
-        <h1 class="page-title">Friends & Community</h1>
+<header class="friends-header">
+    <div class="friends-header-info">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            {% if group %}
+            <form action="{{ url_for('group_leave') }}" method="POST" style="margin: 0;">
+                <button type="submit" class="back-btn-squad" title="Leave Group"
+                    onclick="return confirm('Leave this group?');">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </form>
+            {% endif %}
+            <h1 class="page-title-friends">Friends & Community</h1>
+        </div>
+        <p class="friends-subtitle">Collaborate with your study squad in real-time.</p>
     </div>
 
-    <div class="top-actions" style="display: flex; gap: 16px;">
-        <div class="mode-switcher"
-            style="display: flex; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; border: 1px solid var(--border);">
-            <a href="/friends" class="mode-btn"
-                style="padding: 8px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); border: none; text-decoration: none;">Friends</a>
-            <a href="/group" class="mode-btn active"
-                style="padding: 8px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--accent-green); color: black; border: none; text-decoration: none;">Group</a>
+    <div class="friends-actions">
+        <div class="mode-switcher-friends">
+            <a href="/friends" class="mode-btn-friends">Friends</a>
+            <a href="/group" class="mode-btn-friends active">Group</a>
         </div>
     </div>
-</div>
+</header>
 
 {% if not group %}
 <!-- No Group State -->
@@ -64,14 +63,19 @@
 </div>
 {% else %}
 <!-- Chat Layout -->
-<div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px; height: calc(100vh - 150px);">
+<div class="chat-layout-main">
 
     <!-- Left Panel: Members -->
     <div class="card" style="display: flex; flex-direction: column; padding: 0;">
         <div class="card-header" style="padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 0;">
-            <div class="card-title">Members</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ group_members |
-                selectattr('is_online_status') | list | length }} Online</div>
+            <div class="card-title" style="margin-bottom: 4px;">Members</div>
+            <div style="font-size: 0.85rem; color: var(--accent-green); margin-bottom: 12px;">
+                Invite Code: <span style="color: #fff; font-weight: 800; user-select: all; letter-spacing: 0.5px;">{{
+                    group.invite_code }}</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                {{ group_members|selectattr('is_online_status')|list|length }} Online
+            </div>
         </div>
 
         <!-- Search (Client-side filter) -->
@@ -89,7 +93,7 @@
                 <img src="https://ui-avatars.com/api/?name={{ u.first_name }}+{{ u.last_name }}&background=random"
                     style="width: 40px; height: 40px; border-radius: 50%;">
                 <div style="flex: 1;">
-                    <div style="font-weight: 500;">{{ u.first_name }} {{ u.last_name }}</div>
+                    <div style="font-weight: 600; color: #fff;">{{ u.first_name }} {{ u.last_name }}</div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary);">Student</div>
                 </div>
                 <!-- Online Status -->
@@ -103,10 +107,7 @@
             {% endfor %}
         </div>
 
-        <div
-            style="padding: 16px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
-            Invite Code: <strong style="color: white; user-select: all;">{{ group.invite_code }}</strong>
-        </div>
+
     </div>
 
     <!-- Right Panel: Chat -->
@@ -120,7 +121,7 @@
                     {{ group.name[0] | upper }}
                 </div>
                 <div>
-                    <div style="font-weight: 600; font-size: 1.1rem;">{{ group.name }}</div>
+                    <div style="font-weight: 700; font-size: 1.15rem; color: #fff;">{{ group.name }}</div>
                     <div style="font-size: 0.8rem; color: var(--accent-green);">Active Now</div>
                 </div>
             </div>
@@ -139,8 +140,7 @@
         </div>
 
         <!-- Messages Area -->
-        <div id="groupMessagesContainer"
-            style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 24px;">
+        <div id="groupMessagesContainer" class="messages-scroll-area">
             {% if group_messages and group_messages|length > 0 %}
             {% for m in group_messages %}
             <div
@@ -329,4 +329,160 @@
         }
     }
 </script>
+<style>
+    /* Header & Layout */
+    .friends-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .friends-header-info {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .page-title-friends {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+        color: #fff;
+    }
+
+    .friends-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .mode-switcher-friends {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 5px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        gap: 5px;
+    }
+
+    .mode-btn-friends {
+        padding: 8px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .mode-btn-friends.active {
+        background: var(--accent-green);
+        color: #000;
+    }
+
+    .back-btn-squad {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: #fff;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition: all 0.2s;
+    }
+
+    .back-btn-squad:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(-3px);
+    }
+
+    .chat-layout-main {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 24px;
+        height: calc(100vh - 180px);
+        min-height: 500px;
+    }
+
+    /* Message Bubbles */
+    .messages-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 24px;
+    }
+
+    /* Scrollbar */
+    .messages-scroll-area::-webkit-scrollbar,
+    #friendsList::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .messages-scroll-area::-webkit-scrollbar-thumb,
+    #friendsList::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    @media (max-width: 1024px) {
+        .chat-layout-main {
+            grid-template-columns: 250px 1fr;
+            gap: 16px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .friends-header {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mode-switcher-friends {
+            width: 100%;
+        }
+
+        .mode-btn-friends {
+            flex: 1;
+            text-align: center;
+        }
+
+        .chat-layout-main {
+            grid-template-columns: 1fr;
+            height: auto;
+            min-height: 80vh;
+        }
+
+        .chat-layout-main> :first-child {
+            /* Show members on mobile below chat */
+            order: 2;
+            max-height: 450px;
+            height: auto;
+        }
+
+        .chat-layout-main> :last-child {
+            order: 1;
+            height: 500px;
+            /* Fixed height for chat on mobile */
+        }
+
+        .messages-scroll-area {
+            padding: 15px;
+        }
+
+        .messages-scroll-area>div {
+            max-width: 90% !important;
+        }
+
+        .page-title-friends {
+            font-size: 1.75rem;
+        }
+    }
+</style>
 {% endblock %}
