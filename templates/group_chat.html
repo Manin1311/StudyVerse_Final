@@ -142,13 +142,16 @@
                 {% if group.admin_id == current_user.id %}
                 <form action="{{ url_for('group_clear_chat') }}" method="POST" style="margin: 0;">
                     <button type="submit" class="btn-clear-chat" title="Clear All Messages"
-                        onclick="return confirm('Are you sure you want to clear all chat messages? This cannot be undone.');">
+                        style="width: auto; padding: 0 12px; gap: 8px; display: flex;"
+                        onclick="return confirm('WARNING: Are you sure you want to PERMANENTLY clear all chat history? This cannot be undone.');">
                         <i class="fa-solid fa-trash-can"></i>
+                        <span style="font-weight: 600; font-size: 0.85rem;">Clear Chat</span>
                     </button>
                 </form>
                 {% endif %}
             </div>
         </div>
+        <!-- V1.1 - Added Clear Chat & Auto-Scroll -->
 
         <!-- Messages Area -->
         <div id="groupMessagesContainer" class="messages-scroll-area">
@@ -272,6 +275,21 @@
 
 </div>
 {% endif %}
+
+<!-- Inline Scroll Fallback -->
+<script>
+    (function () {
+        const container = document.getElementById('groupMessagesContainer');
+        if (container) {
+            const scroll = () => { container.scrollTop = container.scrollHeight; };
+            scroll();
+            setTimeout(scroll, 100);
+            setTimeout(scroll, 500);
+            setTimeout(scroll, 1000);
+            window.addEventListener('load', scroll);
+        }
+    })();
+</script>
 {% endblock %}
 
 {% block scripts %}
