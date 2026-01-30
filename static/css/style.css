@@ -809,25 +809,25 @@ body.theme_sakura::before {
    SIMPLE THEME
    ======================================== */
 body.theme_simple {
-    --bg-main: #e5e7eb;
+    --bg-main: #f1f5f9;
     --bg-card: #ffffff;
     --bg-sidebar: #ffffff;
     --bg-hover: rgba(0, 0, 0, 0.05);
 
-    --accent-green: #374151;
-    --accent-green-rgb: 55, 65, 81;
-    --accent-green-dim: rgba(55, 65, 81, 0.1);
-    --accent-green-bright: #111827;
+    --accent-green: #334155;
+    --accent-green-rgb: 51, 65, 85;
+    --accent-green-dim: rgba(51, 65, 85, 0.1);
+    --accent-green-bright: #0f172a;
 
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
 
-    --border: #d1d5db;
-    --border-light: #e5e7eb;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
 
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-glow: none;
 
     /* Legacy Variable Support */
@@ -837,33 +837,194 @@ body.theme_simple {
     --card-foreground: var(--text-primary);
     --primary: var(--accent-green);
     --primary-foreground: #fff;
-    --muted: #f3f4f6;
+    --muted: #f8fafc;
     --muted-foreground: var(--text-secondary);
     --destructive: #ef4444;
-    --mint: #374151;
+    --mint: #334151;
 }
 
+/* Sidebar Overrides */
 body.theme_simple .sidebar {
     border-right: 1px solid var(--border);
 }
 
 body.theme_simple .nav-item i {
-    color: #4b5563;
+    color: #64748b;
+}
+
+body.theme_simple .nav-item.active {
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
 body.theme_simple .nav-item.active i {
-    color: var(--text-primary);
+    color: #0f172a;
+}
+
+/* Dashboard Widget Overrides */
+body.theme_simple .bento-card.glass {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: var(--shadow) !important;
+}
+
+body.theme_simple .bento-card div[style*="color: #fff"] {
+    color: #1e293b !important;
+}
+
+/* Clock Overrides */
+body.theme_simple .card-clock-green {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow);
+}
+
+body.theme_simple .flip-digit {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+    box-shadow: none !important;
+}
+
+body.theme_simple .clock-divider {
+    color: #94a3b8;
+}
+
+body.theme_simple .card-clock-date {
+    color: #64748b !important;
+}
+
+body.theme_simple .clock-ampm-badge {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+body.theme_simple .clock-ampm-badge.active {
+    background: #1e293b;
+    color: #ffffff;
+}
+
+/* Productivity Chart Overrides */
+body.theme_simple .card-focus-wide {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+body.theme_simple .focus-badge {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+body.theme_simple .focus-title {
+    color: #1e293b !important;
+}
+
+body.theme_simple .focus-title span {
+    color: #94a3b8 !important;
+}
+
+body.theme_simple .card-focus-wide svg circle[stroke="#222"] {
+    stroke: #f1f5f9 !important;
+}
+
+body.theme_simple .card-focus-wide div[style*="color: #fff"] {
+    color: #1e293b !important;
+}
+
+/* Contrast Card (Important/Feature) - Making it dark like "Total Revenue" in ref image */
+body.theme_simple .card-important-red {
+    background: #111827 !important;
+    border: none;
+}
+
+body.theme_simple .card-important-red .important-title {
+    color: #ffffff !important;
+}
+
+/* Task & Calendar Overrides */
+body.theme_simple .active-tasks-card,
+body.theme_simple .temporal-grid-card,
+body.theme_simple .card-todos-right,
+body.theme_simple .weekly-stats-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+body.theme_simple div[style*="color: #fff"],
+body.theme_simple h3[style*="color: #fff"] {
+    color: #1e293b !important;
+}
+
+body.theme_simple .task-count-badge {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+body.theme_simple .active-task-item {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+}
+
+body.theme_simple .active-task-item h4 {
+    color: #1e293b;
+}
+
+/* Calendar Specifics */
+body.theme_simple .cal-nav-btn {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+body.theme_simple .cal-day {
+    color: #64748b;
+}
+
+body.theme_simple .cal-day.active {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+/* Weekly Stats Overrides */
+body.theme_simple .weekly-stats-chart {
+    background: #f8fafc !important;
+    border: 1px solid #f1f5f9 !important;
+}
+
+body.theme_simple .mini-stat-box {
+    background: #f1f5f9 !important;
+}
+
+body.theme_simple .stat-val {
+    color: #1e293b !important;
+}
+
+/* Quick Nav Overrides */
+body.theme_simple .quick-nav-floating {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.theme_simple .quick-nav-floating a.btn-secondary {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.theme_simple .quick-nav-floating a.btn-primary {
+    background: #1e293b !important;
+    color: #ffffff !important;
 }
 
 body.theme_simple .page-title {
-    color: var(--text-primary);
-    background: none;
-    -webkit-text-fill-color: initial;
-    text-shadow: none;
+    color: #1e293b !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+    text-shadow: none !important;
 }
 
 body.theme_simple .card {
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* ========================================
