@@ -806,6 +806,67 @@ body.theme_sakura::before {
 }
 
 /* ========================================
+   SIMPLE THEME
+   ======================================== */
+body.theme_simple {
+    --bg-main: #e5e7eb;
+    --bg-card: #ffffff;
+    --bg-sidebar: #ffffff;
+    --bg-hover: rgba(0, 0, 0, 0.05);
+
+    --accent-green: #374151;
+    --accent-green-rgb: 55, 65, 81;
+    --accent-green-dim: rgba(55, 65, 81, 0.1);
+    --accent-green-bright: #111827;
+
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+
+    --border: #d1d5db;
+    --border-light: #e5e7eb;
+
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow-glow: none;
+
+    /* Legacy Variable Support */
+    --background: var(--bg-main);
+    --foreground: var(--text-primary);
+    --card: var(--bg-card);
+    --card-foreground: var(--text-primary);
+    --primary: var(--accent-green);
+    --primary-foreground: #fff;
+    --muted: #f3f4f6;
+    --muted-foreground: var(--text-secondary);
+    --destructive: #ef4444;
+    --mint: #374151;
+}
+
+body.theme_simple .sidebar {
+    border-right: 1px solid var(--border);
+}
+
+body.theme_simple .nav-item i {
+    color: #4b5563;
+}
+
+body.theme_simple .nav-item.active i {
+    color: var(--text-primary);
+}
+
+body.theme_simple .page-title {
+    color: var(--text-primary);
+    background: none;
+    -webkit-text-fill-color: initial;
+    text-shadow: none;
+}
+
+body.theme_simple .card {
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ========================================
    NEW EXCLUSIVE FRAMES
    ======================================== */
 

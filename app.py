@@ -1684,6 +1684,15 @@ class ShopService:
             'type': 'theme',
             'color': '#84cc16'
         },
+        'theme_simple': {
+            'id': 'theme_simple',
+            'name': 'Simple Theme ⚪',
+            'description': 'Clean, professional light mode look.',
+            'price': 10,
+            'icon': 'fa-circle-half-stroke',
+            'type': 'theme',
+            'color': '#e5e7eb'
+        },
         
         # === NEW PREMIUM THEMES ===
         'theme_blood_moon': {
