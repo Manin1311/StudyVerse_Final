@@ -143,12 +143,12 @@
     const calendarData = [
         {% for event in calendar_events %}
     {
-        id: { { event.id } },
-        title: { { event.title | tojson } },
-        date: { { event.due_date | tojson } },
-        category: { { event.category | tojson } },
-        completed: { { 'true' if event.completed else 'false' } },
-        priority: { { event.priority | tojson } }
+        id: {{ event.id }},
+        title: {{ event.title | tojson }},
+        date: {{ event.due_date | tojson }},
+        category: {{ event.category | tojson }},
+        completed: {{ 'true' if event.completed else 'false' }},
+        priority: {{ event.priority | tojson }}
     } {% if not loop.last %}, {% endif %}
     {% endfor %}
     ];
