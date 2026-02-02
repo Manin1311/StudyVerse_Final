@@ -160,6 +160,67 @@
     border-color: var(--border) !important;
 }
 
+/* Light mode timer/focus mode overrides */
+[data-theme="light"] .timer-card {
+    background: url('../img/bg.jpg') center/cover no-repeat !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .timer-bg-overlay {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(2px);
+}
+
+[data-theme="light"] .timer-digits {
+    color: var(--text-primary) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .mode-switcher {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .mode-btn {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .mode-btn:hover {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .mode-btn.active {
+    background: var(--accent-green) !important;
+    color: white !important;
+}
+
+/* Light mode music card */
+[data-theme="light"] .music-card {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--border) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Light mode brain dump card */
+[data-theme="light"] .brain-dump-card [style*="background: rgba(255,255,255,0.03)"] {
+    background: var(--bg-hover) !important;
+}
+
+[data-theme="light"] .brain-dump-card [style*="border-bottom: 1px solid rgba(255,255,255,0.05)"] {
+    border-bottom: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] #brain-dump-area {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] #new-goal-input {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
 
 /* Cyberpunk Theme */
 body.theme_cyberpunk {
