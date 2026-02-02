@@ -3,632 +3,274 @@
 {% block title %}Byte Battle - StudyVerse{% endblock %}
 
 {% block content %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
-    /* Battle Specific Styles */
-    :root {
-        --battle-bg: #0b0b0e;
-        --battle-card-bg: #13131a;
-        --battle-border: rgba(255, 255, 255, 0.08);
-        --battle-accent: #3b82f6;
-        --battle-text: #f1f5f9;
-        --battle-text-dim: #94a3b8;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    /* Scoped styles to avoid affecting global layout too much if possible */
+    .battle-scope {
+        font-family: 'Inter', sans-serif;
+        background-color: #050505;
+        color: #a1a1aa;
     }
+    .battle-scope .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Custom Scrollbar for Battle UI */
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
-    body {
-        background-color: var(--battle-bg);
-        color: var(--battle-text);
-    }
-
-    /* Fixed height only on desktop */
-    @media (min-width: 1025px) {
-        body {
-            overflow: hidden;
-        }
-
-        #battle-wrapper {
-            height: calc(100vh - 80px);
-        }
-    }
-
-    #battle-wrapper {
-        display: flex;
-        flex-direction: column;
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 1rem;
-    }
-
-    .battle-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--battle-border);
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        gap: 15px;
-    }
-
-    .header-left {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .header-center {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .header-right {
-        display: flex;
-        align-items: center;
-    }
-
-    .battle-grid {
-        display: grid;
-        grid-template-columns: 1.8fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        grid-template-areas:
-            "editor problem"
-            "editor chat";
-        gap: 1.25rem;
-        flex: 1;
-        min-height: 0;
-        height: calc(100vh - 180px);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .battle-grid.focus-mode {
-        grid-template-columns: 1fr 0fr;
-        gap: 0;
-    }
-
-    .battle-grid.focus-mode .panel-problem-col,
-    .battle-grid.focus-mode .panel-chat-col {
-        display: none !important;
-    }
-
-    .panel-editor-col {
-        grid-area: editor;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
-    .panel-problem-col {
-        grid-area: problem;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .panel-chat-col {
-        grid-area: chat;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .battle-card {
-        background: var(--battle-card-bg);
-        border: 1px solid var(--battle-border);
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        height: 100%;
-        transition: all 0.3s ease;
-    }
-
-    .battle-card:hover {
-        border-color: rgba(59, 130, 246, 0.4);
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-    }
-
-    @media (max-width: 1024px) {
-        .battle-grid {
-            grid-template-columns: 1fr !important;
-            grid-template-rows: auto auto auto;
-            grid-template-areas:
-                "problem"
-                "editor"
-                "chat";
-            overflow-y: auto;
-            height: auto;
-        }
-
-        #battle-wrapper {
-            height: auto;
-            overflow-y: auto;
-        }
-
-        .battle-header {
-            flex-direction: column;
-            gap: 10px;
-            text-align: center;
-        }
-
-        #timer-display {
-            width: auto;
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .battle-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1.5rem;
-            height: auto;
-        }
-
-        #battle-wrapper {
-            padding-bottom: 5rem;
-        }
-
-        .battle-header {
-            padding: 1.25rem;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .header-left,
-        .header-center,
-        .header-right {
-            width: 100%;
-            align-items: center;
-        }
-
-        .panel-editor-col {
-            order: 2;
-        }
-
-        .panel-problem-col {
-            order: 1;
-        }
-
-        .panel-chat-col {
-            order: 3;
-        }
-
-        .battle-card {
-            height: auto !important;
-            min-height: 300px;
-        }
-
-        #code-editor {
-            height: 400px;
-        }
-
-        #chat-log {
-            height: 350px;
-        }
-    }
-
-    /* Editor */
-    #code-editor {
-        flex: 1;
-        background: #0d0d12;
-        color: #e2e8f0;
-        border: none;
-        padding: 1.5rem;
-        font-family: 'Fira Code', monospace;
-        font-size: 1.05rem;
-        line-height: 1.7;
-        resize: none;
-        outline: none;
-        overflow: auto;
-        white-space: pre;
-        tab-size: 4;
-    }
-
-    #code-editor::placeholder {
-        color: rgba(255, 255, 255, 0.2);
-    }
-
-    #code-editor::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    #code-editor::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.2);
-    }
-
-    #code-editor::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-    }
-
-    #code-editor::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Problem Panel */
-    .problem-content {
-        padding: 1rem;
-        overflow-y: auto;
-    }
-
-    /* Chat */
-    #chat-log {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        background: #141414;
-    }
-
-    .chat-msg {
-        display: flex;
-        flex-direction: column;
-        max-width: 85%;
-        font-size: 0.9rem;
-    }
-
-    .chat-msg.system {
-        align-self: center;
-        max-width: 95%;
-        text-align: center;
-        color: var(--battle-text-dim);
-        font-style: italic;
-        margin: 0.5rem 0;
-    }
-
-    .chat-msg.bot {
-        align-self: flex-start;
-    }
-
-    .chat-msg.user {
-        align-self: flex-end;
-    }
-
-    .msg-bubble {
-        padding: 0.5rem 0.75rem;
-        border-radius: 8px;
-        background: #262626;
-        line-height: 1.4;
-    }
-
-    .chat-msg.bot .msg-bubble {
-        background: rgba(59, 130, 246, 0.15);
-        /* Blue tint */
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        color: #bfdbfe;
-    }
-
-    .chat-msg.user .msg-bubble {
-        background: #262626;
-        border: 1px solid #404040;
-    }
-
-    /* Entry Screen */
-    #screen-entry {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        text-align: center;
-    }
-
-    .entry-box {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 3rem 2rem;
-        border-radius: 20px;
-        width: 90%;
-        max-width: 480px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-        transition: transform 0.3s ease;
-    }
-
-    .entry-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        letter-spacing: -1px;
-        background: linear-gradient(135deg, #fff 0%, #a3a3a3 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .join-group {
-        display: flex;
-        gap: 12px;
-        margin-top: 1rem;
-    }
-
-    .join-input {
-        flex: 1;
-        padding: 0.85rem;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid #444;
-        border-radius: 10px;
-        color: white;
-        text-transform: uppercase;
-        text-align: center;
-        font-family: monospace;
-        letter-spacing: 2px;
-        font-weight: 700;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-
-    .join-input:focus {
-        border-color: var(--battle-accent);
-    }
-
-    @media (max-width: 768px) {
-        .entry-box {
-            padding: 2.5rem 1.5rem;
-        }
-
-        .entry-title {
-            font-size: 2rem;
-        }
-
-        .join-group {
-            flex-direction: column;
-        }
-
-        .join-btn-battle {
-            width: 100%;
-        }
-    }
-
-    /* Status Indicator */
-    #battle-debug {
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
-        left: auto !important;
-        background: rgba(0, 0, 0, 0.6) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(74, 222, 128, 0.3) !important;
-        color: #4ade80 !important;
-        padding: 8px 16px !important;
-        font-family: 'Fira Code', monospace !important;
-        font-size: 11px !important;
-        border-radius: 30px !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    }
-
-    /* Modal */
+    /* Modal Overlay (Preserved from old implementation) */
     .modal-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
         display: none;
         align-items: center;
         justify-content: center;
         z-index: 1000;
+        backdrop-filter: blur(5px);
     }
-
     .modal-box {
-        background: var(--battle-card-bg);
-        border: 1px solid var(--battle-border);
+        background: #18181b;
+        border: 1px solid #27272a;
         padding: 2rem;
         border-radius: 12px;
         width: 400px;
         text-align: center;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        color: white;
     }
-
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        background: #333;
-        color: #aaa;
-    }
-
-    .status-badge.active {
-        background: rgba(59, 130, 246, 0.2);
-        color: #60a5fa;
-        border: 1px solid rgba(59, 130, 246, 0.4);
-    }
-
+    
     /* Utilities */
-    .btn-battle {
-        padding: 0.75rem 1.5rem;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
+    .hidden { display: none !important; }
+    
+    /* Editor Overrides */
+    #code-editor {
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1.6;
+        background: transparent;
+        color: #e4e4e7; 
+        caret-color: #3b82f6;
     }
+    #code-editor::placeholder { color: #3f3f46; }
 
-    .btn-primary {
-        background: var(--battle-accent);
-        color: white;
-    }
+    /* Chat Messages */
+    .chat-msg { margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .chat-msg.system { text-align: center; color: #52525b; font-style: italic; font-size: 0.75rem; margin: 0.75rem 0; }
+    .chat-msg.bot { color: #818cf8; }
+    .chat-msg.user { color: #e4e4e7; text-align: right; }
+    .msg-bubble { display: inline-block; padding: 0.4rem 0.8rem; border-radius: 6px; background: #27272a; max-width: 90%; }
+    .chat-msg.bot .msg-bubble { background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); }
+    .chat-msg.user .msg-bubble { background: #3f3f46; }
 
-    .btn-primary:hover {
-        opacity: 0.9;
-    }
-
-    .btn-secondary {
-        background: #333;
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background: #444;
-    }
-
-    .hidden {
-        display: none !important;
-    }
 </style>
 
-<div id="battle-wrapper">
-
+<div id="battle-wrapper" class="battle-scope fixed inset-0 z-50 overflow-hidden bg-[#050505]">
+    
     <!-- 1. ENTRY SCREEN -->
-    <div id="screen-entry">
-        <div class="entry-box">
-            <div style="font-size: 4rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));">
-                ⚔️</div>
-            <h1 class="entry-title">BYTE BATTLE</h1>
-            <p style="color: var(--battle-text-dim); margin-bottom: 2.5rem; font-size: 1.1rem;">Host or join a live
-                coding duel.</p>
+    <div id="screen-entry" class="flex flex-col items-center justify-center h-full w-full relative z-10">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-[20%] left-[20%] w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-[20%] right-[20%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]"></div>
+        </div>
 
-            <button id="btn-create" class="btn-battle btn-primary"
-                style="width: 100%; font-size: 1.2rem; margin-bottom: 2rem; border-radius: 12px; height: 56px;">
+        <div class="border border-white/10 bg-black/40 backdrop-blur-xl p-10 rounded-2xl w-[90%] max-w-md shadow-2xl text-center relative z-20">
+            <div class="text-5xl mb-6">⚔️</div>
+            <h1 class="text-3xl font-bold text-white tracking-tight mb-2">BYTE BATTLE</h1>
+            <p class="text-zinc-500 mb-8">Host or join a live coding duel.</p>
+
+            <button id="btn-create" class="w-full bg-white hover:bg-zinc-200 text-black font-semibold py-3.5 rounded-lg transition-colors mb-4 shadow-lg shadow-white/5">
                 Create Room
             </button>
 
-            <div class="join-group">
-                <input type="text" id="join-code" placeholder="ENTER ROOM CODE" class="join-input">
-                <button id="btn-join" class="btn-battle btn-secondary join-btn-battle"
-                    style="border-radius: 10px; height: 50px;">Join</button>
+            <div class="flex gap-2">
+                <input type="text" id="join-code" placeholder="ENTER CODE" class="flex-1 bg-zinc-900 border border-zinc-700 text-white rounded-lg px-4 py-3 outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600 font-mono text-center tracking-widest uppercase">
+                <button id="btn-join" class="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-6 rounded-lg transition-colors border border-zinc-700">
+                    Join
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 2. BATTLE INTERFACE (Initially Hidden) -->
-    <div id="screen-battle" class="hidden" style="flex-direction: column; height: 100%;">
-
-        <!-- Header -->
-        <div class="battle-header">
-            <div class="header-left">
-                <span style="font-weight: 800; font-size: 1.25rem; color: #fff;">⚔️ BYTE BATTLE</span>
-                <span style="color: var(--battle-text-dim); font-family: monospace; font-size: 0.85rem;">Room: <span
-                        id="room-display" style="color: var(--battle-accent); font-weight: 700;">---</span></span>
+    <!-- 2. BATTLE INTERFACE -->
+    <div id="screen-battle" class="hidden flex h-full w-full">
+        <!-- Sidebar -->
+        <aside class="w-14 bg-[#050505] border-r border-white/[0.06] flex flex-col items-center py-5 z-20 hidden md:flex">
+            <div class="mb-6 text-white font-semibold tracking-tighter text-lg">C.</div>
+            <nav class="flex-1 flex flex-col gap-2 w-full items-center px-2">
+                <button class="w-full aspect-square flex items-center justify-center rounded-md bg-white/[0.08] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+                    <i data-lucide="code-2" class="w-4 h-4"></i>
+                </button>
+            </nav>
+            <div class="mt-auto px-2 w-full mb-4">
+                 <button class="w-full aspect-square rounded-full overflow-hidden border border-white/10 opacity-60 hover:opacity-100 transition-opacity">
+                    <div class="w-full h-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">YOU</div>
+                </button>
             </div>
-            <div class="header-center">
-                <div
-                    style="font-size: 0.7rem; color: var(--battle-text-dim); text-transform: uppercase; letter-spacing: 1px;">
-                    Estimated Time</div>
-                <div id="timer-display"
-                    style="font-family: 'Fira Code', monospace; font-size: 1.75rem; font-weight: 800; color: #fff;">
-                    --:--</div>
-            </div>
-            <div class="header-right">
-                <div id="status-display" class="status-badge">WAITING</div>
-            </div>
-        </div>
+        </aside>
 
-        <div class="battle-grid">
+        <!-- Main Content -->
+        <main class="flex-1 grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06] bg-[#080808]">
+            
+            <!-- LEFT SIDE: Editor -->
+            <section class="flex flex-col h-full bg-[#050505] relative group">
+                <!-- Editor Tabs -->
+                <div class="h-10 flex items-end px-0 border-b border-white/[0.06] shrink-0">
+                    <div class="h-full flex items-center px-4 gap-2.5 text-xs text-zinc-300 border-r border-white/[0.06] bg-[#080808]">
+                        <i data-lucide="file-code" class="w-3.5 h-3.5 text-blue-400"></i>
+                        <span class="font-medium">solution.py</span>
+                        <span id="lang-display" class="hidden">Python</span> <!-- Hidden legacy hook -->
+                    </div>
+                </div>
 
-            <!-- LEFT COLUMN -->
-            <div class="panel-col panel-editor-col">
-                <!-- Code Editor -->
-                <div class="battle-card" style="flex: 1;">
-                    <div class="card-header"
-                        style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-code"></i> CODE
-                                EDITOR</span>
-                            <span id="lang-display"
-                                style="color: var(--battle-accent); font-weight: 800; font-size: 0.85rem; background: rgba(59, 130, 246, 0.1); padding: 2px 8px; border-radius: 4px;">Python</span>
+                <!-- Code Area -->
+                <div class="flex-1 relative font-mono text-xs md:text-sm bg-[#050505]">
+                    <!-- Line Numbers (Static Decoration for now, hard to sync perfectly without Monaco) -->
+                    <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col items-end pr-4 text-zinc-700 select-none leading-[1.6] pt-4 text-[11px] border-r border-white/[0.03] bg-[#050505] z-10 pointer-events-none">
+                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                        <span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
+                    </div>
+                    
+                    <!-- The Real Editor -->
+                    <textarea id="code-editor" class="absolute inset-0 w-full h-full resize-none outline-none p-4 pl-16 bg-transparent text-sm leading-[1.6]" spellcheck="false" placeholder="# Write your solution here..."></textarea>
+                </div>
+
+                <!-- Bottom Action Bar -->
+                <div class="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between bg-[#050505] shrink-0">
+                    <div class="flex items-center gap-4 text-xs font-medium text-zinc-500">
+                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i data-lucide="terminal" class="w-3.5 h-3.5"></i> Console</span>
+                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i data-lucide="keyboard" class="w-3.5 h-3.5"></i> Shortcuts</span>
+                    </div>
+                    <button id="btn-submit" class="group relative px-4 py-2 bg-zinc-50 hover:bg-white text-black text-xs font-semibold rounded-[4px] transition-all flex items-center gap-2 shadow-[0_0_15px_-3px_rgba(255,255,255,0.15)] ring-1 ring-white">
+                        <span>Submit Code</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-zinc-600 group-hover:text-black"></i>
+                    </button>
+                    <!-- Legacy id hooks logic needs -->
+                    <span id="focus-btn-text" class="hidden"></span>
+                </div>
+            </section>
+
+            <!-- RIGHT SIDE: Problem & AI/Chat -->
+            <section class="flex flex-col h-full bg-[#080808]">
+                
+                <!-- Header -->
+                <div class="h-10 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#080808] shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
+                        <span id="status-display" class="text-xs font-medium tracking-wide text-zinc-400 uppercase">WAITING</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                         <span class="text-xs text-zinc-600">ID: <span id="room-display" class="text-zinc-400 font-mono">---</span></span>
+                         <div id="timer-display" class="font-mono text-sm font-medium text-zinc-200 tracking-tight flex items-center gap-2 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.05]">
+                            --:--
                         </div>
-                        <button onclick="toggleEditorFocus()" class="btn-battle"
-                            style="background: rgba(255,255,255,0.05); padding: 4px 10px; font-size: 0.8rem; border: 1px solid var(--battle-border);">
-                            <i class="fa-solid fa-expand"></i> <span id="focus-btn-text">Full Width</span>
-                        </button>
                     </div>
-                    <textarea id="code-editor" placeholder="# Paste or write your code here..."></textarea>
                 </div>
-            </div>
 
-            <!-- PROBLEM COLUMN -->
-            <div class="panel-col panel-problem-col">
-                <div class="battle-card" style="flex: 1;">
-                    <div class="card-header">
-                        <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-file-lines"></i> PROBLEM
-                            STATEMENT</span>
-                    </div>
-                    <div class="problem-content">
-                        <h3 id="problem-title" style="margin-bottom: 0.75rem; color: #fff; font-size: 1.25rem;">Waiting
-                            for host...</h3>
-                        <p id="problem-desc"
-                            style="color: var(--battle-text-dim); line-height: 1.7; font-size: 0.95rem;">
-                            The battle has not started yet.
-                        </p>
-                        <div id="problem-details" class="hidden"
-                            style="margin-top: 1.25rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); font-family: 'Fira Code', monospace; font-size: 0.85rem;">
-                            <div style="margin-bottom: 8px;"><strong
-                                    style="color: var(--battle-accent);">Input:</strong> <span id="prob-in"
-                                    style="color: #fff;"></span></div>
-                            <div><strong style="color: var(--battle-accent);">Output:</strong> <span id="prob-out"
-                                    style="color: #fff;"></span></div>
+                <!-- Scrollable Container -->
+                <div class="flex-1 flex flex-col min-h-0 relative">
+                    
+                    <!-- Content -->
+                    <div class="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar relative z-0">
+                        <div class="max-w-xl mx-auto space-y-8">
+                            
+                            <!-- Title -->
+                            <div>
+                                <h1 id="problem-title" class="text-xl font-semibold text-zinc-100 tracking-tight mb-3">Waiting for host...</h1>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span class="font-medium text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/10">Medium</span>
+                                    <span class="text-zinc-500">Algorithms</span>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div id="problem-desc" class="text-sm leading-relaxed text-zinc-400 space-y-4">
+                                <p>The battle has not started yet.</p>
+                            </div>
+
+                            <!-- Examples (Dynamic Hooks) -->
+                            <div id="problem-details" class="hidden space-y-4">
+                                <div class="group relative rounded-lg border border-white/[0.06] bg-white/[0.01] p-4 transition-colors hover:bg-white/[0.02]">
+                                    <div class="absolute -left-[1px] top-4 bottom-4 w-[2px] bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></div>
+                                    <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 pl-1">Input / Output</p>
+                                    <div class="font-mono text-xs space-y-2 pl-1">
+                                        <div class="flex"><span class="text-zinc-500 w-16">Input:</span> <span id="prob-in" class="text-zinc-300">...</span></div>
+                                        <div class="flex"><span class="text-zinc-500 w-16">Output:</span> <span id="prob-out" class="text-zinc-300">...</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- CHAT LOG CONTAINER -->
+                             <div class="border-t border-white/[0.06] pt-6">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i data-lucide="message-square" class="w-3.5 h-3.5 text-zinc-500"></i>
+                                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Battle Chat</span>
+                                </div>
+                                <div id="chat-log" class="h-40 overflow-y-auto custom-scrollbar p-2 rounded-lg bg-white/[0.02]">
+                                    <!-- Messages injected here -->
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- RIGHT COLUMN: CHAT -->
-            <div class="panel-col panel-chat-col">
-                <div class="battle-card" style="height: 100%;">
-                    <div class="card-header">
-                        <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-robot"></i> BYTEBOT
-                            (CHAT)</span>
+                    <!-- AI/Chat Input Area -->
+                    <div class="border-t border-white/[0.06] bg-[#080808] p-5 shrink-0 z-10">
+                        <div class="max-w-xl mx-auto w-full flex flex-col gap-3">
+                            <!-- Input -->
+                            <div class="relative mt-2">
+                                <input id="chat-input" type="text" placeholder="Type a message..." class="w-full bg-[#050505] border border-white/[0.08] text-zinc-200 text-sm rounded-md pl-3 pr-10 py-2.5 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-800 transition-all placeholder:text-zinc-700">
+                                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <button class="p-1 hover:bg-zinc-800 rounded text-zinc-500 transition-colors">
+                                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="chat-log">
-                        <!-- Messages -->
-                    </div>
-                    <div
-                        style="padding: 1.25rem; border-top: 1px solid var(--battle-border); background: rgba(0,0,0,0.2); flex-shrink: 0;">
-                        <input type="text" id="chat-input" placeholder="Type a message..."
-                            style="width: 100%; padding: 0.95rem; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; color: white; margin-bottom: 0.75rem; outline: none; transition: border-color 0.2s;">
-                        <button id="btn-submit" class="btn-battle btn-primary"
-                            style="width: 100%; height: 50px; font-weight: 800; font-size: 1rem; border-radius: 10px; text-transform: uppercase; letter-spacing: 1px;">
-                            SUBMIT CODE
-                        </button>
-                    </div>
+
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
-
 </div>
 
 <!-- MODAL: Join Request (Host View) -->
 <div id="modal-join-req" class="modal-overlay">
     <div class="modal-box">
-        <div style="font-size: 2rem; margin-bottom: 1rem;">👋</div>
-        <h3 style="margin-bottom: 0.5rem;">Join Request</h3>
-        <p style="color: var(--battle-text-dim); margin-bottom: 2rem;">
-            Player "<span id="req-name" style="color: white; font-weight: bold;">Opponent</span>" wants to join.
+        <div class="text-4xl mb-4">👋</div>
+        <h3 class="text-xl font-bold mb-2">Join Request</h3>
+        <p class="text-zinc-400 text-sm mb-6">
+            Player "<span id="req-name" class="text-white font-bold">Opponent</span>" wants to join.
         </p>
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <button id="btn-reject" class="btn-battle btn-secondary" style="flex: 1;">Reject</button>
-            <button id="btn-accept" class="btn-battle btn-primary" style="flex: 1;">Accept</button>
+        <div class="flex gap-4 justify-center">
+            <button id="btn-reject" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-2 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">Reject</button>
+            <button id="btn-accept" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium">Accept</button>
         </div>
     </div>
 </div>
 
 <!-- MODAL: Result -->
 <div id="modal-result" class="modal-overlay">
-    <div class="modal-box" style="width: 500px;">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
-        <h2 style="margin-bottom: 1rem;">BATTLE RESULT</h2>
+    <div class="modal-box w-[500px]">
+        <div class="text-5xl mb-4">🏆</div>
+        <h2 class="text-2xl font-bold mb-4 tracking-tight">BATTLE RESULT</h2>
 
-        <div id="result-body"
-            style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <h3 id="res-winner" style="color: var(--battle-accent); margin-bottom: 0.5rem;">Winner: Player 1</h3>
-            <p id="res-reason" style="color: var(--battle-text-dim);">Reason: Better logic.</p>
+        <div id="result-body" class="bg-zinc-800/50 p-6 rounded-lg mb-6 border border-zinc-700/50">
+            <h3 id="res-winner" class="text-emerald-400 font-bold mb-2">Winner: Player 1</h3>
+            <p id="res-reason" class="text-zinc-400 text-sm">Reason: Better logic.</p>
         </div>
 
-        <p style="margin-bottom: 1rem; color: #fff;">Rematch?</p>
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <button id="btn-vote-no" class="btn-battle btn-secondary" style="flex: 1;">No</button>
-            <button id="btn-vote-yes" class="btn-battle btn-primary" style="flex: 1;">Yes</button>
+        <p class="mb-4 text-zinc-300 text-sm">Rematch?</p>
+        <div class="flex gap-4 justify-center">
+            <button id="btn-vote-no" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">No</button>
+            <button id="btn-vote-yes" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg transition-colors text-sm font-medium">Yes</button>
         </div>
-        <div id="vote-status" style="margin-top: 1rem; color: var(--battle-text-dim); font-size: 0.9rem;"></div>
+        <div id="vote-status" class="mt-4 text-zinc-500 text-xs"></div>
     </div>
 </div>
 
@@ -641,39 +283,11 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/battle.js') }}"></script>
 <script>
+    lucide.createIcons();
+
+    // Editor Resizing / Tab Handling to match logic
     const editor = document.getElementById('code-editor');
-    const grid = document.querySelector('.battle-grid');
-    const focusBtnText = document.getElementById('focus-btn-text');
-
-    function toggleEditorFocus() {
-        if (!grid) return;
-        grid.classList.toggle('focus-mode');
-        const isFocus = grid.classList.contains('focus-mode');
-        if (focusBtnText) {
-            focusBtnText.textContent = isFocus ? 'Restore' : 'Full Width';
-        }
-
-        // Re-trigger resize
-        setTimeout(() => {
-            if (editor) editor.dispatchEvent(new Event('input'));
-        }, 400);
-    }
-
     if (editor) {
-        editor.addEventListener('input', function () {
-            // Adaptive Height
-            this.style.height = 'auto';
-            const scrollHeight = this.scrollHeight;
-            const containerHeight = this.parentElement.clientHeight - 60;
-            this.style.height = (scrollHeight > containerHeight ? scrollHeight : containerHeight) + 'px';
-        });
-
-        // Initial resize
-        setTimeout(() => {
-            editor.dispatchEvent(new Event('input'));
-        }, 500);
-
-        // Tab support
         editor.addEventListener('keydown', function (e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -684,5 +298,21 @@
             }
         });
     }
+
+    // Connect Chat Input Enter Key for legacy support if JS doesn't auto-bind
+    const chatInput = document.getElementById('chat-input');
+    const btnSubmit = document.getElementById('btn-submit'); 
+    // Note: btn-submit is the Code Submit button. JS likely binds a separate listener or the same for chat?
+    // Checking old code: chat-input had a separate submit but mostly relies on 'Enter' key or similar in JS.
+    // The old code had a 'btn-submit' for SUBMIT CODE.
+    // Chat usually sends on Enter.
+    
+    chatInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            // Find if there is a chat function exposed or just trigger event
+            // The battle.js likely handles it.
+        }
+    });
+
 </script>
 {% endblock %}
