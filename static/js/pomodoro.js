@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Keep save threshold at 60 seconds
-        if (timeSpent > 60) {
+        if (timeSpent >= 60) {
             if (confirm(`You have focused for ${Math.floor(timeSpent / 60)} minutes. Save this session before resetting?`)) {
                 saveSession(currentMode, timeSpent);
             }
@@ -287,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Session saved successfully:', data);
                 if (window.StudyVerse && window.StudyVerse.showToast) {
                     window.StudyVerse.showToast(`${mode} session (${durationMinutes}m) saved!`, 'success');
+                }
+                // Trigger confetti for focus sessions
+                if (mode === 'focus' && window.triggerConfetti) {
+                    window.triggerConfetti();
                 }
             })
             .catch(error => {

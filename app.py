@@ -52,9 +52,8 @@ app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 # Production: Must use DATABASE_URL from environment (e.g. Render)
-# Production: Must use DATABASE_URL from environment (e.g. Render)
-database_url = os.getenv('DATABASE_URL')
-if database_url and database_url.startswith("postgres://"):
+database_url = os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db')
+if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -2971,7 +2970,7 @@ def progress():
         .filter(StudySession.completed_at >= week_ago)
         .scalar()
     )
-    weekly_hours = round((weekly_minutes or 0) / 60.0, 1)
+    weekly_hours = round((weekly_minutes or 0) / 60.0, 2)
     sessions_week = StudySession.query.filter_by(user_id=current_user.id).filter(StudySession.completed_at >= week_ago).count()
 
     # Consecutive-day streak based on completed sessions.
@@ -2996,7 +2995,7 @@ def progress():
             .filter(StudySession.completed_at <= end_dt)
             .scalar()
         )
-        hours = round((minutes or 0) / 60.0, 1)
+        hours = round((minutes or 0) / 60.0, 2)
         max_hours = max(max_hours, hours)
         
         # Format label (e.g. "1.5h" or "45m")
