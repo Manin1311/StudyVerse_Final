@@ -13,8 +13,8 @@
     --accent-green-bright: #22c55e;
 
     --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
-    --text-muted: #52525b;
+    --text-secondary: #d4d4d8;
+    --text-muted: #a1a1aa;
 
     --border: #27272a;
     --border-light: #3f3f46;
@@ -61,7 +61,7 @@
 
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --text-muted: #64748b;
 
     --border: #e2e8f0;
     --border-light: #cbd5e1;
@@ -2404,6 +2404,12 @@ body.sidebar-collapsed .sidebar .nav-item i {
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.badge-low {
+    background: rgba(148, 163, 184, 0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
 .badge-todo {
     background: rgba(59, 130, 246, 0.1);
     color: #60a5fa;
@@ -3987,7 +3993,7 @@ textarea:focus-visible {
 
 .subtopic-item.completed span {
     text-decoration: line-through;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 /* Calendar Specifics */

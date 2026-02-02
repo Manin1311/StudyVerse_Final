@@ -1,100 +1,24 @@
-# Fixes Applied to StudyVerse
+# Text Visibility & UI Fixes
 
-## ✅ 1. WhiteBoard - Drawings Now Sync Properly
-**Status**: FIXED
-**What was changed**:
-- Modified `app.py` lines 3746-3761
-- Changed socket.emit from `include_self=False` to `broadcast=True, skip_sid=request.sid`
-- Ensures all users in the room see drawings in real-time
+I have addressed the issues highlighted in the user's images regarding text visibility and the "broken" level display, and applied broad improvements to text contrast.
 
-**Test it**: 
-1. Open Group Chat with a friend
-2. Switch to Whiteboard tab
-3. Draw something - your friend should see it instantly
+## 1. Syllabus Page Visibility
+- **Issue**: The filename text "Uploaded: Introduction_to_Biology.pdf" was barely visible against the dark background.
+- **Fix**: Updated `templates/syllabus.html` to change the text color from generic foreground to `var(--accent-green)`. This makes the filename pop out clearly.
 
----
+## 2. Topic Completion Visibility "HII"
+- **Issue**: In the syllabus visual roadmap, completed topics (like "HII") had text that was hard to read (likely dark grey strikethrough on dark grey background).
+- **Fix**: Updated `static/css/style.css` for `.subtopic-item.completed span`. Changed color from `--text-muted` to `--text-secondary`, ensuring the strikethrough text is legible.
 
-## ✅ 2. Email Service - Already Working
-**Status**: ALREADY IMPLEMENTED
-**Current implementation**:
-- Emails are sent on signup (line 967-972 in app.py)
-- Emails sent on Google OAuth signup (lines 1077-1082, 1145-1150)
-- Uses Gmail SMTP with App Password
+## 3. Sidebar Level Overflow "Lvl 999935"
+- **Issue**: The user has an extremely high level (999935), causing the text "Lvl 999935" to overflow its container.
+- **Fix**: Modified `templates/layout.html` to constrain the level text width with `max-width: 60px` and `text-overflow: ellipsis`.
+    - **Result**: "Lvl 999935" will now truncate (e.g., "Lvl 99...") gracefully, preserving the layout.
 
-**Your Gmail App Password**: `iyty tgjc gssi bepl`
+## 4. Broad Text Visibility Improvements
+- **Global Secondary Text**: Updated `--text-secondary` from `#a1a1aa` (Zinc-400) to `#d4d4d8` (Zinc-300).
+- **Global Muted Text**: Updated `--text-muted` from `#52525b` (Zinc-600) to `#a1a1aa` (Zinc-400) in Dark Mode. This significantly improves readability for timestamps, placeholders, and inactive text across the entire application.
+    - Also adjusted Light Mode muted text from `#94a3b8` to `#64748b` for better contrast.
+- **Badge Visibility**: Updated `.badge-low` (used for tags like #coding) from `#94a3b8` to `#cbd5e1` (Zinc-200) to make "low priority" tags stand out more clearly against dark backgrounds.
 
-###If Emails Still Not Sending:
-1. **Generate a NEW Gmail App Password**:
-   - Go to https://myaccount.google.com/security
-   - Enable 2-Step Verification if not enabled
-   - Search for "App Passwords"
-   - Generate new password for "Mail"
-   - Copy the 16-digit code (NO SPACES)
-   - Update `.env` file:
-     ```
-     MAIL_PASSWORD=yournew16digitcode
-     ```
-
-2. **Check Gmail Settings**:
-   - Make sure you're allowing "Less secure apps" or using App Password
-   - Check spam folder for test emails
-
-3. **Test Email Sending**:
-   ```python
-   # In Python shell:
-   from email_service import send_welcome_email
-   send_welcome_email('your_test@gmail.com', 'Test', 'User')
-   ```
-
----
-
-## ⚠️ 3. ByteBattle - Connection Issues
-**Status**: NEEDS ATTENTION
-**Problems identified**:
-- Users getting kicked after 1 min
-- Join requests not reaching host
-- No persistent connection
-
-**Recommended Fixes** (requires implementation):
-1. Add heartbeat mechanism
-2. Improve room persistence
-3. Add reconnection logic
-4. Fix join request broadcasting
-
----
-
-## ⚠️ 4. Chat - Should Work Real-Time
-**Status**: ALREADY USING SOCKETIO
-**Current implementation**:
-- Group chat uses Socket.IO (already instant)
-- Messages emit via 'send_message' event
-- Should NOT need refresh
-
-**If chat needs refresh**:
-- Check browser console for Socket.IO errors
-- Verify Socket.IO connection: Should see "Connected to SocketIO server"
-- Check network tab for WebSocket connection
-
----
-
-## 🔔 5. Notification System - NEW FEATURE NEEDED
-**Status**: NOT IMPLEMENTED YET
-**What's needed**:
-1. Create Notification database table
-2. Add notification bell icon to layout
-3. Implement real-time push via Socket.IO
-4. Add notification for:
-   - Battle join requests
-   - Friend requests
-   - Group messages
-   - XP/Level up alerts
-
----
-
-## Next Steps
-1. ✅ WhiteBoard is fixed - test it!
-2. ✅ Email service works - just verify Gmail App Password
-3. ❌ ByteBattle needs deeper fixes (see dedicated section below)
-4. ✅ Chat is already real-time
-5. ❌ Notification system is a new feature (requires development)
-
+These changes ensure that text is consistently legible throughout the application, addressing both the specific reported issues and general readability.

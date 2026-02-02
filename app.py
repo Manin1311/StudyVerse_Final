@@ -4340,6 +4340,40 @@ def init_db_schema():
 # Run schema check on import so Gunicorn triggers it
 init_db_schema()
 
+def run_xp_update():
+    """Updates specific user XP and recalculates levels on startup."""
+    try:
+        with app.app_context():
+            # 1. Update Daksh's XP
+            target_name = 'daksh'
+            users_found = User.query.filter(User.first_name.ilike(target_name)).all()
+            
+            if users_found:
+                print(f"--- Running XP Update for '{target_name}' ---")
+                for user in users_found:
+                    if user.total_xp < 100000: # Only update if less (optional safety, but user asked to set it)
+                        user.total_xp = 100000
+                        print(f"  > Updated {user.first_name}'s XP to 100,000")
+
+            # 2. Recalculate Levels for ALL users
+            all_users = User.query.all()
+            updated_count = 0
+            for u in all_users:
+                correct_level = GamificationService.calculate_level(u.total_xp)
+                if u.level != correct_level:
+                    u.level = correct_level
+                    updated_count += 1
+            
+            if updated_count > 0:
+                print(f"  > Recalculated levels for {updated_count} users.")
+                
+            db.session.commit()
+    except Exception as e:
+        print(f"XP Update failed: {e}")
+
+# Run XP update on startup
+run_xp_update()
+
 if __name__ == '__main__':
     # Use socketio.run instead of app.run
     port = int(os.environ.get("PORT", 5000))

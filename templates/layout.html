@@ -125,8 +125,10 @@
                         onclick="showXPModal({{ current_user.level }}, {{ xp_remaining }}, {{ level_progress }})">
                         <div
                             style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">
-                            <span>Lvl {{ current_user.level }}</span>
-                            <span>{{ level_progress }}%</span>
+                            <span
+                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60px;">Lvl
+                                {{ current_user.level }}</span>
+                            <span style="flex-shrink: 0;">{{ level_progress }}%</span>
                         </div>
                         <div class="xp-bar-bg">
                             <div class="xp-bar-fill" style="width: {{ level_progress }}%;"></div>
