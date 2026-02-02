@@ -3040,6 +3040,12 @@ def progress():
     # Fetch user inventory count for streak freezes
     streak_freezes = UserItem.query.filter_by(user_id=current_user.id, item_id='streak_freeze').count()
 
+    # Category Distribution for Pie Chart
+    categories = db.session.query(Todo.category, db.func.count(Todo.id))\
+        .filter(Todo.user_id == current_user.id)\
+        .group_by(Todo.category).all()
+    category_data = {cat or 'Uncategorized': count for cat, count in categories}
+
     return render_template(
         'progress.html',
         total_todos=total_todos,
@@ -3050,7 +3056,8 @@ def progress():
         day_streak=streak,
         daily_hours=daily,
         top_topics=top_topics,
-        streak_freezes=streak_freezes
+        streak_freezes=streak_freezes,
+        category_distribution=category_data
     )
 
 @app.route('/leaderboard')
