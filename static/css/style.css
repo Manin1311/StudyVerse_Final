@@ -463,6 +463,79 @@
     stroke: var(--border) !important;
 }
 
+/* ===== FRIENDS & GROUP PAGES LIGHT MODE OVERRIDES ===== */
+
+/* Friends page */
+[data-theme="light"] .page-title-friends {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .search-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .search-input-friends {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .list-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .list-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .friend-item-row {
+    background: var(--bg-hover) !important;
+}
+
+[data-theme="light"] .friend-name {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .friend-name a {
+    color: var(--text-primary) !important;
+}
+
+/* Group/Squad page */
+[data-theme="light"] .back-btn-squad {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .back-btn-squad:hover {
+    background: var(--bg-hover) !important;
+}
+
+[data-theme="light"] .back-btn-squad i {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .card-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .member-item [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .messages-scroll-area {
+    background: var(--bg-main) !important;
+}
+
+/* Fix all white text in friends/group pages */
+[data-theme="light"] .friends-header [style*="color: #fff"],
+[data-theme="light"] .list-header [style*="color: #fff"],
+[data-theme="light"] .card-header [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
 
 /* Cyberpunk Theme */
 body.theme_cyberpunk {
