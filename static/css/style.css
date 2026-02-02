@@ -463,9 +463,30 @@
     stroke: var(--border) !important;
 }
 
-/* ===== FRIENDS & GROUP PAGES LIGHT MODE OVERRIDES ===== */
+/* ===== FRIENDS, GROUP & CHAT PAGES LIGHT MODE OVERRIDES ===== */
 
-/* Friends page */
+/* AI Coach / Chat page */
+[data-theme="light"] .ai-msg.user .msg-bubble {
+    background: #2563eb !important;
+    /* Bright blue for visibility */
+    color: white !important;
+}
+
+[data-theme="light"] .ai-msg.bot .msg-bubble {
+    background: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .bg-input,
+[data-theme="light"] #chatInput {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 [data-theme="light"] .page-title-friends {
     color: var(--text-primary) !important;
 }
