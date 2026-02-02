@@ -180,6 +180,44 @@ class User(UserMixin, db.Model):
     longest_streak = db.Column(db.Integer, default=0)
     last_activity_date = db.Column(db.Date, nullable=True)
     about_me = db.Column(db.Text, nullable=True)
+
+    @property
+    def rank_info(self):
+        """Returns the dictionary of rank details (name, icon, color)."""
+        return GamificationService.get_rank(self.level)
+
+    @property
+    def active_frame_color(self):
+        """Returns the color of the user's currently active frame, or None."""
+        try:
+            active_items = UserItem.query.filter_by(user_id=self.id, is_active=True).all()
+            for u_item in active_items:
+                cat_item = ShopService.ITEMS.get(u_item.item_id)
+                if cat_item and cat_item.get('type') == 'frame':
+                    return cat_item.get('color')
+        except Exception:
+            pass
+        return None
+
+    @property
+    def rank(self):
+        """Backward compatibility for templates using user.rank."""
+        return self.rank_info['name']
+
+    @property
+    def rank_name(self):
+        """Backward compatibility for templates using user.rank_name."""
+        return self.rank_info['name']
+
+    @property
+    def rank_icon(self):
+        """Backward compatibility for templates using user.rank_icon."""
+        return self.rank_info['icon']
+
+    @property
+    def rank_color(self):
+        """Backward compatibility for templates using user.rank_color."""
+        return self.rank_info['color']
     
     def get_avatar(self, size=200):
         if self.profile_image and "ui-avatars.com" not in self.profile_image:
@@ -200,13 +238,16 @@ class User(UserMixin, db.Model):
         return f"https://ui-avatars.com/api/?name={initials}&background=0ea5e9&color=fff&size={size}"
     
     def to_dict(self):
+        rank_data = GamificationService.get_rank(self.level)
         return {
             'id': self.id,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'level': self.level,
             'total_xp': self.total_xp,
-            'rank': GamificationService.get_rank(self.level),
+            'rank': rank_data['name'],
+            'rank_icon': rank_data['icon'],
+            'rank_color': rank_data['color'],
             'avatar': self.get_avatar(),
             'is_public': self.is_public_profile
         }
@@ -261,7 +302,7 @@ class GamificationService:
         (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),
         (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),
         (76, 100): ('Master', 'fa-crown', '#ff0000'),
-        (101, 9999): ('Grandmaster', 'fa-dragon', '#800080')
+        (101, 10000000000000): ('Grandmaster', 'fa-dragon', '#800080')
     }
 
     @staticmethod
@@ -271,6 +312,7 @@ class GamificationService:
 
     @staticmethod
     def get_rank(level):
+        if level is None: level = 1
         for (min_lvl, max_lvl), (name, icon, color) in GamificationService.RANKS.items():
             if min_lvl <= level <= max_lvl:
                 return {'name': name, 'icon': icon, 'color': color}
@@ -282,25 +324,52 @@ class GamificationService:
         if not user:
             return
 
-        # Check for active XP multiplier power-ups
+        # 1. Fetch ALL active power-ups for the user
         active_powerups = ActivePowerUp.query.filter_by(
             user_id=user.id,
             is_active=True
-        ).filter(
-            ActivePowerUp.power_up_id.in_(['xp_boost', 'mega_xp_boost'])
         ).all()
         
-        # Clean up expired power-ups and apply multiplier
-        multiplier = 1.0
+        # 2. Categorize and clean up expired power-ups
+        xp_multiplier = 1.0
+        time_multiplier = 1.0
+        has_protection = False
         active_boost = None
+
         for powerup in active_powerups:
             if powerup.is_expired():
                 powerup.is_active = False
-            elif powerup.multiplier > multiplier:
-                multiplier = powerup.multiplier
-                active_boost = powerup.power_up_id
+                continue
+            
+            # Fetch item details from catalog to know the effect type
+            item_id = powerup.power_up_id
+            cat_item = ShopService.ITEMS.get(item_id)
+            if not cat_item: continue
 
-        # Cap Focus XP daily
+            effect = cat_item.get('effect')
+            
+            if effect in ['xp_multiplier', 'mega_xp_multiplier']:
+                if powerup.multiplier > xp_multiplier:
+                    xp_multiplier = powerup.multiplier
+                    active_boost = item_id
+            elif effect == 'time_multiplier':
+                if powerup.multiplier > time_multiplier:
+                    time_multiplier = powerup.multiplier
+            elif effect == 'xp_protection':
+                has_protection = True
+        
+        # 3. Handle XP loss protection
+        if amount < 0 and has_protection:
+            return {'earned': 0, 'message': 'XP Protection Active! No XP lost.'}
+
+        # 4. Apply special multipliers based on source (e.g., Double Time for focus)
+        actual_multiplier = xp_multiplier
+        if source == 'focus' and time_multiplier > 1.0:
+            # If both XP boost and Double Time are active, they might stack or we take the highest.
+            # Usually, Double Time specifically doubles the focus reward.
+            actual_multiplier *= time_multiplier
+
+        # 5. Cap Focus XP daily (Check BEFORE multipliers to keep cap consistent)
         if source == 'focus':
             today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
             daily_focus_xp = db.session.query(db.func.sum(XPHistory.amount))\
@@ -319,8 +388,8 @@ class GamificationService:
 
         # Apply multiplier
         original_amount = amount
-        if multiplier > 1.0:
-            amount = int(amount * multiplier)
+        if actual_multiplier > 1.0:
+            amount = int(amount * actual_multiplier)
 
         user.total_xp += amount
         
@@ -352,8 +421,8 @@ class GamificationService:
         }
         
         # Add multiplier info if active
-        if multiplier > 1.0:
-            result['multiplier'] = multiplier
+        if actual_multiplier > 1.0:
+            result['multiplier'] = actual_multiplier
             result['base_amount'] = original_amount
             result['boost_active'] = active_boost
         
@@ -1684,15 +1753,6 @@ class ShopService:
             'type': 'theme',
             'color': '#84cc16'
         },
-        'theme_simple': {
-            'id': 'theme_simple',
-            'name': 'Simple Theme ⚪',
-            'description': 'Clean, professional light mode look.',
-            'price': 10,
-            'icon': 'fa-circle-half-stroke',
-            'type': 'theme',
-            'color': '#e5e7eb'
-        },
         
         # === NEW PREMIUM THEMES ===
         'theme_blood_moon': {
@@ -2140,33 +2200,6 @@ def group_leave():
         flash('You have left the group.', 'success')
     return redirect(url_for('group_chat'))
 
-@app.route('/group/clear-chat', methods=['POST'])
-@login_required
-def group_clear_chat():
-    """Clear all chat messages in the group (admin only). Does NOT delete the group."""
-    group = GroupService.get_user_group(current_user.id)
-    if not group:
-        flash('You are not in a group.', 'error')
-        return redirect(url_for('group_chat'))
-    
-    # Only allow admin to clear chat
-    if group.admin_id != current_user.id:
-        flash('Only the group admin can clear the chat.', 'error')
-        return redirect(url_for('group_chat'))
-    
-    # Delete all messages for this group
-    GroupChatMessage.query.filter_by(group_id=group.id).delete()
-    db.session.commit()
-    
-    # Notify all members in the room via SocketIO
-    try:
-        socketio.emit('chat_cleared', {'group_id': group.id}, room=str(group.id))
-    except Exception as e:
-        print(f"Socket emit failed: {e}")
-    
-    flash('All chat messages have been cleared.', 'success')
-    return redirect(url_for('group_chat'))
-
 @app.route('/group/send', methods=['POST'])
 @login_required
 def group_send():
@@ -2463,11 +2496,20 @@ def pomodoro_save_session():
         
         # Award XP: 1 XP per minute of focus
         if mode == 'focus':
-            xp_amount = duration
+            # Check for Double Time power-up to adjust stored duration
+            active_time_boost = ActivePowerUp.query.filter_by(
+                user_id=current_user.id, 
+                power_up_id='double_time',
+                is_active=True
+            ).first()
+            
+            if active_time_boost and not active_time_boost.is_expired():
+                study_session.duration = duration * 2
+                xp_amount = duration # add_xp will handle the multiplier
+            else:
+                xp_amount = duration
+                
             result = GamificationService.add_xp(current_user.id, 'focus', xp_amount)
-            if result:
-                 # We can return this to UI if we want a popup
-                 pass
         
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Session saved'})
@@ -2998,6 +3040,12 @@ def progress():
     # Fetch user inventory count for streak freezes
     streak_freezes = UserItem.query.filter_by(user_id=current_user.id, item_id='streak_freeze').count()
 
+    # Category Distribution for Pie Chart
+    categories = db.session.query(Todo.category, db.func.count(Todo.id))\
+        .filter(Todo.user_id == current_user.id)\
+        .group_by(Todo.category).all()
+    category_data = {cat or 'Uncategorized': count for cat, count in categories}
+
     return render_template(
         'progress.html',
         total_todos=total_todos,
@@ -3008,7 +3056,8 @@ def progress():
         day_streak=streak,
         daily_hours=daily,
         top_topics=top_topics,
-        streak_freezes=streak_freezes
+        streak_freezes=streak_freezes,
+        category_distribution=category_data
     )
 
 @app.route('/leaderboard')
@@ -3024,22 +3073,18 @@ def leaderboard():
         .all()
     )
     
-    # Add rank info to each user for display
-    for user in top_users:
-        user.rank_info = GamificationService.get_rank(user.level)
-    
-    # Find current user's rank
-    my_rank = 1
-    all_users_ranked = (
-        User.query
-        .filter(User.is_public_profile == True)
-        .order_by(User.level.desc(), User.total_xp.desc())
-        .all()
-    )
-    for i, u in enumerate(all_users_ranked):
-        if u.id == current_user.id:
-            my_rank = i + 1
-            break
+    # Calculate current user's rank much more efficiently
+    # Rank is 1 + number of users who have more level OR same level but more XP
+    my_rank = User.query.filter(
+        User.is_public_profile == True,
+        db.or_(
+            User.level > current_user.level,
+            db.and_(
+                User.level == current_user.level,
+                User.total_xp > current_user.total_xp
+            )
+        )
+    ).count() + 1
     
     return render_template(
         'leaderboard.html',
@@ -4308,38 +4353,38 @@ def init_db_schema():
                     # New Features (Friends/Public Profile)
                     if 'is_public_profile' not in columns:
                         print("Running migration: Adding is_public_profile to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN is_public_profile BOOLEAN DEFAULT 1"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN is_public_profile BOOLEAN DEFAULT TRUE'))
                     if 'last_seen' not in columns:
                         print("Running migration: Adding last_seen to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN last_seen TIMESTAMP"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN last_seen TIMESTAMP'))
                     
                     # Existing checks
                     if 'cover_image' not in columns:
                         print("Running migration: Adding cover_image to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN cover_image VARCHAR(255)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN cover_image VARCHAR(255)'))
                     if 'google_id' not in columns:
                         print("Running migration: Adding google_id to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN google_id VARCHAR(100)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN google_id VARCHAR(100)'))
                     if 'profile_image' not in columns:
                         print("Running migration: Adding profile_image to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN profile_image VARCHAR(255)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_image VARCHAR(255)'))
                     
                     # Gamification Migrations
                     if 'total_xp' not in columns:
                         print("Running migration: Adding total_xp to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN total_xp INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN total_xp INTEGER DEFAULT 0'))
                     if 'level' not in columns:
                         print("Running migration: Adding level to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN level INTEGER DEFAULT 1"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN level INTEGER DEFAULT 1'))
                     if 'current_streak' not in columns:
                         print("Running migration: Adding current_streak to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN current_streak INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN current_streak INTEGER DEFAULT 0'))
                     if 'longest_streak' not in columns:
                         print("Running migration: Adding longest_streak to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN longest_streak INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN longest_streak INTEGER DEFAULT 0'))
                     if 'last_activity_date' not in columns:
                         print("Running migration: Adding last_activity_date to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN last_activity_date DATE"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN last_activity_date DATE'))
                     
                 # 3. Check for Todo table updates
                 if 'todo' in inspector.get_table_names():
@@ -4349,7 +4394,7 @@ def init_db_schema():
                          conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
                     if 'is_group' not in columns:
                          print("Running migration: Adding is_group to todo table...")
-                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT 0"))
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT FALSE"))
                     if 'category' not in columns:
                          print("Running migration: Adding category to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN category VARCHAR(50)"))
@@ -4373,8 +4418,41 @@ def init_db_schema():
         except Exception as e:
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
-# Run schema check on import so Gunicorn triggers it
+def run_xp_update():
+    """Updates specific user XP and recalculates levels on startup."""
+    try:
+        with app.app_context():
+            # 1. Update Daksh's XP (Case-insensitive)
+            target_name = 'daksh'
+            users_found = User.query.filter(User.first_name.ilike(target_name)).all()
+            
+            if users_found:
+                print(f"--- Running XP Update for '{target_name}' ---")
+                for user in users_found:
+                    user.total_xp += 100000
+                    print(f"  > Incremented {user.first_name}'s XP by 100,000. New XP: {user.total_xp}")
+
+            # 2. Recalculate Levels for ALL users
+            print("--- Recalculating Levels/Ranks for All Users ---")
+            all_users = User.query.all()
+            updated_count = 0
+            for u in all_users:
+                correct_level = GamificationService.calculate_level(u.total_xp)
+                if u.level != correct_level:
+                    u.level = correct_level
+                    updated_count += 1
+            
+            if updated_count > 0:
+                print(f"  > Adjusted levels for {updated_count} users.")
+                
+            db.session.commit()
+            print("--- User Status Synchronization Complete ---")
+    except Exception as e:
+        print(f"XP/Rank Update failed: {e}")
+
+# IMPORTANT: Order matters. Define logic, THEN run schema check and updates.
 init_db_schema()
+run_xp_update()
 
 if __name__ == '__main__':
     # Use socketio.run instead of app.run

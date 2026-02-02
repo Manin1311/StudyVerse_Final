@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
-
 /* Dark Theme (Default) */
 :root {
     --bg-main: #0c0c0c;
@@ -13,8 +11,8 @@
     --accent-green-bright: #22c55e;
 
     --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
-    --text-muted: #52525b;
+    --text-secondary: #d4d4d8;
+    --text-muted: #a1a1aa;
 
     --border: #27272a;
     --border-light: #3f3f46;
@@ -61,7 +59,7 @@
 
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --text-muted: #64748b;
 
     --border: #e2e8f0;
     --border-light: #cbd5e1;
@@ -803,259 +801,6 @@ body.theme_sakura::before {
     100% {
         transform: translateY(25%);
     }
-}
-
-/* ========================================
-   SIMPLE THEME
-   ======================================== */
-body.theme_simple {
-    --bg-main: #f0f2f5;
-    --bg-card: #ffffff;
-    --bg-sidebar: #ffffff;
-    --bg-hover: #f3f4f6;
-
-    --accent-green: #1e293b;
-    --accent-green-rgb: 30, 41, 59;
-    --accent-green-dim: rgba(30, 41, 59, 0.05);
-    --accent-green-bright: #0f172a;
-
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-
-    --border: #e2e8f0;
-    --border-light: #f1f5f9;
-
-    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --shadow-glow: none;
-
-    /* Legacy Variable Support */
-    --background: var(--bg-main);
-    --foreground: var(--text-primary);
-    --card: var(--bg-card);
-    --card-foreground: var(--text-primary);
-    --primary: var(--accent-green);
-    --primary-foreground: #fff;
-    --muted: #f1f5f9;
-    --muted-foreground: var(--text-secondary);
-    --destructive: #ef4444;
-}
-
-/* Sidebar Overrides - Exact Reference Style */
-body.theme_simple .sidebar {
-    background-color: #ffffff !important;
-    border-right: 1px solid #e2e8f0;
-    box-shadow: none !important;
-}
-
-body.theme_simple .sidebar .logo {
-    color: #1e293b;
-}
-
-body.theme_simple .nav-item {
-    color: #64748b;
-    font-weight: 500;
-}
-
-body.theme_simple .nav-item i {
-    color: #64748b;
-}
-
-body.theme_simple .nav-item:hover {
-    background: #f8fafc;
-    color: #1e293b;
-}
-
-body.theme_simple .nav-item.active {
-    background: #f1f5f9 !important;
-    color: #0f172a !important;
-    font-weight: 700;
-    border-radius: 8px;
-}
-
-body.theme_simple .nav-item.active i {
-    color: #0f172a !important;
-}
-
-/* Dashboard Cards Overrides */
-body.theme_simple .card,
-body.theme_simple .bento-card.glass,
-body.theme_simple .card-clock-green,
-body.theme_simple .card-focus-wide,
-body.theme_simple .active-tasks-card,
-body.theme_simple .temporal-grid-card,
-body.theme_simple .card-todos-right,
-body.theme_simple .weekly-stats-card {
-    background: #ffffff !important;
-    backdrop-filter: none !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: var(--shadow) !important;
-    border-radius: 20px !important;
-}
-
-body.theme_simple .page-title {
-    color: #1e293b !important;
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
-    text-shadow: none !important;
-}
-
-/* Chart Bars - Narrow, Highly Rounded Dark Slate */
-body.theme_simple .stat-bar.bar-focus,
-body.theme_simple .stat-bar.bar-task {
-    background: #1e293b !important;
-    border-radius: 20px !important;
-    /* Fully rounded tags */
-    box-shadow: none !important;
-    width: 24px !important;
-    border: none !important;
-}
-
-body.theme_simple .stat-bar.bar-task {
-    background: #475569 !important;
-}
-
-body.theme_simple .stat-val {
-    color: #1e293b !important;
-    font-weight: 700;
-}
-
-body.theme_simple .bar-value {
-    color: #64748b !important;
-    font-weight: 600 !important;
-}
-
-/* Habit Chart Bar Overrides (from JS) */
-body.theme_simple #dashboard-habit-chart div[style*="background"] {
-    background: #1e293b !important;
-    border-radius: 20px 20px 0 0 !important;
-    box-shadow: none !important;
-    width: 40% !important;
-    /* Make bars narrower like ref */
-}
-
-/* Calendar Overrides - Full light mode */
-body.theme_simple .calendar-widget,
-body.theme_simple .temporal-grid-card {
-    background: #ffffff !important;
-}
-
-body.theme_simple .cal-day {
-    color: #475569 !important;
-    background: transparent !important;
-}
-
-body.theme_simple .cal-day.active {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border-radius: 12px;
-}
-
-body.theme_simple .cal-nav-btn {
-    background: #f1f5f9 !important;
-    color: #1e293b !important;
-    border-radius: 8px !important;
-}
-
-body.theme_simple .temporal-header,
-body.theme_simple .timeline-info {
-    color: #1e293b !important;
-    font-weight: 600;
-}
-
-/* Clock Flip Tints */
-body.theme_simple .flip-digit {
-    background: #f8fafc !important;
-    color: #1e293b !important;
-    border: 1px solid #e2e8f0;
-    box-shadow: none !important;
-}
-
-body.theme_simple .clock-divider {
-    color: #cbd5e1;
-}
-
-/* Important Card Contrast - Deep Slate */
-body.theme_simple .card-important-red {
-    background: #0f172a !important;
-    border: none !important;
-    color: #ffffff;
-}
-
-body.theme_simple .card-important-red .important-title {
-    color: #ffffff !important;
-}
-
-body.theme_simple .card-important-red .important-label {
-    color: #64748b;
-}
-
-/* Buttons Styling */
-body.theme_simple .btn-add-new-task,
-body.theme_simple .btn-init-event,
-body.theme_simple .btn-primary {
-    background: #1e293b !important;
-    color: #ffffff !important;
-    border: none !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    transition: transform 0.2s ease;
-}
-
-body.theme_simple .btn-add-new-task:hover,
-body.theme_simple .btn-init-event:hover {
-    transform: translateY(-2px);
-    background: #0f172a !important;
-}
-
-body.theme_simple .mini-stat-box {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px !important;
-}
-
-body.theme_simple .weekly-stats-chart {
-    background: #fdfdfd !important;
-    border: 1px solid #f1f5f9 !important;
-    border-radius: 16px !important;
-}
-
-/* Quick Nav Overrides */
-body.theme_simple .quick-nav-floating {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-}
-
-body.theme_simple .quick-nav-floating a.btn-secondary {
-    background: #f1f5f9 !important;
-    color: #475569 !important;
-    border: 1px solid #e2e8f0 !important;
-}
-
-body.theme_simple .quick-nav-floating a.btn-primary {
-    background: #1e293b !important;
-    color: #ffffff !important;
-}
-
-/* Modal Overrides */
-body.theme_simple .modal-content {
-    background-color: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-}
-
-body.theme_simple .modal-content h2,
-body.theme_simple .modal-content label {
-    color: #1e293b !important;
-}
-
-body.theme_simple .modal-content input,
-body.theme_simple .modal-content textarea {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    color: #1e293b !important;
 }
 
 /* ========================================
@@ -2657,6 +2402,12 @@ body.sidebar-collapsed .sidebar .nav-item i {
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.badge-low {
+    background: rgba(148, 163, 184, 0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
 .badge-todo {
     background: rgba(59, 130, 246, 0.1);
     color: #60a5fa;
@@ -4240,7 +3991,7 @@ textarea:focus-visible {
 
 .subtopic-item.completed span {
     text-decoration: line-through;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 /* Calendar Specifics */
@@ -5490,11 +5241,12 @@ body.sidebar-collapsed .nav-item i {
     /* Very dark, almost black */
     border: 1px solid #222;
     border-radius: 24px;
-    padding: 24px;
-    min-height: 450px;
+    padding: 12px;
+    margin: 0;
+    min-height: 300px;
     display: grid;
     grid-template-columns: 1.2fr 1fr;
-    gap: 24px;
+    gap: 12px;
     position: relative;
 }
 
@@ -5513,7 +5265,7 @@ body.sidebar-collapsed .nav-item i {
 .calendar-widget {
     background: #161616;
     border-radius: 20px;
-    padding: 20px;
+    padding: 8px;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
@@ -5648,8 +5400,8 @@ body.sidebar-collapsed .nav-item i {
     background: #0f0f0f;
     border: 1px solid #222;
     border-radius: 24px;
-    padding: 24px;
-    min-height: 450px;
+    padding: 16px;
+    min-height: 300px;
     display: flex;
     flex-direction: column;
 }
@@ -5780,8 +5532,8 @@ body.sidebar-collapsed .nav-item i {
     background: #0f0f0f;
     border: 1px solid #222;
     border-radius: 24px;
-    padding: 24px;
-    min-height: 420px;
+    padding: 16px;
+    min-height: 300px;
     height: auto;
     display: flex;
     flex-direction: column;

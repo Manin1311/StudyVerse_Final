@@ -25,21 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (messagesContainer) {
-        // Auto-scroll to bottom - use function for reuse
-        function scrollToBottom() {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        // Scroll immediately
-        scrollToBottom();
-
-        // Also scroll after short delays to handle async rendering
-        setTimeout(scrollToBottom, 100);
-        setTimeout(scrollToBottom, 300);
-        setTimeout(scrollToBottom, 500);
-
-        // And when all images/content are loaded
-        window.addEventListener('load', scrollToBottom);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     if (uploadBtn && fileInput) {
@@ -146,53 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('📩 Message received:', data);
             appendMessage(data);
         });
-
-        socket.on('chat_cleared', (data) => {
-            console.log('🗑️ Chat cleared remotely');
-            if (messagesContainer) {
-                messagesContainer.innerHTML = `
-                    <div style="text-align: center; color: var(--text-secondary); margin-top: 40px;">
-                        <p>No messages yet. Start the conversation!</p>
-                    </div>
-                `;
-                seenMessageIds.clear();
-                lastMessageId = 0;
-            }
-        });
-
-        const clearForm = document.getElementById('clearChatForm');
-        if (clearForm) {
-            clearForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('🗑️ Clearing chat via AJAX...');
-                try {
-                    const response = await fetch(clearForm.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        }
-                    });
-                    if (response.ok) {
-                        console.log('✅ Chat cleared successfully');
-                        // No need to manually clear here if SocketIO works, 
-                        // but good for instant local feedback:
-                        if (messagesContainer) {
-                            messagesContainer.innerHTML = `
-                                <div style="text-align: center; color: var(--text-secondary); margin-top: 40px;">
-                                    <p>No messages yet. Start the conversation!</p>
-                                </div>
-                            `;
-                            seenMessageIds.clear();
-                            lastMessageId = 0;
-                        }
-                    } else {
-                        console.error('❌ Failed to clear chat');
-                    }
-                } catch (err) {
-                    console.error('❌ Error:', err);
-                }
-            });
-        }
 
         if (chatForm) {
             chatForm.addEventListener('submit', async (e) => {

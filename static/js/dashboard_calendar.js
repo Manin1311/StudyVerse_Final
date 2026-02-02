@@ -63,13 +63,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 cell.classList.add('active');
             }
 
-            // Interaction
-            cell.addEventListener('click', () => {
-                document.querySelectorAll('.cal-day.active').forEach(el => el.classList.remove('active'));
-                cell.classList.add('active');
-                selectedDate = dateStr;
-                updateTimelineForDate(dateStr);
-            });
+            // Check if past date
+            const cellDate = new Date(year, month, d);
+            const todayZero = new Date();
+            todayZero.setHours(0, 0, 0, 0);
+
+            if (cellDate < todayZero) {
+                cell.classList.add('past');
+                cell.style.opacity = '0.3';
+                cell.style.cursor = 'not-allowed';
+            } else {
+                // Interaction
+                cell.addEventListener('click', () => {
+                    document.querySelectorAll('.cal-day.active').forEach(el => el.classList.remove('active'));
+                    cell.classList.add('active');
+                    selectedDate = dateStr;
+                    updateTimelineForDate(dateStr);
+
+                    // Always re-enable button when a valid date is clicked
+                    if (initEventBtn) {
+                        initEventBtn.disabled = false;
+                        initEventBtn.style.opacity = '1';
+                        initEventBtn.style.cursor = 'pointer';
+                    }
+                });
+            }
 
             dayGrid.appendChild(cell);
         }
