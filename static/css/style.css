@@ -223,6 +223,246 @@
     color: var(--text-primary) !important;
 }
 
+/* ===== DASHBOARD LIGHT MODE OVERRIDES ===== */
+
+/* Top stats cards */
+[data-theme="light"] .bento-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .bento-card [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+/* Clock card - keep green but adjust for light mode */
+[data-theme="light"] .card-clock-green {
+    background: var(--accent-green) !important;
+    box-shadow: 0 10px 30px rgba(22, 163, 74, 0.2) !important;
+}
+
+[data-theme="light"] .flip-digit {
+    background: rgba(0, 0, 0, 0.15) !important;
+    color: #064e3b !important;
+}
+
+[data-theme="light"] .card-clock-date {
+    color: #064e3b !important;
+}
+
+[data-theme="light"] .clock-ampm-badge {
+    background: rgba(0, 0, 0, 0.1) !important;
+    color: #064e3b !important;
+}
+
+[data-theme="light"] .clock-ampm-badge.active {
+    background: #064e3b !important;
+    color: white !important;
+}
+
+/* Focus/Productivity card */
+[data-theme="light"] .card-focus-wide {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .focus-title,
+[data-theme="light"] .card-focus-wide [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .card-focus-wide circle[stroke="#222"] {
+    stroke: var(--border) !important;
+}
+
+/* Important card (red) */
+[data-theme="light"] .card-important-red {
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="light"] .important-title,
+[data-theme="light"] .card-important-red [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+/* Active tasks card */
+[data-theme="light"] .active-tasks-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .active-tasks-header [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .active-task-item {
+    background: var(--bg-hover) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .active-task-item h4 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .active-task-item p {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .btn-add-new-task {
+    background: var(--accent-green) !important;
+    color: white !important;
+}
+
+/* Temporal grid (calendar) */
+[data-theme="light"] .temporal-grid-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .temporal-header {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .calendar-widget {
+    background: var(--bg-main) !important;
+}
+
+[data-theme="light"] .cal-header {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .cal-day {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .cal-day.active {
+    background: var(--accent-green) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .cal-day:hover {
+    background: var(--bg-hover) !important;
+}
+
+[data-theme="light"] .events-widget {
+    background: var(--bg-main) !important;
+}
+
+[data-theme="light"] .event-placeholder {
+    background: var(--bg-card) !important;
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .btn-init-event {
+    background: var(--accent-green) !important;
+    color: white !important;
+}
+
+/* Weekly todos card */
+[data-theme="light"] .card-todos-right {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .weekly-todos-header,
+[data-theme="light"] .card-todos-right [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .todos-list-minimal li {
+    color: var(--text-primary) !important;
+}
+
+/* Weekly stats cards */
+[data-theme="light"] .weekly-stats-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .weekly-stats-card h3,
+[data-theme="light"] .weekly-stats-card [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .weekly-stats-chart {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .mini-stat-box {
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .stat-val {
+    color: var(--text-primary) !important;
+}
+
+/* Habit chart */
+[data-theme="light"] #dashboard-habit-chart {
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* Modals */
+[data-theme="light"] .modal-content {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .modal-content h2,
+[data-theme="light"] .modal-content [style*="color: #fff"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .modal-content input,
+[data-theme="light"] .modal-content textarea {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .modal-overlay {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Quick nav floating */
+[data-theme="light"] .quick-nav-floating {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid var(--border) !important;
+    backdrop-filter: blur(20px);
+}
+
+[data-theme="light"] .btn-secondary {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* Fix all hardcoded dark backgrounds in dashboard */
+[data-theme="light"] [style*="background: #101010"],
+[data-theme="light"] [style*="background: #111"],
+[data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
+[data-theme="light"] [style*="background: rgba(0,0,0,0.4)"],
+[data-theme="light"] [style*="background: rgba(15,15,15"] {
+    background: var(--bg-card) !important;
+}
+
+[data-theme="light"] [style*="background: rgba(255,255,255,0.05)"] {
+    background: var(--bg-hover) !important;
+}
+
+[data-theme="light"] [style*="border: 1px solid #333"],
+[data-theme="light"] [style*="border: 1px solid #1a1a1a"] {
+    border: 1px solid var(--border) !important;
+}
+
+/* SVG circles in charts */
+[data-theme="light"] svg circle[stroke="#222"] {
+    stroke: var(--border) !important;
+}
+
 
 /* Cyberpunk Theme */
 body.theme_cyberpunk {
