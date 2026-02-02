@@ -187,6 +187,19 @@ class User(UserMixin, db.Model):
         return GamificationService.get_rank(self.level)
 
     @property
+    def active_frame_color(self):
+        """Returns the color of the user's currently active frame, or None."""
+        try:
+            active_items = UserItem.query.filter_by(user_id=self.id, is_active=True).all()
+            for u_item in active_items:
+                cat_item = ShopService.ITEMS.get(u_item.item_id)
+                if cat_item and cat_item.get('type') == 'frame':
+                    return cat_item.get('color')
+        except Exception:
+            pass
+        return None
+
+    @property
     def rank(self):
         """Backward compatibility for templates using user.rank."""
         return self.rank_info['name']
@@ -289,7 +302,7 @@ class GamificationService:
         (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),
         (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),
         (76, 100): ('Master', 'fa-crown', '#ff0000'),
-        (101, 9999): ('Grandmaster', 'fa-dragon', '#800080')
+        (101, 10000000000000): ('Grandmaster', 'fa-dragon', '#800080')
     }
 
     @staticmethod
@@ -299,6 +312,7 @@ class GamificationService:
 
     @staticmethod
     def get_rank(level):
+        if level is None: level = 1
         for (min_lvl, max_lvl), (name, icon, color) in GamificationService.RANKS.items():
             if min_lvl <= level <= max_lvl:
                 return {'name': name, 'icon': icon, 'color': color}
@@ -3016,22 +3030,18 @@ def leaderboard():
         .all()
     )
     
-    # Add rank info to each user for display
-    for user in top_users:
-        user.rank_info = GamificationService.get_rank(user.level)
-    
-    # Find current user's rank
-    my_rank = 1
-    all_users_ranked = (
-        User.query
-        .filter(User.is_public_profile == True)
-        .order_by(User.level.desc(), User.total_xp.desc())
-        .all()
-    )
-    for i, u in enumerate(all_users_ranked):
-        if u.id == current_user.id:
-            my_rank = i + 1
-            break
+    # Calculate current user's rank much more efficiently
+    # Rank is 1 + number of users who have more level OR same level but more XP
+    my_rank = User.query.filter(
+        User.is_public_profile == True,
+        db.or_(
+            User.level > current_user.level,
+            db.and_(
+                User.level == current_user.level,
+                User.total_xp > current_user.total_xp
+            )
+        )
+    ).count() + 1
     
     return render_template(
         'leaderboard.html',
