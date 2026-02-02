@@ -7,25 +7,44 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-    
+
     /* Scoped styles to avoid affecting global layout too much if possible */
     .battle-scope {
         font-family: 'Inter', sans-serif;
         background-color: #050505;
         color: #a1a1aa;
     }
-    .battle-scope .font-mono { font-family: 'JetBrains Mono', monospace; }
-    
+
+    .battle-scope .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+    }
+
     /* Custom Scrollbar for Battle UI */
-    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #27272a;
+        border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #3f3f46;
+    }
 
     /* Modal Overlay (Preserved from old implementation) */
     .modal-overlay {
         position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         background: rgba(0, 0, 0, 0.85);
         display: none;
         align-items: center;
@@ -33,6 +52,7 @@
         z-index: 1000;
         backdrop-filter: blur(5px);
     }
+
     .modal-box {
         background: #18181b;
         border: 1px solid #27272a;
@@ -43,33 +63,89 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         color: white;
     }
-    
+
     /* Utilities */
-    .hidden { display: none !important; }
-    
+    .hidden {
+        display: none !important;
+    }
+
+    /* Hide global layout elements on battle page */
+    .sidebar,
+    #app-sidebar,
+    .mobile-header,
+    #sidebar-toggle,
+    .desktop-sidebar-toggle {
+        display: none !important;
+    }
+
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .app-container {
+        display: block !important;
+        padding: 0 !important;
+    }
+
     /* Editor Overrides */
     #code-editor {
         font-family: 'JetBrains Mono', monospace;
         line-height: 1.6;
         background: transparent;
-        color: #e4e4e7; 
+        color: #e4e4e7;
         caret-color: #3b82f6;
     }
-    #code-editor::placeholder { color: #3f3f46; }
+
+    #code-editor::placeholder {
+        color: #3f3f46;
+    }
 
     /* Chat Messages */
-    .chat-msg { margin-bottom: 0.5rem; font-size: 0.85rem; }
-    .chat-msg.system { text-align: center; color: #52525b; font-style: italic; font-size: 0.75rem; margin: 0.75rem 0; }
-    .chat-msg.bot { color: #818cf8; }
-    .chat-msg.user { color: #e4e4e7; text-align: right; }
-    .msg-bubble { display: inline-block; padding: 0.4rem 0.8rem; border-radius: 6px; background: #27272a; max-width: 90%; }
-    .chat-msg.bot .msg-bubble { background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); }
-    .chat-msg.user .msg-bubble { background: #3f3f46; }
+    .chat-msg {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
 
+    .chat-msg.system {
+        text-align: center;
+        color: #52525b;
+        font-style: italic;
+        font-size: 0.75rem;
+        margin: 0.75rem 0;
+    }
+
+    .chat-msg.bot {
+        color: #818cf8;
+    }
+
+    .chat-msg.user {
+        color: #e4e4e7;
+        text-align: right;
+    }
+
+    .msg-bubble {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        background: #27272a;
+        max-width: 90%;
+    }
+
+    .chat-msg.bot .msg-bubble {
+        background: rgba(79, 70, 229, 0.1);
+        border: 1px solid rgba(79, 70, 229, 0.2);
+    }
+
+    .chat-msg.user .msg-bubble {
+        background: #3f3f46;
+    }
 </style>
 
 <div id="battle-wrapper" class="battle-scope fixed inset-0 z-50 overflow-hidden bg-[#050505]">
-    
+
     <!-- 1. ENTRY SCREEN -->
     <div id="screen-entry" class="flex flex-col items-center justify-center h-full w-full relative z-10">
         <!-- Background Elements -->
@@ -78,18 +154,22 @@
             <div class="absolute bottom-[20%] right-[20%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]"></div>
         </div>
 
-        <div class="border border-white/10 bg-black/40 backdrop-blur-xl p-10 rounded-2xl w-[90%] max-w-md shadow-2xl text-center relative z-20">
+        <div
+            class="border border-white/10 bg-black/40 backdrop-blur-xl p-10 rounded-2xl w-[90%] max-w-md shadow-2xl text-center relative z-20">
             <div class="text-5xl mb-6">⚔️</div>
             <h1 class="text-3xl font-bold text-white tracking-tight mb-2">BYTE BATTLE</h1>
             <p class="text-zinc-500 mb-8">Host or join a live coding duel.</p>
 
-            <button id="btn-create" class="w-full bg-white hover:bg-zinc-200 text-black font-semibold py-3.5 rounded-lg transition-colors mb-4 shadow-lg shadow-white/5">
+            <button id="btn-create"
+                class="w-full bg-white hover:bg-zinc-200 text-black font-semibold py-3.5 rounded-lg transition-colors mb-4 shadow-lg shadow-white/5">
                 Create Room
             </button>
 
             <div class="flex gap-2">
-                <input type="text" id="join-code" placeholder="ENTER CODE" class="flex-1 bg-zinc-900 border border-zinc-700 text-white rounded-lg px-4 py-3 outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600 font-mono text-center tracking-widest uppercase">
-                <button id="btn-join" class="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-6 rounded-lg transition-colors border border-zinc-700">
+                <input type="text" id="join-code" placeholder="ENTER CODE"
+                    class="flex-1 bg-zinc-900 border border-zinc-700 text-white rounded-lg px-4 py-3 outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600 font-mono text-center tracking-widest uppercase">
+                <button id="btn-join"
+                    class="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-6 rounded-lg transition-colors border border-zinc-700">
                     Join
                 </button>
             </div>
@@ -99,28 +179,35 @@
     <!-- 2. BATTLE INTERFACE -->
     <div id="screen-battle" class="hidden flex h-full w-full">
         <!-- Sidebar -->
-        <aside class="w-14 bg-[#050505] border-r border-white/[0.06] flex flex-col items-center py-5 z-20 hidden md:flex">
+        <aside
+            class="w-14 bg-[#050505] border-r border-white/[0.06] flex flex-col items-center py-5 z-20 hidden md:flex">
             <div class="mb-6 text-white font-semibold tracking-tighter text-lg">C.</div>
             <nav class="flex-1 flex flex-col gap-2 w-full items-center px-2">
-                <button class="w-full aspect-square flex items-center justify-center rounded-md bg-white/[0.08] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+                <button
+                    class="w-full aspect-square flex items-center justify-center rounded-md bg-white/[0.08] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
                     <i data-lucide="code-2" class="w-4 h-4"></i>
                 </button>
             </nav>
             <div class="mt-auto px-2 w-full mb-4">
-                 <button class="w-full aspect-square rounded-full overflow-hidden border border-white/10 opacity-60 hover:opacity-100 transition-opacity">
-                    <div class="w-full h-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">YOU</div>
+                <button
+                    class="w-full aspect-square rounded-full overflow-hidden border border-white/10 opacity-60 hover:opacity-100 transition-opacity">
+                    <div
+                        class="w-full h-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500">
+                        YOU</div>
                 </button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06] bg-[#080808]">
-            
+        <main
+            class="flex-1 grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06] bg-[#080808]">
+
             <!-- LEFT SIDE: Editor -->
             <section class="flex flex-col h-full bg-[#050505] relative group">
                 <!-- Editor Tabs -->
                 <div class="h-10 flex items-end px-0 border-b border-white/[0.06] shrink-0">
-                    <div class="h-full flex items-center px-4 gap-2.5 text-xs text-zinc-300 border-r border-white/[0.06] bg-[#080808]">
+                    <div
+                        class="h-full flex items-center px-4 gap-2.5 text-xs text-zinc-300 border-r border-white/[0.06] bg-[#080808]">
                         <i data-lucide="file-code" class="w-3.5 h-3.5 text-blue-400"></i>
                         <span class="font-medium">solution.py</span>
                         <span id="lang-display" class="hidden">Python</span> <!-- Hidden legacy hook -->
@@ -130,24 +217,32 @@
                 <!-- Code Area -->
                 <div class="flex-1 relative font-mono text-xs md:text-sm bg-[#050505]">
                     <!-- Line Numbers (Static Decoration for now, hard to sync perfectly without Monaco) -->
-                    <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col items-end pr-4 text-zinc-700 select-none leading-[1.6] pt-4 text-[11px] border-r border-white/[0.03] bg-[#050505] z-10 pointer-events-none">
+                    <div
+                        class="absolute left-0 top-0 bottom-0 w-12 flex flex-col items-end pr-4 text-zinc-700 select-none leading-[1.6] pt-4 text-[11px] border-r border-white/[0.03] bg-[#050505] z-10 pointer-events-none">
                         <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
                         <span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
                     </div>
-                    
+
                     <!-- The Real Editor -->
-                    <textarea id="code-editor" class="absolute inset-0 w-full h-full resize-none outline-none p-4 pl-16 bg-transparent text-sm leading-[1.6]" spellcheck="false" placeholder="# Write your solution here..."></textarea>
+                    <textarea id="code-editor"
+                        class="absolute inset-0 w-full h-full resize-none outline-none p-4 pl-16 bg-transparent text-sm leading-[1.6]"
+                        spellcheck="false" placeholder="# Write your solution here..."></textarea>
                 </div>
 
                 <!-- Bottom Action Bar -->
-                <div class="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between bg-[#050505] shrink-0">
+                <div
+                    class="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between bg-[#050505] shrink-0">
                     <div class="flex items-center gap-4 text-xs font-medium text-zinc-500">
-                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i data-lucide="terminal" class="w-3.5 h-3.5"></i> Console</span>
-                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i data-lucide="keyboard" class="w-3.5 h-3.5"></i> Shortcuts</span>
+                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i
+                                data-lucide="terminal" class="w-3.5 h-3.5"></i> Console</span>
+                        <span class="flex items-center gap-1.5 hover:text-zinc-300 transition-colors cursor-pointer"><i
+                                data-lucide="keyboard" class="w-3.5 h-3.5"></i> Shortcuts</span>
                     </div>
-                    <button id="btn-submit" class="group relative px-4 py-2 bg-zinc-50 hover:bg-white text-black text-xs font-semibold rounded-[4px] transition-all flex items-center gap-2 shadow-[0_0_15px_-3px_rgba(255,255,255,0.15)] ring-1 ring-white">
+                    <button id="btn-submit"
+                        class="group relative px-4 py-2 bg-zinc-50 hover:bg-white text-black text-xs font-semibold rounded-[4px] transition-all flex items-center gap-2 shadow-[0_0_15px_-3px_rgba(255,255,255,0.15)] ring-1 ring-white">
                         <span>Submit Code</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-zinc-600 group-hover:text-black"></i>
+                        <i data-lucide="arrow-right"
+                            class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-zinc-600 group-hover:text-black"></i>
                     </button>
                     <!-- Legacy id hooks logic needs -->
                     <span id="focus-btn-text" class="hidden"></span>
@@ -156,16 +251,22 @@
 
             <!-- RIGHT SIDE: Problem & AI/Chat -->
             <section class="flex flex-col h-full bg-[#080808]">
-                
+
                 <!-- Header -->
-                <div class="h-10 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#080808] shrink-0">
+                <div
+                    class="h-10 border-b border-white/[0.06] flex items-center justify-between px-6 bg-[#080808] shrink-0">
                     <div class="flex items-center gap-2">
-                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
-                        <span id="status-display" class="text-xs font-medium tracking-wide text-zinc-400 uppercase">WAITING</span>
+                        <div
+                            class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse">
+                        </div>
+                        <span id="status-display"
+                            class="text-xs font-medium tracking-wide text-zinc-400 uppercase">WAITING</span>
                     </div>
                     <div class="flex items-center gap-3">
-                         <span class="text-xs text-zinc-600">ID: <span id="room-display" class="text-zinc-400 font-mono">---</span></span>
-                         <div id="timer-display" class="font-mono text-sm font-medium text-zinc-200 tracking-tight flex items-center gap-2 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.05]">
+                        <span class="text-xs text-zinc-600">ID: <span id="room-display"
+                                class="text-zinc-400 font-mono">---</span></span>
+                        <div id="timer-display"
+                            class="font-mono text-sm font-medium text-zinc-200 tracking-tight flex items-center gap-2 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.05]">
                             --:--
                         </div>
                     </div>
@@ -173,16 +274,18 @@
 
                 <!-- Scrollable Container -->
                 <div class="flex-1 flex flex-col min-h-0 relative">
-                    
+
                     <!-- Content -->
                     <div class="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar relative z-0">
                         <div class="max-w-xl mx-auto space-y-8">
-                            
+
                             <!-- Title -->
                             <div>
-                                <h1 id="problem-title" class="text-xl font-semibold text-zinc-100 tracking-tight mb-3">Waiting for host...</h1>
+                                <h1 id="problem-title" class="text-xl font-semibold text-zinc-100 tracking-tight mb-3">
+                                    Waiting for host...</h1>
                                 <div class="flex items-center gap-3 text-xs">
-                                    <span class="font-medium text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/10">Medium</span>
+                                    <span
+                                        class="font-medium text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/10">Medium</span>
                                     <span class="text-zinc-500">Algorithms</span>
                                 </div>
                             </div>
@@ -194,23 +297,32 @@
 
                             <!-- Examples (Dynamic Hooks) -->
                             <div id="problem-details" class="hidden space-y-4">
-                                <div class="group relative rounded-lg border border-white/[0.06] bg-white/[0.01] p-4 transition-colors hover:bg-white/[0.02]">
-                                    <div class="absolute -left-[1px] top-4 bottom-4 w-[2px] bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></div>
-                                    <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 pl-1">Input / Output</p>
+                                <div
+                                    class="group relative rounded-lg border border-white/[0.06] bg-white/[0.01] p-4 transition-colors hover:bg-white/[0.02]">
+                                    <div
+                                        class="absolute -left-[1px] top-4 bottom-4 w-[2px] bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
+                                    </div>
+                                    <p
+                                        class="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-3 pl-1">
+                                        Input / Output</p>
                                     <div class="font-mono text-xs space-y-2 pl-1">
-                                        <div class="flex"><span class="text-zinc-500 w-16">Input:</span> <span id="prob-in" class="text-zinc-300">...</span></div>
-                                        <div class="flex"><span class="text-zinc-500 w-16">Output:</span> <span id="prob-out" class="text-zinc-300">...</span></div>
+                                        <div class="flex"><span class="text-zinc-500 w-16">Input:</span> <span
+                                                id="prob-in" class="text-zinc-300">...</span></div>
+                                        <div class="flex"><span class="text-zinc-500 w-16">Output:</span> <span
+                                                id="prob-out" class="text-zinc-300">...</span></div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- CHAT LOG CONTAINER -->
-                             <div class="border-t border-white/[0.06] pt-6">
+                            <div class="border-t border-white/[0.06] pt-6">
                                 <div class="flex items-center gap-2 mb-4">
                                     <i data-lucide="message-square" class="w-3.5 h-3.5 text-zinc-500"></i>
-                                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Battle Chat</span>
+                                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Battle
+                                        Chat</span>
                                 </div>
-                                <div id="chat-log" class="h-40 overflow-y-auto custom-scrollbar p-2 rounded-lg bg-white/[0.02]">
+                                <div id="chat-log"
+                                    class="h-40 overflow-y-auto custom-scrollbar p-2 rounded-lg bg-white/[0.02]">
                                     <!-- Messages injected here -->
                                 </div>
                             </div>
@@ -223,7 +335,8 @@
                         <div class="max-w-xl mx-auto w-full flex flex-col gap-3">
                             <!-- Input -->
                             <div class="relative mt-2">
-                                <input id="chat-input" type="text" placeholder="Type a message..." class="w-full bg-[#050505] border border-white/[0.08] text-zinc-200 text-sm rounded-md pl-3 pr-10 py-2.5 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-800 transition-all placeholder:text-zinc-700">
+                                <input id="chat-input" type="text" placeholder="Type a message..."
+                                    class="w-full bg-[#050505] border border-white/[0.08] text-zinc-200 text-sm rounded-md pl-3 pr-10 py-2.5 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-800 transition-all placeholder:text-zinc-700">
                                 <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button class="p-1 hover:bg-zinc-800 rounded text-zinc-500 transition-colors">
                                         <i data-lucide="send" class="w-3.5 h-3.5"></i>
@@ -248,8 +361,10 @@
             Player "<span id="req-name" class="text-white font-bold">Opponent</span>" wants to join.
         </p>
         <div class="flex gap-4 justify-center">
-            <button id="btn-reject" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-2 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">Reject</button>
-            <button id="btn-accept" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium">Accept</button>
+            <button id="btn-reject"
+                class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-2 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">Reject</button>
+            <button id="btn-accept"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium">Accept</button>
         </div>
     </div>
 </div>
@@ -267,8 +382,10 @@
 
         <p class="mb-4 text-zinc-300 text-sm">Rematch?</p>
         <div class="flex gap-4 justify-center">
-            <button id="btn-vote-no" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">No</button>
-            <button id="btn-vote-yes" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg transition-colors text-sm font-medium">Yes</button>
+            <button id="btn-vote-no"
+                class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg transition-colors border border-zinc-700 text-sm font-medium">No</button>
+            <button id="btn-vote-yes"
+                class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg transition-colors text-sm font-medium">Yes</button>
         </div>
         <div id="vote-status" class="mt-4 text-zinc-500 text-xs"></div>
     </div>
@@ -301,12 +418,12 @@
 
     // Connect Chat Input Enter Key for legacy support if JS doesn't auto-bind
     const chatInput = document.getElementById('chat-input');
-    const btnSubmit = document.getElementById('btn-submit'); 
+    const btnSubmit = document.getElementById('btn-submit');
     // Note: btn-submit is the Code Submit button. JS likely binds a separate listener or the same for chat?
     // Checking old code: chat-input had a separate submit but mostly relies on 'Enter' key or similar in JS.
     // The old code had a 'btn-submit' for SUBMIT CODE.
     // Chat usually sends on Enter.
-    
+
     chatInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             // Find if there is a chat function exposed or just trigger event
