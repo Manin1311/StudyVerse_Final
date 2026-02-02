@@ -397,6 +397,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderGoals(goals) {
+        // Update active count
+        const activeCount = goals.filter(g => !g.completed).length;
+        const countEl = document.getElementById('goals-count');
+        if (countEl) countEl.textContent = `${activeCount} Active`;
+
         goalsList.innerHTML = '';
         if (goals.length === 0) {
             goalsList.innerHTML = `

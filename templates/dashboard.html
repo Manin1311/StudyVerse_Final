@@ -345,8 +345,18 @@
 
     <!-- ROW 3: Banner + Weekly Stats -->
     <div class="bottom-stats-grid">
+        <style>
+            .temporal-grid-card {
+                padding: 10px !important;
+                margin: 0 !important;
+            }
+
+            .calendar-widget {
+                padding: 10px !important;
+            }
+        </style>
         <!-- Left: Habit Tracker (Chart Only) -->
-        <div class="weekly-stats-card" style="padding: 24px;">
+        <div class="weekly-stats-card" style="padding: 24px 24px 0 24px; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                 <h3 style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">Habit Consistency</h3>
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #888;">
@@ -356,7 +366,7 @@
             </div>
 
             <div id="dashboard-habit-chart"
-                style="height: 200px; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a;">
+                style="flex: 1; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 0; border-bottom: 1px solid #1a1a1a; margin-top: auto;">
                 <!-- JS will populate this from LocalStorage -->
                 <div style="color: var(--text-muted); align-self: center;">Loading habit data...</div>
             </div>

@@ -9,7 +9,7 @@
             <h1 style="font-size: 30px; font-weight: 700;">
                 <span class="gradient-text">Syllabus</span>
             </h1>
-            <p class="text-muted">Your course structure and topic proficiency.</p>
+            <p style="color: var(--text-secondary);">Your course structure and topic proficiency.</p>
         </div>
         <div style="display: flex; gap: 12px;">
             <!-- Flashcards feature disabled -->
@@ -76,8 +76,9 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 style="font-size: 20px; font-weight: 600;">Your Course</h3>
-                    <p class="text-sm text-muted" style="margin-top: 4px;">{% if syllabus_doc %}{{ syllabus_doc.filename
+                    <h3 style="font-size: 20px; font-weight: 600; color: var(--text-primary);">Your Course</h3>
+                    <p class="text-sm" style="margin-top: 4px; color: var(--text-secondary);">{% if syllabus_doc %}{{
+                        syllabus_doc.filename
                         }}{% else %}Upload a PDF to generate chapters and topics{% endif %}</p>
                 </div>
             </div>
