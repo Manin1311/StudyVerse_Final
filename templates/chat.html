@@ -148,15 +148,17 @@
 
     /* Message Bubbles - Override Global for better visibility */
     .ai-msg.bot .msg-bubble {
-        background: rgba(30, 41, 59, 0.7) !important;
-        color: #f8fafc !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(30, 41, 59, 0.7);
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .ai-msg.user .msg-bubble {
-        background: var(--accent-blue) !important;
-        color: white !important;
+        background: #3b82f6;
+        /* Fallback blue */
+        background: var(--accent-blue, #3b82f6);
+        color: white;
     }
 
     .markdown-content strong {
