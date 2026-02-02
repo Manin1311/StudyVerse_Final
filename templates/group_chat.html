@@ -83,9 +83,15 @@
             <div
                 style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px dashed var(--border);">
                 <span style="font-size: 0.85rem; color: var(--text-secondary);">Invite Code:</span>
-                <span
-                    style="font-family: var(--font-mono); color: var(--accent-green); font-weight: 700; font-size: 1rem; letter-spacing: 1px;">{{
-                    group.invite_code }}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="groupInviteCode"
+                        style="font-family: var(--font-mono); color: var(--accent-green); font-weight: 700; font-size: 1rem; letter-spacing: 1px;">{{
+                        group.invite_code }}</span>
+                    <button onclick="copyInviteCode('{{ group.invite_code }}')" title="Copy Invite Code"
+                        style="width: 28px; height: 28px; font-size: 0.86rem; background: rgba(74, 222, 128, 0.1); color: var(--accent-green); border: none !important; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; outline: none !important; box-shadow: none;">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -280,6 +286,29 @@
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
+    // Copy Invite Code Function
+    function copyInviteCode(code) {
+        if (!code) return;
+
+        navigator.clipboard.writeText(code).then(() => {
+            // Show feedback
+            const btn = document.querySelector('button[onclick^="copyInviteCode"]');
+            const originalHTML = btn.innerHTML;
+            const originalBG = btn.style.background;
+
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            btn.style.background = 'rgba(74, 222, 128, 0.2)';
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = originalBG;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy code');
+        });
+    }
+
     const GROUP_ID = "{{ group.id if group else '' }}";
     const CURRENT_USER_ID = "{{ current_user.id }}";
     const CURRENT_USER_NAME = "{{ current_user.first_name }} {{ current_user.last_name }}";

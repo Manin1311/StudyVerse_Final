@@ -180,6 +180,31 @@ class User(UserMixin, db.Model):
     longest_streak = db.Column(db.Integer, default=0)
     last_activity_date = db.Column(db.Date, nullable=True)
     about_me = db.Column(db.Text, nullable=True)
+
+    @property
+    def rank_info(self):
+        """Returns the dictionary of rank details (name, icon, color)."""
+        return GamificationService.get_rank(self.level)
+
+    @property
+    def rank(self):
+        """Backward compatibility for templates using user.rank."""
+        return self.rank_info['name']
+
+    @property
+    def rank_name(self):
+        """Backward compatibility for templates using user.rank_name."""
+        return self.rank_info['name']
+
+    @property
+    def rank_icon(self):
+        """Backward compatibility for templates using user.rank_icon."""
+        return self.rank_info['icon']
+
+    @property
+    def rank_color(self):
+        """Backward compatibility for templates using user.rank_color."""
+        return self.rank_info['color']
     
     def get_avatar(self, size=200):
         if self.profile_image and "ui-avatars.com" not in self.profile_image:
@@ -200,13 +225,16 @@ class User(UserMixin, db.Model):
         return f"https://ui-avatars.com/api/?name={initials}&background=0ea5e9&color=fff&size={size}"
     
     def to_dict(self):
+        rank_data = GamificationService.get_rank(self.level)
         return {
             'id': self.id,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'level': self.level,
             'total_xp': self.total_xp,
-            'rank': GamificationService.get_rank(self.level),
+            'rank': rank_data['name'],
+            'rank_icon': rank_data['icon'],
+            'rank_color': rank_data['color'],
             'avatar': self.get_avatar(),
             'is_public': self.is_public_profile
         }
@@ -4272,38 +4300,38 @@ def init_db_schema():
                     # New Features (Friends/Public Profile)
                     if 'is_public_profile' not in columns:
                         print("Running migration: Adding is_public_profile to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN is_public_profile BOOLEAN DEFAULT 1"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN is_public_profile BOOLEAN DEFAULT TRUE'))
                     if 'last_seen' not in columns:
                         print("Running migration: Adding last_seen to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN last_seen TIMESTAMP"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN last_seen TIMESTAMP'))
                     
                     # Existing checks
                     if 'cover_image' not in columns:
                         print("Running migration: Adding cover_image to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN cover_image VARCHAR(255)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN cover_image VARCHAR(255)'))
                     if 'google_id' not in columns:
                         print("Running migration: Adding google_id to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN google_id VARCHAR(100)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN google_id VARCHAR(100)'))
                     if 'profile_image' not in columns:
                         print("Running migration: Adding profile_image to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN profile_image VARCHAR(255)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_image VARCHAR(255)'))
                     
                     # Gamification Migrations
                     if 'total_xp' not in columns:
                         print("Running migration: Adding total_xp to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN total_xp INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN total_xp INTEGER DEFAULT 0'))
                     if 'level' not in columns:
                         print("Running migration: Adding level to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN level INTEGER DEFAULT 1"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN level INTEGER DEFAULT 1'))
                     if 'current_streak' not in columns:
                         print("Running migration: Adding current_streak to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN current_streak INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN current_streak INTEGER DEFAULT 0'))
                     if 'longest_streak' not in columns:
                         print("Running migration: Adding longest_streak to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN longest_streak INTEGER DEFAULT 0"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN longest_streak INTEGER DEFAULT 0'))
                     if 'last_activity_date' not in columns:
                         print("Running migration: Adding last_activity_date to user table...")
-                        conn.execute(text("ALTER TABLE user ADD COLUMN last_activity_date DATE"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN last_activity_date DATE'))
                     
                 # 3. Check for Todo table updates
                 if 'todo' in inspector.get_table_names():
@@ -4313,7 +4341,7 @@ def init_db_schema():
                          conn.execute(text("ALTER TABLE todo ADD COLUMN completed_at TIMESTAMP"))
                     if 'is_group' not in columns:
                          print("Running migration: Adding is_group to todo table...")
-                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT 0"))
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_group BOOLEAN DEFAULT FALSE"))
                     if 'category' not in columns:
                          print("Running migration: Adding category to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN category VARCHAR(50)"))
@@ -4337,25 +4365,22 @@ def init_db_schema():
         except Exception as e:
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
-# Run schema check on import so Gunicorn triggers it
-init_db_schema()
-
 def run_xp_update():
     """Updates specific user XP and recalculates levels on startup."""
     try:
         with app.app_context():
-            # 1. Update Daksh's XP
+            # 1. Update Daksh's XP (Case-insensitive)
             target_name = 'daksh'
             users_found = User.query.filter(User.first_name.ilike(target_name)).all()
             
             if users_found:
                 print(f"--- Running XP Update for '{target_name}' ---")
                 for user in users_found:
-                    if user.total_xp < 100000: # Only update if less (optional safety, but user asked to set it)
-                        user.total_xp = 100000
-                        print(f"  > Updated {user.first_name}'s XP to 100,000")
+                    user.total_xp += 100000
+                    print(f"  > Incremented {user.first_name}'s XP by 100,000. New XP: {user.total_xp}")
 
             # 2. Recalculate Levels for ALL users
+            print("--- Recalculating Levels/Ranks for All Users ---")
             all_users = User.query.all()
             updated_count = 0
             for u in all_users:
@@ -4365,13 +4390,15 @@ def run_xp_update():
                     updated_count += 1
             
             if updated_count > 0:
-                print(f"  > Recalculated levels for {updated_count} users.")
+                print(f"  > Adjusted levels for {updated_count} users.")
                 
             db.session.commit()
+            print("--- User Status Synchronization Complete ---")
     except Exception as e:
-        print(f"XP Update failed: {e}")
+        print(f"XP/Rank Update failed: {e}")
 
-# Run XP update on startup
+# IMPORTANT: Order matters. Define logic, THEN run schema check and updates.
+init_db_schema()
 run_xp_update()
 
 if __name__ == '__main__':

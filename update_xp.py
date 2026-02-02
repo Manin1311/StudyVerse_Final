@@ -18,9 +18,9 @@ def update_xp():
                 print(f"Found user: {user.first_name} {user.last_name} (ID: {user.id})")
                 print(f"  Current XP: {user.total_xp}, Level: {user.level}")
                 
-                # Set XP to 100,000
-                user.total_xp = 100000
-                print(f"  > Setting XP to 100,000")
+                # Increment XP by 100,000
+                user.total_xp += 100000
+                print(f"  > Incrementing XP by 100,000. New XP: {user.total_xp}")
 
         # 2. Recalculate Levels for ALL users
         print("\n--- Recalculating Levels for All Users ---")
@@ -30,7 +30,6 @@ def update_xp():
         for u in all_users:
             old_level = u.level
             # Calculate correct level based on total_xp
-            # Using the static method from GamificationService as defined in app.py
             correct_level = GamificationService.calculate_level(u.total_xp)
             
             if u.level != correct_level:
@@ -38,8 +37,10 @@ def update_xp():
                 print(f"User {u.first_name} (ID: {u.id}): Level adjusted {old_level} -> {correct_level} (XP: {u.total_xp})")
                 updated_count += 1
             
-            # Since rank is derived from level dynamically in this app (not stored in DB),
-            # updating the level effectively "fixes" the rank for display.
+            # Note: Rank is now calculated dynamically in to_dict() and elsewhere.
+            # We don't store it in the database anymore.
+            rank_data = GamificationService.get_rank(u.level)
+            print(f"  > Current dynamic rank for {u.first_name}: {rank_data['name']}")
 
         db.session.commit()
         print(f"\n--- Update Complete ---")

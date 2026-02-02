@@ -297,42 +297,49 @@
         <div class="card-todos-right">
             <div>
                 <h3 class="weekly-todos-header">Weekly To-Dos</h3>
-                <div style="font-size: 0.9rem; margin-bottom: 12px; color: #fff; font-weight: 700;">
-                    <i class="fa-solid fa-caret-right"></i> This Week
+
+                <div id="weekly-todos-trigger" onclick="toggleWeeklyTodos()"
+                    style="font-size: 0.9rem; margin: 12px 0; color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none;">
+                    <i class="fa-solid fa-caret-down" id="todos-caret" style="transition: transform 0.3s ease;"></i>
+                    This Week
                 </div>
-                <ul class="todos-list-minimal">
-                    {% for todo in upcoming_todos[:3] %}
-                    <li>{{ todo.title }}</li>
-                    {% endfor %}
 
-                    {% for parent in completed_parent_tasks[:2] %}
-                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
-                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
-                        {{ parent }}
-                    </li>
-                    {% endfor %}
+                <div id="weekly-todos-content"
+                    style="transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; overflow: hidden; max-height: 1000px;">
+                    <ul class="todos-list-minimal">
+                        {% for todo in upcoming_todos[:3] %}
+                        <li>{{ todo.title }}</li>
+                        {% endfor %}
 
-                    {% if not upcoming_todos and not completed_parent_tasks %}
-                    <li>Digital Electronics Project</li>
-                    <li>Math Assignment 3</li>
-                    <li>Physics Lab Report</li>
+                        {% for parent in completed_parent_tasks[:2] %}
+                        <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                            <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                            {{ parent }}
+                        </li>
+                        {% endfor %}
+
+                        {% if not upcoming_todos and not completed_parent_tasks %}
+                        <li>Digital Electronics Project</li>
+                        <li>Math Assignment 3</li>
+                        <li>Physics Lab Report</li>
+                        {% endif %}
+                    </ul>
+
+                    {% if completed_events_week %}
+                    <div
+                        style="font-size: 0.9rem; margin-top: 20px; margin-bottom: 12px; color: var(--accent-green); font-weight: 700;">
+                        <i class="fa-solid fa-check-double"></i> Completed (Events)
+                    </div>
+                    <ul class="todos-list-minimal">
+                        {% for event in completed_events_week[:3] %}
+                        <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                            <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                            {{ event.title }}
+                        </li>
+                        {% endfor %}
+                    </ul>
                     {% endif %}
-                </ul>
-
-                {% if completed_events_week %}
-                <div
-                    style="font-size: 0.9rem; margin-top: 20px; margin-bottom: 12px; color: var(--accent-green); font-weight: 700;">
-                    <i class="fa-solid fa-check-double"></i> Completed (Events)
                 </div>
-                <ul class="todos-list-minimal">
-                    {% for event in completed_events_week[:3] %}
-                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
-                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
-                        {{ event.title }}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
             </div>
 
             <div class="card-image-small">
@@ -729,7 +736,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard_calendar.js') }}?v={{ range(1, 10000) | random }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard_calendar.js') }}?v=1.0.1"></script>
 <script>
     function updateFlipClock() {
         const now = new Date();
@@ -811,6 +818,36 @@
                 content.innerHTML = `<p style="color: #f87171;">Failed to reach AI.</p>`;
             });
     }
+
+    function toggleWeeklyTodos() {
+        const content = document.getElementById('weekly-todos-content');
+        const caret = document.getElementById('todos-caret');
+
+        if (content.style.maxHeight === '0px') {
+            content.style.maxHeight = '1000px';
+            content.style.opacity = '1';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+            localStorage.setItem('weeklyTodosCollapsed', 'false');
+        } else {
+            content.style.maxHeight = '0px';
+            content.style.opacity = '0';
+            if (caret) caret.style.transform = 'rotate(-90deg)';
+            localStorage.setItem('weeklyTodosCollapsed', 'true');
+        }
+    }
+
+    // Initialize state on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('weeklyTodosCollapsed') === 'true') {
+            const content = document.getElementById('weekly-todos-content');
+            const caret = document.getElementById('todos-caret');
+            if (content) {
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                if (caret) caret.style.transform = 'rotate(-90deg)';
+            }
+        }
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="//unpkg.com/globe.gl"></script>

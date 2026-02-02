@@ -143,12 +143,12 @@
     const calendarData = [
         {% for event in calendar_events %}
     {
-        id: { { event.id } },
-        title: { { event.title | tojson } },
-        date: { { event.due_date | tojson } },
-        category: { { event.category | tojson } },
-        completed: { { 'true' if event.completed else 'false' } },
-        priority: { { event.priority | tojson } }
+        id: {{ event.id }},
+        title: {{ event.title | tojson }},
+        date: {{ event.due_date | tojson }},
+        category: {{ event.category | tojson }},
+        completed: {{ 'true' if event.completed else 'false' }},
+        priority: {{ event.priority | tojson }}
     } {% if not loop.last %}, {% endif %}
     {% endfor %}
     ];
@@ -200,13 +200,22 @@
             const cell = document.createElement('div');
             cell.className = 'calendar-cell'; // Use class defined in CSS
 
-            // Add Click Handler for Adding Task
-            cell.onclick = () => {
-                openQuickAddModal(dateStr);
-            };
-
             // Highlight today
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const cellDate = new Date(year, month, day);
+
+            if (cellDate < today) {
+                cell.classList.add('past-day');
+                cell.style.opacity = '0.3';
+                cell.style.cursor = 'not-allowed';
+            } else {
+                // Add Click Handler for Adding Task
+                cell.onclick = () => {
+                    openQuickAddModal(dateStr);
+                };
+            }
+
             if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                 cell.classList.add('today');
             }
