@@ -402,6 +402,7 @@
         (function () {
             const themeToggleBtn = document.getElementById('theme-toggle');
             const htmlElement = document.documentElement;
+            const body = document.body;
 
             // Get saved theme from localStorage or default to 'dark'
             const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -416,11 +417,37 @@
                     const currentTheme = htmlElement.getAttribute('data-theme');
                     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-                    // Set new theme
-                    htmlElement.setAttribute('data-theme', newTheme);
+                    // Add a subtle fade overlay for smooth transition
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `
+                        position: fixed;
+                        inset: 0;
+                        background: ${newTheme === 'light' ? '#ffffff' : '#0c0c0c'};
+                        opacity: 0;
+                        pointer-events: none;
+                        z-index: 9999;
+                        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    `;
+                    document.body.appendChild(overlay);
 
-                    // Save to localStorage
-                    localStorage.setItem('theme', newTheme);
+                    // Trigger fade in
+                    requestAnimationFrame(() => {
+                        overlay.style.opacity = '0.3';
+                    });
+
+                    // Set new theme after brief delay
+                    setTimeout(() => {
+                        htmlElement.setAttribute('data-theme', newTheme);
+                        localStorage.setItem('theme', newTheme);
+
+                        // Fade out overlay
+                        overlay.style.opacity = '0';
+
+                        // Remove overlay after transition
+                        setTimeout(() => {
+                            overlay.remove();
+                        }, 300);
+                    }, 150);
 
                     // Remove animation class after animation completes
                     setTimeout(() => {
