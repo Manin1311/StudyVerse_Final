@@ -324,25 +324,52 @@ class GamificationService:
         if not user:
             return
 
-        # Check for active XP multiplier power-ups
+        # 1. Fetch ALL active power-ups for the user
         active_powerups = ActivePowerUp.query.filter_by(
             user_id=user.id,
             is_active=True
-        ).filter(
-            ActivePowerUp.power_up_id.in_(['xp_boost', 'mega_xp_boost'])
         ).all()
         
-        # Clean up expired power-ups and apply multiplier
-        multiplier = 1.0
+        # 2. Categorize and clean up expired power-ups
+        xp_multiplier = 1.0
+        time_multiplier = 1.0
+        has_protection = False
         active_boost = None
+
         for powerup in active_powerups:
             if powerup.is_expired():
                 powerup.is_active = False
-            elif powerup.multiplier > multiplier:
-                multiplier = powerup.multiplier
-                active_boost = powerup.power_up_id
+                continue
+            
+            # Fetch item details from catalog to know the effect type
+            item_id = powerup.power_up_id
+            cat_item = ShopService.ITEMS.get(item_id)
+            if not cat_item: continue
 
-        # Cap Focus XP daily
+            effect = cat_item.get('effect')
+            
+            if effect in ['xp_multiplier', 'mega_xp_multiplier']:
+                if powerup.multiplier > xp_multiplier:
+                    xp_multiplier = powerup.multiplier
+                    active_boost = item_id
+            elif effect == 'time_multiplier':
+                if powerup.multiplier > time_multiplier:
+                    time_multiplier = powerup.multiplier
+            elif effect == 'xp_protection':
+                has_protection = True
+        
+        # 3. Handle XP loss protection
+        if amount < 0 and has_protection:
+            return {'earned': 0, 'message': 'XP Protection Active! No XP lost.'}
+
+        # 4. Apply special multipliers based on source (e.g., Double Time for focus)
+        actual_multiplier = xp_multiplier
+        if source == 'focus' and time_multiplier > 1.0:
+            # If both XP boost and Double Time are active, they might stack or we take the highest.
+            # Usually, Double Time specifically doubles the focus reward.
+            actual_multiplier *= time_multiplier
+
+        # 5. Cap Focus XP daily (Check BEFORE multipliers to keep cap consistent)
         if source == 'focus':
             today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
             daily_focus_xp = db.session.query(db.func.sum(XPHistory.amount))\
@@ -361,8 +388,8 @@ class GamificationService:
 
         # Apply multiplier
         original_amount = amount
-        if multiplier > 1.0:
-            amount = int(amount * multiplier)
+        if actual_multiplier > 1.0:
+            amount = int(amount * actual_multiplier)
 
         user.total_xp += amount
         
@@ -394,8 +421,8 @@ class GamificationService:
         }
         
         # Add multiplier info if active
-        if multiplier > 1.0:
-            result['multiplier'] = multiplier
+        if actual_multiplier > 1.0:
+            result['multiplier'] = actual_multiplier
             result['base_amount'] = original_amount
             result['boost_active'] = active_boost
         
@@ -2469,11 +2496,20 @@ def pomodoro_save_session():
         
         # Award XP: 1 XP per minute of focus
         if mode == 'focus':
-            xp_amount = duration
+            # Check for Double Time power-up to adjust stored duration
+            active_time_boost = ActivePowerUp.query.filter_by(
+                user_id=current_user.id, 
+                power_up_id='double_time',
+                is_active=True
+            ).first()
+            
+            if active_time_boost and not active_time_boost.is_expired():
+                study_session.duration = duration * 2
+                xp_amount = duration # add_xp will handle the multiplier
+            else:
+                xp_amount = duration
+                
             result = GamificationService.add_xp(current_user.id, 'focus', xp_amount)
-            if result:
-                 # We can return this to UI if we want a popup
-                 pass
         
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Session saved'})
