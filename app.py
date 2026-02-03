@@ -4426,6 +4426,12 @@ def init_db_schema():
                     if 'category' not in columns:
                          print("Running migration: Adding category to todo table...")
                          conn.execute(text("ALTER TABLE todo ADD COLUMN category VARCHAR(50)"))
+                    if 'due_time' not in columns:
+                         print("Running migration: Adding due_time to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN due_time VARCHAR(20)"))
+                    if 'is_notified' not in columns:
+                         print("Running migration: Adding is_notified to todo table...")
+                         conn.execute(text("ALTER TABLE todo ADD COLUMN is_notified BOOLEAN DEFAULT FALSE"))
 
                 # 4. Check for SyllabusDocument updates
                 if 'syllabus_document' in inspector.get_table_names():
