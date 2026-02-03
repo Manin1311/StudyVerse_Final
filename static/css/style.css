@@ -4916,7 +4916,6 @@ body.sidebar-collapsed .nav-item i {
     grid-template-columns: 1.2fr 1fr;
     gap: 24px;
     position: relative;
-    align-self: start;
 }
 
 .temporal-header {
@@ -5071,6 +5070,8 @@ body.sidebar-collapsed .nav-item i {
     border-radius: 24px;
     padding: 16px;
     min-height: 300px;
+    max-height: 450px;
+    /* Limit height to prevent row expansion */
     display: flex;
     flex-direction: column;
 }
