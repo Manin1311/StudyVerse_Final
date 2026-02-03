@@ -480,12 +480,14 @@
     color: var(--text-primary) !important;
 }
 
-/* Profile / Settings Page Overrides */
+/* Profile / Settings Page Overrides - FORCE WHITE TEXT */
+[data-theme="light"] #profile-name,
+[data-theme="light"] #profile-major,
 [data-theme="light"] .profile-hero h2,
 [data-theme="light"] .profile-hero p,
 [data-theme="light"] .profile-info-brief {
-    color: #fff !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    color: #ffffff !important;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
 }
 
 [data-theme="light"] .glass-panel {
