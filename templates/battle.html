@@ -246,7 +246,8 @@
     }
 
     /* --- FORCE DARK MODE FOR BATTLE PAGE (Override Global Light Theme) --- */
-    [data-theme="light"] body {
+    [data-theme="light"] body,
+    [data-theme="light"] .main-content {
         background-color: var(--battle-bg) !important;
         color: var(--battle-text) !important;
     }
@@ -254,6 +255,13 @@
     /* Fix inheritance blocked by .main-content */
     [data-theme="light"] #battle-wrapper {
         color: var(--battle-text) !important;
+        background-color: var(--battle-bg) !important;
+    }
+
+    /* Force Selection Colors to be visible on dark bg */
+    [data-theme="light"] #battle-wrapper ::selection {
+        background: var(--battle-accent) !important;
+        color: #ffffff !important;
     }
 
     /* Override global light mode text enforcements */
@@ -261,13 +269,22 @@
     [data-theme="light"] #battle-wrapper h2,
     [data-theme="light"] #battle-wrapper h3,
     [data-theme="light"] #battle-wrapper .page-title,
-    [data-theme="light"] .battle-header,
-    [data-theme="light"] .battle-header span,
     [data-theme="light"] #timer-display {
         color: #ffffff !important;
         text-shadow: none !important;
         background: none !important;
         -webkit-text-fill-color: initial !important;
+    }
+
+    /* Specific fix for Battle Header to keep background */
+    [data-theme="light"] .battle-header {
+        background: var(--battle-card-bg) !important;
+        color: #ffffff !important;
+        border: 1px solid var(--battle-border) !important;
+    }
+
+    [data-theme="light"] .battle-header span {
+        color: #ffffff !important;
     }
 
     [data-theme="light"] #battle-wrapper p,
