@@ -480,6 +480,14 @@
     color: var(--text-primary) !important;
 }
 
+/* Profile / Settings Page Overrides */
+[data-theme="light"] .profile-hero h2,
+[data-theme="light"] .profile-hero p,
+[data-theme="light"] .profile-info-brief {
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 [data-theme="light"] .glass-panel {
     background: white !important;
     border: 1px solid var(--border) !important;
