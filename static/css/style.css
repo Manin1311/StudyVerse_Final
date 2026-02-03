@@ -471,6 +471,46 @@
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
+/* Item Shop Overrides */
+[data-theme="light"] .main-content {
+    background: #ffffff !important;
+}
+
+[data-theme="light"] .page-header .page-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .glass-panel {
+    background: white !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .shop-item-card h3 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .filter-btn {
+    background: var(--bg-card) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] .filter-btn.active {
+    background: var(--accent-green) !important;
+    color: white !important;
+    border: 1px solid var(--accent-green) !important;
+}
+
+[data-theme="light"] .buy-btn {
+    color: var(--text-primary) !important;
+}
+
+/* Fix generic white text in shop */
+[data-theme="light"] .shop-item-card [style*="color: white"] {
+    color: var(--text-primary) !important;
+}
+
 [data-theme="light"] .ai-msg.user .msg-bubble {
     background: #2563eb !important;
     /* Bright blue for visibility */
