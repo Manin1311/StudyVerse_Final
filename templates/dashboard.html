@@ -142,12 +142,16 @@
             {% endif %}
 
             {% if important_todo %}
-            <div class="important-item" style="border-left-color: #ef4444;">
+            {% set is_high = (important_todo_label == 'High Priority Task') %}
+            {% set todo_color = '#ef4444' if is_high else '#3b82f6' %}
+            <div class="important-item"
+                style="border-left-color: {{ todo_color }}; {{ 'background: rgba(59, 130, 246, 0.05);' if not is_high }}">
                 <div
-                    style="font-size: 0.65rem; color: #ef4444; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
-                    High Priority Task</div>
+                    style="font-size: 0.65rem; color: {{ todo_color }}; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
+                    {{ important_todo_label }}</div>
                 <div class="important-title">{{ important_todo.title }}</div>
-                <div class="important-meta">Due {{ important_todo.due_date if important_todo.due_date else 'Soon' }}
+                <div class="important-meta" style="{{ 'color: ' + todo_color if not is_high }}">Due {{
+                    important_todo.due_date if important_todo.due_date else 'Soon' }}
                 </div>
             </div>
             {% endif %}

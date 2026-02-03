@@ -1480,9 +1480,16 @@ def dashboard():
     time_str = now_ist.strftime('%H:%M')
 
     # Next event today or in the future
+    # Handle NULL time by assuming it's an all-day event (so '00:00')
     important_event = Event.query.filter(
         Event.user_id == current_user.id,
-        ((Event.date > today_str) | ((Event.date == today_str) & (Event.time >= time_str)))
+        Event.date >= today_str
+    ).filter(
+        # Logic: If date > today, any time is fine. If date == today, time must be >= now OR null (all day)
+        db.or_(
+            Event.date > today_str,
+            db.and_(Event.date == today_str, db.or_(Event.time >= time_str, Event.time == None, Event.time == ''))
+        )
     ).order_by(Event.date.asc(), Event.time.asc()).first()
 
     # High priority uncompleted task
@@ -1491,6 +1498,20 @@ def dashboard():
         completed=False,
         priority='high'
     ).order_by(Todo.id.desc()).first()
+
+    important_todo_label = "High Priority Task"
+    
+    # Fallback: If no high priority task, show next due task
+    if not important_todo:
+        important_todo = Todo.query.filter(
+            Todo.user_id == current_user.id,
+            Todo.completed == False,
+            Todo.due_date != None,
+            Todo.due_date >= today_str
+        ).order_by(Todo.due_date.asc()).first()
+        
+        if important_todo:
+            important_todo_label = "Upcoming Task"
              
 
     return render_template(
@@ -1515,7 +1536,8 @@ def dashboard():
         completed_parent_tasks=completed_parent_tasks,
         completed_events_week=completed_events_week,
         important_event=important_event,
-        important_todo=important_todo
+        important_todo=important_todo,
+        important_todo_label=important_todo_label
     )
 
 @app.route('/chat')
