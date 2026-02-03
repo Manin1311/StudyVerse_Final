@@ -103,6 +103,11 @@
         color: var(--text-secondary);
     }
 
+    .student-name-link:hover {
+        color: var(--accent-green) !important;
+        text-decoration: underline;
+    }
+
     .xp-badge {
         font-weight: 800;
         color: var(--accent-green);
@@ -205,10 +210,13 @@
                                     {% endif %}
                                 </div>
                                 <div style="min-width: 0;">
-                                    <div
-                                        style="font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem; margin-bottom: 2px;">
-                                        {{ user.first_name }} {{ user.last_name }}
-                                    </div>
+
+                                    <a href="{{ url_for('profile', user_id=user.id) }}" style="text-decoration: none;">
+                                        <div class="student-name-link"
+                                            style="font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem; margin-bottom: 2px; transition: color 0.2s;">
+                                            {{ user.first_name }} {{ user.last_name }}
+                                        </div>
+                                    </a>
                                     <div
                                         style="font-size: 0.85rem; color: {{ user.rank_info.color }}; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                                         <i class="fa-solid {{ user.rank_info.icon }}"></i> {{ user.rank_info.name }}
