@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Socket Init (Simplified for robustness) ---
     // Allow auto-detection of transports (Polling -> WebSocket)
-    const socket = io('/', { transports: ['polling', 'websocket'] });
+    const socket = io();
     let currentRoom = sessionStorage.getItem('battle_room_code'); // Restore from session
     let isHost = false;
     let battleTimer = null;
