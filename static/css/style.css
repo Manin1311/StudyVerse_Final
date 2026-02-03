@@ -487,7 +487,40 @@
 [data-theme="light"] .profile-hero p,
 [data-theme="light"] .profile-info-brief {
     color: #ffffff !important;
+    color: #ffffff !important;
     text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+}
+
+/* Edit Profile Modal Light Mode Overrides */
+[data-theme="light"] #editProfileModal>div {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] #editProfileModal h3 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] #editProfileModal label {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] #editProfileModal input,
+[data-theme="light"] #editProfileModal textarea {
+    background: #f1f5f9 !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+[data-theme="light"] #editProfileModal button[onclick="closeEditModal()"] {
+    color: var(--text-secondary) !important;
+    border-color: var(--border) !important;
+}
+
+[data-theme="light"] #editProfileModal button[onclick="closeEditModal()"]:hover {
+    color: var(--text-primary) !important;
+    background: var(--bg-hover) !important;
 }
 
 [data-theme="light"] .glass-panel {
