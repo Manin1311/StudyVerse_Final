@@ -609,6 +609,11 @@
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDueDate').value = '';
         document.getElementById('taskDueTime').value = '';
+
+        // Prevent selection of past dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('taskDueDate').min = today;
+
         selectPriority('Medium');
         currentSubtasks = [];
         updateSubtaskList();
