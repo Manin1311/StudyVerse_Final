@@ -244,6 +244,68 @@
     .hidden {
         display: none !important;
     }
+
+    /* --- FORCE DARK MODE FOR BATTLE PAGE (Override Global Light Theme) --- */
+    [data-theme="light"] body {
+        background-color: var(--battle-bg) !important;
+        color: var(--battle-text) !important;
+    }
+
+    /* Override global light mode text enforcements */
+    [data-theme="light"] #battle-wrapper h1,
+    [data-theme="light"] #battle-wrapper h2,
+    [data-theme="light"] #battle-wrapper h3,
+    [data-theme="light"] #battle-wrapper .page-title {
+        color: #ffffff !important;
+        text-shadow: none !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+    }
+
+    [data-theme="light"] #battle-wrapper p,
+    [data-theme="light"] #battle-wrapper span,
+    [data-theme="light"] #battle-wrapper div {
+        color: inherit;
+    }
+
+    /* Re-enforce white text on specific elements */
+    [data-theme="light"] #battle-wrapper [style*="color: white"],
+    [data-theme="light"] #battle-wrapper [style*="color: #fff"],
+    [data-theme="light"] #battle-wrapper [style*="color: #ffffff"] {
+        color: #ffffff !important;
+    }
+
+    /* Fix inputs being forced to light mode */
+    [data-theme="light"] #battle-wrapper input,
+    [data-theme="light"] #battle-wrapper textarea {
+        background-color: #222 !important;
+        color: #fff !important;
+        border: 1px solid #444 !important;
+        box-shadow: none !important;
+    }
+
+    /* Fix buttons */
+    [data-theme="light"] #battle-wrapper .btn-secondary {
+        background-color: #333 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    /* Fix Code Editor being forced to white */
+    [data-theme="light"] #code-editor {
+        background-color: #141414 !important;
+        color: #d4d4d4 !important;
+    }
+
+    /* Fix Chat Bubbles */
+    [data-theme="light"] #battle-wrapper .msg-bubble {
+        color: #fff !important;
+    }
+
+    [data-theme="light"] #battle-wrapper .chat-msg.bot .msg-bubble {
+        color: #bfdbfe !important;
+        background: rgba(59, 130, 246, 0.15) !important;
+    }
 </style>
 
 <div id="battle-wrapper">
