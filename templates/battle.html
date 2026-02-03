@@ -251,11 +251,19 @@
         color: var(--battle-text) !important;
     }
 
+    /* Fix inheritance blocked by .main-content */
+    [data-theme="light"] #battle-wrapper {
+        color: var(--battle-text) !important;
+    }
+
     /* Override global light mode text enforcements */
     [data-theme="light"] #battle-wrapper h1,
     [data-theme="light"] #battle-wrapper h2,
     [data-theme="light"] #battle-wrapper h3,
-    [data-theme="light"] #battle-wrapper .page-title {
+    [data-theme="light"] #battle-wrapper .page-title,
+    [data-theme="light"] .battle-header,
+    [data-theme="light"] .battle-header span,
+    [data-theme="light"] #timer-display {
         color: #ffffff !important;
         text-shadow: none !important;
         background: none !important;
