@@ -273,8 +273,11 @@
 
             <!-- Deadline -->
             <div class="form-group">
-                <label>Deadline</label>
-                <input type="date" id="taskDueDate">
+                <label>Deadline (Date & Time)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="date" id="taskDueDate" style="flex: 2;">
+                    <input type="time" id="taskDueTime" style="flex: 1;">
+                </div>
             </div>
 
             <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
@@ -605,6 +608,7 @@
         // Reset form
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDueDate').value = '';
+        document.getElementById('taskDueTime').value = '';
         selectPriority('Medium');
         currentSubtasks = [];
         updateSubtaskList();
@@ -675,12 +679,14 @@
         const category = document.getElementById('taskTitle').value; // Title acts as Category
         const priority = document.getElementById('taskPriority').value;
         const dueDate = document.getElementById('taskDueDate').value;
+        const dueTime = document.getElementById('taskDueTime').value; // Get Time
         const isGroup = document.getElementById('modal-is-group').value === '1';
 
         const payload = {
             category: category,
             priority: priority,
             due_date: dueDate,
+            due_time: dueTime,
             is_group: isGroup,
             subtasks: currentSubtasks
         };

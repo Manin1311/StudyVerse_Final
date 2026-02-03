@@ -15,7 +15,7 @@ import io
 import json
 import os
 import requests
-from email_service import init_mail, send_welcome_email
+from email_service import init_mail, send_welcome_email, send_task_reminder_email
 from pytz import timezone, utc
 
 import os
@@ -489,6 +489,10 @@ class Todo(db.Model):
     completed = db.Column(db.Boolean, default=False)
     priority = db.Column(db.String(20), default='medium')
     due_date = db.Column(db.String(50))
+    # Time specific fields
+    due_time = db.Column(db.String(20), nullable=True) # HH:MM format
+    is_notified = db.Column(db.Boolean, default=False)
+    
     category = db.Column(db.String(50))
     is_group = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -2330,6 +2334,7 @@ def todos_add_batch():
     category = data.get('category', '').strip()
     priority = data.get('priority', 'Medium')
     due_date = data.get('due_date')
+    due_time = data.get('due_time') # NEW: Capture time
     is_group = data.get('is_group') == '1' or data.get('is_group') is True
     subtasks = data.get('subtasks', [])
 
@@ -2348,6 +2353,8 @@ def todos_add_batch():
             completed=False,
             priority=priority,
             due_date=due_date,
+            due_time=due_time,       # NEW: Save time
+            is_notified=False,       # NEW: Reset notification status
             category=category, # The "Task Title" acts as the category/project name
             is_group=is_group,
         )
@@ -4471,11 +4478,94 @@ def run_xp_update():
     except Exception as e:
         print(f"XP/Rank Update failed: {e}")
 
+# Global scheduler flag to prevent duplicates
+SCHEDULER_STARTED = False
+
+def check_task_reminders():
+    """
+    Background job to check for due tasks and send emails.
+    Check every 60 seconds.
+    """
+    while True:
+        try:
+            with app.app_context():
+                now_utc = datetime.utcnow()
+                # IST = UTC + 5:30
+                now_ist = now_utc + timedelta(hours=5, minutes=30)
+                
+                # Format for comparison
+                current_date_str = now_ist.strftime('%Y-%m-%d')
+                current_time_str = now_ist.strftime('%H:%M')
+                
+                # Check for tasks due TODAY that haven't been notified
+                # Logic: Due Date is today AND (Time is approaching OR Time is null)
+                # Specific logic: Notify if Due Time is within next 1 hour
+                
+                # Query all un-notified tasks due today
+                upcoming_tasks = Todo.query.filter(
+                    Todo.due_date == current_date_str,
+                    Todo.completed == False,
+                    Todo.is_notified == False
+                ).all()
+                
+                for task in upcoming_tasks:
+                    should_notify = False
+                    
+                    if not task.due_time:
+                        # All-day task: Notify at 9 AM or immediately if created later
+                        # For simplicity, we can notify immediately if it's today
+                        should_notify = True 
+                    else:
+                        # Time-specific task
+                        # Convert due_time (HH:MM) to numeric or simplified compare
+                        # Simple compare: Notify if Current Time < Due Time <= Current Time + 1 Hour
+                         try:
+                            # Simple string comparison works for HH:MM 24h format
+                            # Notify if we are past the time or close to it?
+                            # Users asked for: "due date is now due" -> alert
+                            
+                            # Let's alert if current time is >= due time (it's due!)
+                            # OR slightly before? Lets say 15 mins before or ON time.
+                            # For robustness: Alert if Current Time >= Due Time
+                            
+                            if current_time_str >= task.due_time:
+                                should_notify = True
+                                
+                         except Exception:
+                             pass
+                             
+                    if should_notify:
+                        # Fetch user manually if needed, or use relationship
+                        user = User.query.get(task.user_id)
+                        if user and user.email:
+                            print(f"Sending reminder for task {task.id} to {user.email}")
+                            sent = send_task_reminder_email(
+                                user.email, 
+                                user.first_name, 
+                                task.title, 
+                                task.due_date, 
+                                task.due_time
+                            )
+                            if sent:
+                                task.is_notified = True
+                                db.session.commit()
+                                
+        except Exception as e:
+            print(f"Scheduler Error: {e}")
+            
+        # Sleep for 60 seconds
+        eventlet.sleep(60)
+
 # IMPORTANT: Order matters. Define logic, THEN run schema check and updates.
 init_db_schema()
 run_xp_update()
 
 if __name__ == '__main__':
+    # Start Background Scheduler
+    if not SCHEDULER_STARTED:
+        eventlet.spawn(check_task_reminders)
+        SCHEDULER_STARTED = True
+
     # Use socketio.run instead of app.run
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)

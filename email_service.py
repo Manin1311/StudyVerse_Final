@@ -113,3 +113,33 @@ The StudyVerse Team
     except Exception as e:
         print(f"✗ Error sending welcome email: {str(e)}")
         return False
+
+def send_task_reminder_email(user_email, user_first_name, task_title, due_date, due_time):
+    """
+    Send an email reminder for a due task.
+    """
+    try:
+        
+        # Simple HTML body
+        html_body = f"""
+        <h2>Hello {user_first_name},</h2>
+        <p>This is a reminder for your task:</p>
+        <p><strong>{task_title}</strong></p>
+        <p>Due: {due_date} {due_time if due_time else ''}</p>
+        <p>Don't forget to complete it!</p>
+        <br>
+        <p>Best regards,</p>
+        <p>StudyVerse Team</p>
+        """
+        
+        text_body = f"Reminder: Task '{task_title}' is due on {due_date} {due_time or ''}."
+
+        return send_email(
+            subject=f"Reminder: {task_title} is due soon! ⏰",
+            recipients=user_email,
+            html_body=html_body,
+            text_body=text_body
+        )
+    except Exception as e:
+        print(f"✗ Error sending task reminder email: {str(e)}")
+        return False
