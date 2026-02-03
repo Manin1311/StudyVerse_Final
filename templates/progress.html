@@ -51,58 +51,55 @@
         </div>
     </div>
 
-    <<<<<<< HEAD <<<<<<< Updated upstream=======>>>>>>> b7c844851e021d7a17d05f35a8021be393b5f1e1
-        <!-- Task Category Distribution (Pie Chart) -->
-        <div class="card" style="grid-column: span 2; min-height: 450px; display: flex; flex-direction: column;">
-            <div class="card-header">
-                <div class="card-title">Task Distribution</div>
-            </div>
-            <div style="flex: 1; position: relative; padding: 20px;">
-                <canvas id="categoryPieChart"></canvas>
-            </div>
+    <!-- Task Category Distribution (Pie Chart) -->
+    <div class="card" style="grid-column: span 2; min-height: 450px; display: flex; flex-direction: column;">
+        <div class="card-header">
+            <div class="card-title">Task Distribution</div>
         </div>
+        <div style="flex: 1; position: relative; padding: 20px;">
+            <canvas id="categoryPieChart"></canvas>
+        </div>
+    </div>
 
-        <!-- Performance Summary -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Academic Health</div>
+    <!-- Performance Summary -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Academic Health</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 24px;">
+            <div class="stat-summary-box">
+                <div class="stat-icon" style="background: rgba(74, 222, 128, 0.1); color: var(--accent-green);">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Completed Tasks</div>
+                    <div style="font-size: 1.2rem; font-weight: 700;">{{ completed_todos }} / {{ total_todos }}
+                    </div>
+                </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 24px;">
-                <div class="stat-summary-box">
-                    <div class="stat-icon" style="background: rgba(74, 222, 128, 0.1); color: var(--accent-green);">
-                        <i class="fa-solid fa-check-double"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Completed Tasks</div>
-                        <div style="font-size: 1.2rem; font-weight: 700;">{{ completed_todos }} / {{ total_todos }}
-                        </div>
-                    </div>
-                </div>
 
-                <div class="stat-summary-box">
-                    <div class="stat-icon" style="background: rgba(167, 139, 250, 0.1); color: var(--accent-purple);">
-                        <i class="fa-solid fa-clock"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Focus Time (Week)</div>
-                        <div style="font-size: 1.2rem; font-weight: 700;">{{ weekly_hours }}h</div>
-                    </div>
+            <div class="stat-summary-box">
+                <div class="stat-icon" style="background: rgba(167, 139, 250, 0.1); color: var(--accent-purple);">
+                    <i class="fa-solid fa-clock"></i>
                 </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Focus Time (Week)</div>
+                    <div style="font-size: 1.2rem; font-weight: 700;">{{ weekly_hours }}h</div>
+                </div>
+            </div>
 
-                <div class="stat-summary-box">
-                    <div class="stat-icon" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24;">
-                        <i class="fa-solid fa-fire-flame-curved"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Study Sessions</div>
-                        <div style="font-size: 1.2rem; font-weight: 700;">{{ sessions_week }} Done</div>
-                    </div>
+            <div class="stat-summary-box">
+                <div class="stat-icon" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24;">
+                    <i class="fa-solid fa-fire-flame-curved"></i>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Study Sessions</div>
+                    <div style="font-size: 1.2rem; font-weight: 700;">{{ sessions_week }} Done</div>
                 </div>
             </div>
         </div>
-        <<<<<<< HEAD=======>>>>>>> Stashed changes
-            =======
-            >>>>>>> b7c844851e021d7a17d05f35a8021be393b5f1e1
+    </div>
+
 </div>
 {% endblock %}
 
