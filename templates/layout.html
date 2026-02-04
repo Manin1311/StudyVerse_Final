@@ -585,7 +585,7 @@
             const flashMessages = document.querySelectorAll('.flash-message, .alert-success');
             flashMessages.forEach(msg => {
                 const text = msg.textContent.toLowerCase();
-                if ((text.includes('xp') && !text.includes('not enough') && !text.includes('short on funds')) || text.includes('level up') || text.includes('completed')) {
+                if ((text.includes('xp') && !text.includes('not enough') && !text.includes('short on funds') && !text.includes('-') && !text.includes('unchecked') && !text.includes('lost')) || text.includes('level up') || text.includes('completed')) {
                     window.triggerConfetti();
                     // Play sound if available
                     // const audio = new Audio('/static/sounds/success.mp3');
