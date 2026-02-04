@@ -3835,32 +3835,86 @@ class QuizService:
     @staticmethod
     def generate_weakness_quiz(user_id: int, **kwargs):
         import random
-        # 1. Identify Weaknesses
-        # Query topics with proficiency < 70, ordered by lowest first
-        weak_topics = (
-            TopicProficiency.query
-            .filter_by(user_id=user_id)
-            .filter(TopicProficiency.proficiency < 70)
-            .order_by(TopicProficiency.proficiency.asc())
-            .limit(5)
-            .all()
-        )
         
-        topics_list = [t.topic_name for t in weak_topics]
+        # 1. Identify Active Syllabus (Context Awareness)
+        # By default, use the most recent (Active) syllabus.
+        # Ideally, passed via kwargs if we start quiz from archive, but for now default to Active.
+        active_doc = SyllabusDocument.query.filter_by(user_id=user_id).order_by(SyllabusDocument.created_at.desc()).first()
+        active_syllabus_id = active_doc.id if active_doc else None
+
+        # 2. Get Topics from Active Syllabus Tasks
+        # We only want to test on what is currently being studied.
         
-        # If not enough weak topics, fill with random topics from user's todos
-        if len(topics_list) < 3:
-            # Get distinct categories from Todos
-            # This is a bit complex in SQLAlch without distinct, let's just fetch some todos
-            some_todos = Todo.query.filter_by(user_id=user_id).limit(50).all()
-            all_cats = list(set([t.category for t in some_todos if t.category]))
-            random.shuffle(all_cats)
-            topics_list.extend(all_cats[:3])
+        topics_list = []
+        
+        if active_syllabus_id:
+            # Plan A: Get categories from Todos linked to this syllabus
+            # We want unique categories from tasks in this syllabus
             
-        topics_list = list(set(topics_list)) # deduplicate
+            # Efficient query for distinct categories in this syllabus
+            # SQLAlchemy distinct can be tricky across DBs, let's fetch category names
+            relevant_todos = (
+                db.session.query(Todo.category)
+                .filter(Todo.user_id == user_id)
+                .filter(Todo.syllabus_id == active_syllabus_id)
+                .filter(Todo.category != None)
+                .distinct()
+                .limit(20)
+                .all()
+            )
+            
+            syllabus_categories = [r[0] for r in relevant_todos if r[0]]
+            
+            # Now, from these categories, which ones are "Weak"?
+            # We intersect with TopicProficiency (if any exists)
+            
+            if syllabus_categories:
+                # Find proficiencies for these specific categories
+                prof_records = (
+                    TopicProficiency.query
+                    .filter_by(user_id=user_id)
+                    .filter(TopicProficiency.topic_name.in_(syllabus_categories))
+                    .order_by(TopicProficiency.proficiency.asc()) # Lowest first
+                    .limit(5)
+                    .all()
+                )
+                
+                # Add the weakest ones first
+                topics_list.extend([p.topic_name for p in prof_records])
+                
+                # If we need more, just add random ones from the syllabus
+                if len(topics_list) < 3:
+                    remaining = list(set(syllabus_categories) - set(topics_list))
+                    random.shuffle(remaining)
+                    topics_list.extend(remaining[:3])
         
+        # Fallback (If no active syllabus or no topics found in it)
         if not topics_list:
-            topics_list = ["General Study Skills", "Time Management", "Focus"]
+            # Fallback to old behavior: Global Weakness
+            weak_topics = (
+                TopicProficiency.query
+                .filter_by(user_id=user_id)
+                .filter(TopicProficiency.proficiency < 70)
+                .order_by(TopicProficiency.proficiency.asc())
+                .limit(5)
+                .all()
+            )
+            topics_list = [t.topic_name for t in weak_topics]
+
+        # Final Fill (if still empty)
+        if len(topics_list) < 3:
+             if active_syllabus_id:
+                  # Force find ANY tasks from this syllabus
+                  some_todos = Todo.query.filter_by(user_id=user_id, syllabus_id=active_syllabus_id).limit(20).all()
+                  cats = list(set([t.category for t in some_todos if t.category]))
+                  topics_list.extend(cats)
+             else:
+                  topics_list = ["General Study Skills", "Time Management", "Focus"]
+        
+        # Deduplicate and Limit
+        topics_list = list(set(topics_list))[:5]
+        if not topics_list:
+             topics_list = ["General Knowledge"]
 
         num_questions = kwargs.get('num_questions', 5)
         difficulty = kwargs.get('difficulty', 'medium')
