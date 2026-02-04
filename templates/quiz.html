@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Knowledge Check</h1>
-    <p class="text-muted">Target your weak spots and level up your proficiency.</p>
+    <p style="color: var(--text-secondary);">Target your weak spots and level up your proficiency.</p>
 </div>
 
 <div class="card" id="quiz-start-card"
@@ -59,24 +59,28 @@
 
 <style>
     .btn-select {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--bg-hover);
         border: 1px solid var(--border);
-        color: var(--text-secondary);
+        color: var(--text-primary);
         padding: 8px;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s;
+        font-weight: 500;
     }
 
     .btn-select:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--bg-card);
+        /* Slightly different on hover */
+        border-color: var(--text-secondary);
     }
 
     .btn-select.selected {
-        background: var(--accent-blue);
-        color: white;
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        background: #3b82f6 !important;
+        /* Force Blue */
+        color: white !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
     }
 </style>
 
