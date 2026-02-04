@@ -3781,7 +3781,7 @@ def reject_friend_request(request_id):
 # ------------------------------
 class QuizService:
     @staticmethod
-    def generate_weakness_quiz(user_id: int):
+    def generate_weakness_quiz(user_id: int, **kwargs):
         import random
         # 1. Identify Weaknesses
         # Query topics with proficiency < 70, ordered by lowest first
@@ -3810,11 +3810,15 @@ class QuizService:
         if not topics_list:
             topics_list = ["General Study Skills", "Time Management", "Focus"]
 
+        num_questions = kwargs.get('num_questions', 5)
+        difficulty = kwargs.get('difficulty', 'medium')
+        
         # 2. Call AI
         # Minimal prompt to save tokens and ensure JSON
         topic_str = ", ".join(topics_list[:3]) # Limit to 3 topics for context
         prompt = (
-            f"Create a 5-question multiple choice quiz testing knowledge on: {topic_str}. "
+            f"Create a {num_questions}-question multiple choice quiz testing knowledge on: {topic_str}. "
+            f"Difficulty level: {difficulty}. "
             "Focus on identifying weaknesses. "
             "Output strictly valid JSON (no markdown formatting) in this specific format: "
             '{"questions": [{"question": "...", "options": ["A", "B", "C", "D"], "correct_index": 0, "topic": "..."}]}'
@@ -3916,7 +3920,11 @@ def quiz_page():
 @app.route('/api/quiz/generate', methods=['POST'])
 @login_required
 def quiz_generate():
-    questions = QuizService.generate_weakness_quiz(current_user.id)
+    data = request.json or {}
+    num_questions = int(data.get('num_questions', 5))
+    difficulty = data.get('difficulty', 'medium')
+    
+    questions = QuizService.generate_weakness_quiz(current_user.id, num_questions=num_questions, difficulty=difficulty)
     if not questions:
         # Fallback Mock if AI fails
         questions = [

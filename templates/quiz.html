@@ -14,20 +14,71 @@
         style="width: 80px; height: 80px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
         <i class="fa-solid fa-brain" style="font-size: 2.5rem; color: #3b82f6;"></i>
     </div>
-    <h2 style="margin-bottom: 16px; font-family: var(--font-heading);">Ready to Challenge Yourself?</h2>
+    <h2 style="margin-bottom: 16px; font-family: var(--font-heading);">Customize Your Challenge</h2>
     <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 32px; line-height: 1.6;">
-        Our AI will analyze your proficiency map, identify your weakest topics, and generate a personalized 5-question
-        quiz to help you improve.
+        Configure your AI quiz to target your needs.
     </p>
 
-    <button id="start-quiz-btn" class="btn-primary" style="padding: 12px 32px; font-size: 1.1rem;">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Weakness Quiz
+    <!-- Quiz Settings Form -->
+    <div style="max-width: 400px; margin: 0 auto 32px; text-align: left; display: grid; gap: 16px;">
+
+        <!-- Question Count -->
+        <div>
+            <label style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem;">Number
+                of Questions</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <button class="btn-select selected" onclick="selectOption(this, 'q-count', 5)">5</button>
+                <button class="btn-select" onclick="selectOption(this, 'q-count', 10)">10</button>
+                <button class="btn-select" onclick="selectOption(this, 'q-count', 15)">15</button>
+                <button class="btn-select" onclick="selectOption(this, 'q-count', 20)">20</button>
+            </div>
+        </div>
+
+        <!-- Difficulty -->
+        <div>
+            <label
+                style="display: block; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem;">Difficulty</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <button class="btn-select" onclick="selectOption(this, 'difficulty', 'easy')">Easy</button>
+                <button class="btn-select selected" onclick="selectOption(this, 'difficulty', 'medium')">Medium</button>
+                <button class="btn-select" onclick="selectOption(this, 'difficulty', 'hard')">Hard</button>
+            </div>
+        </div>
+
+    </div>
+
+    <button id="start-quiz-btn" class="btn-primary"
+        style="padding: 12px 32px; font-size: 1.1rem; width: 100%; max-width: 300px;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Start Quiz
     </button>
     <div id="loading-spinner" style="display: none; margin-top: 20px; color: var(--accent-blue);">
         <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
         <p style="margin-top: 10px;">Constructing your challenge...</p>
     </div>
 </div>
+
+<style>
+    .btn-select {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-select:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-select.selected {
+        background: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    }
+</style>
 
 <div id="quiz-container" style="display: none; max-width: 700px; margin: 0 auto;">
     <!-- Question Card -->
@@ -90,6 +141,22 @@
     let score = 0;
     let userAnswers = [];
 
+    let selectedExample = {
+        count: 5,
+        difficulty: 'medium'
+    };
+
+    function selectOption(btn, type, value) {
+        // Update UI
+        const parent = btn.parentElement;
+        Array.from(parent.children).forEach(c => c.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        // Update State
+        if (type === 'q-count') selectedExample.count = value;
+        if (type === 'difficulty') selectedExample.difficulty = value;
+    }
+
     const startBtn = document.getElementById('start-quiz-btn');
     const loading = document.getElementById('loading-spinner');
     const startCard = document.getElementById('quiz-start-card');
@@ -106,7 +173,14 @@
         loading.style.display = 'block';
 
         try {
-            const res = await fetch('/api/quiz/generate', { method: 'POST' });
+            const res = await fetch('/api/quiz/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    num_questions: selectedExample.count,
+                    difficulty: selectedExample.difficulty
+                })
+            });
             const data = await res.json();
 
             if (data.status === 'error') {
