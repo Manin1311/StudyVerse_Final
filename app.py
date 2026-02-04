@@ -318,7 +318,7 @@ class GamificationService:
         return {'name': 'Bronze', 'icon': 'fa-shield-halved', 'color': '#CD7F32'}
 
     @staticmethod
-    def add_xp(user_id, source, amount):
+    def add_xp(user_id, source, amount, force_deduct=False):
         user = User.query.get(user_id)
         if not user:
             return
@@ -358,8 +358,18 @@ class GamificationService:
                 has_protection = True
         
         # 3. Handle XP loss protection
-        if amount < 0 and has_protection:
-            return {'earned': 0, 'message': 'XP Protection Active! No XP lost.'}
+        if amount < 0:
+            if not force_deduct and has_protection:
+                return {'earned': 0, 'message': 'XP Protection Active! No XP lost.'}
+            
+            # Direct deduction logic
+            user.total_xp = max(0, user.total_xp + amount) # Check bounds? Or allow negative? keeping 0 floor
+            
+            # Log negative history
+            log = XPHistory(user_id=user.id, source=source, amount=amount)
+            db.session.add(log)
+            db.session.commit()
+            return {'earned': amount, 'new_total': user.total_xp}
 
         # 4. Apply special multipliers based on source (e.g., Double Time for focus)
         actual_multiplier = xp_multiplier
@@ -2184,6 +2194,10 @@ def todos_toggle(todo_id):
             topic.updated_at = datetime.utcnow()
             
     else:
+        # Deduct XP if unchecked
+        GamificationService.add_xp(current_user.id, 'task_undo', -10, force_deduct=True)
+        flash('Task unchecked. -10 XP', 'info')
+
         # Deduct Proficiency if unchecked
         if todo.category:
             topic = TopicProficiency.query.filter_by(user_id=current_user.id, topic_name=todo.category).first()
