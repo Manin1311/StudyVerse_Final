@@ -25,23 +25,27 @@
             style="padding: 10px; text-align: center; border-bottom: 2px solid var(--accent-green);">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">XP
             </div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ current_user.total_xp }}</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ current_user.total_xp }}
+            </div>
         </div>
         <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #60a5fa;">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
                 Hours</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{% if weekly_hours > 0 %}{{ weekly_hours
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{% if weekly_hours > 0 %}{{
+                weekly_hours
                 }}h{% else %}&lt;1h{% endif %}</div>
         </div>
         <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #fbbf24;">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
                 Tasks</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ completed_todos or 0 }}</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ completed_todos or 0 }}
+            </div>
         </div>
         <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #a78bfa;">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
                 Level</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ avg_proficiency or 0 }}%</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ avg_proficiency or 0 }}%
+            </div>
         </div>
     </div>
 

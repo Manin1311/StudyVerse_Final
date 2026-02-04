@@ -5527,3 +5527,12 @@ body.sidebar-collapsed .nav-item i {
     gap: 8px;
     /* Reduced gap */
 }
+
+/* ========================================
+   LIGHT MODE FIXES
+   ======================================== */
+[data-theme='light'] .bento-card.glass {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
