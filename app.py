@@ -746,10 +746,10 @@ class SyllabusService:
 
     @staticmethod
     def save_syllabus(user_id: int, filename: str, extracted_text: str) -> SyllabusDocument:
-        existing = SyllabusDocument.query.filter_by(user_id=user_id).first()
-        if existing:
-            db.session.delete(existing)
-            db.session.commit()
+        # existing = SyllabusDocument.query.filter_by(user_id=user_id).first()
+        # if existing:
+        #     db.session.delete(existing)
+        #     db.session.commit()
 
         doc = SyllabusDocument(user_id=user_id, filename=filename, extracted_text=extracted_text)
         db.session.add(doc)
@@ -2486,14 +2486,40 @@ def habit_debugger():
     return render_template('habit-debugger.html')
 
 @app.route('/syllabus')
+@app.route('/syllabus/<int:view_id>')
 @login_required
-def syllabus():
-    # Get the current active syllabus doc
-    doc = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).first()
-    
-    # Get archived docs (all except the first one)
+def syllabus(view_id=None):
+    # Get all docs sorted by newest first
     all_docs = SyllabusDocument.query.filter_by(user_id=current_user.id).order_by(SyllabusDocument.created_at.desc()).all()
-    archived_docs = all_docs[1:] if len(all_docs) > 1 else []
+    
+    if not all_docs:
+        doc = None
+        archived_docs = []
+    else:
+        # If view_id is provided, find that doc
+        if view_id:
+            doc = next((d for d in all_docs if d.id == view_id), None)
+            # If not found (unauthorized?), fallback to newest
+            if not doc:
+                doc = all_docs[0]
+        else:
+            # Default to newest (Active)
+            doc = all_docs[0]
+            
+        # Archived are all except the one currently being viewed? 
+        # Or archived are purely the "non-newest" ones?
+        # Let's say: Archived list contains ALL docs except the current one being viewed, to allow switching.
+        archived_docs = [d for d in all_docs if d.id != doc.id]
+
+    # TODO: We really should filter chapters/todos by the specific syllabus!
+    # currently `build_chapters_from_todos` fetches ALL tasks.
+    # We need to link tasks to a syllabus_id or category matching the syllabus filename.
+    # For now, to keep it simple as requested:
+    # We will assume "Categories" == "Syllabus Name" or just display all.
+    # Since the user asked for "completed courses section", we might need to filter tasks.
+    # Given the current simple data model where tasks are just "Todos" with categories:
+    # We will just show the current state.
+    # Ideally, we should update Todo to have 'syllabus_id'.
     
     chapters = SyllabusService.build_chapters_from_todos(current_user.id)
     total_topics = sum(c['total'] for c in chapters)
