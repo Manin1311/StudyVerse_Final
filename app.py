@@ -4377,6 +4377,22 @@ def check_task_reminders():
 init_db_schema()
 run_xp_update()
 
+@app.route('/fix-db-schema')
+def fix_db_schema():
+    """Manual trigger to fix DB schema in production."""
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            # Postgres specific: Try adding the column directly
+            try:
+                conn.execute(text("ALTER TABLE todo ADD COLUMN IF NOT EXISTS syllabus_id INTEGER REFERENCES syllabus_document(id)"))
+                conn.commit()
+                return "Schema updated safely (Added syllabus_id)."
+            except Exception as e:
+                return f"Error executing ALTER: {str(e)}"
+    except Exception as e:
+        return f"Database connection error: {str(e)}"
+
 if __name__ == '__main__':
     # Start Background Scheduler
     if not SCHEDULER_STARTED:
