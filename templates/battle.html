@@ -331,6 +331,56 @@
         color: #bfdbfe !important;
         background: rgba(59, 130, 246, 0.15) !important;
     }
+
+    /* --- FIX MODALS & OVERLAYS IN LIGHT MODE --- */
+
+    /* Ensure the app container doesn't override the dark bg */
+    [data-theme="light"] .app-container {
+        background-color: var(--battle-bg) !important;
+    }
+
+    /* Force Modal Overlay to be dark */
+    [data-theme="light"] .modal-overlay {
+        background: rgba(0, 0, 0, 0.8) !important;
+        backdrop-filter: blur(4px);
+    }
+
+    /* Force Modal Box to be dark */
+    [data-theme="light"] .modal-box {
+        background: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        color: #e5e5e5 !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* Force Text Colors in Modal */
+    [data-theme="light"] .modal-box h2,
+    [data-theme="light"] .modal-box h3,
+    [data-theme="light"] .modal-box p,
+    [data-theme="light"] .modal-box span {
+        color: #e5e5e5 !important;
+    }
+
+    /* Specific fix for the player name which has inline style */
+    [data-theme="light"] .modal-box #req-name {
+        color: #ffffff !important;
+    }
+
+    /* Fix Buttons in Modal */
+    [data-theme="light"] .modal-box .btn-secondary {
+        background-color: #333 !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    [data-theme="light"] .modal-box .btn-primary {
+        background-color: var(--battle-accent) !important;
+        color: white !important;
+    }
+
+    [data-theme="light"] .modal-box .btn-secondary:hover {
+        background-color: #444 !important;
+    }
 </style>
 
 <div id="battle-wrapper">
