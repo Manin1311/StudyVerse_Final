@@ -724,5 +724,60 @@
             modal.style.display = 'none';
         }
     }
+
+    // Search Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.querySelector('.search-input-todos');
+        if (searchInput) {
+            searchInput.addEventListener('input', function (e) {
+                const term = e.target.value.toLowerCase().trim();
+                const parents = document.querySelectorAll('.task-row.parent');
+
+                parents.forEach(parent => {
+                    const group = parent.nextElementSibling;
+                    if (!group || !group.classList.contains('task-group')) return;
+
+                    const children = group.querySelectorAll('.task-row.subtask');
+                    const toggleBtn = parent.querySelector('.toggle-btn');
+
+                    // Clear / Reset
+                    if (term === '') {
+                        parent.style.display = ''; // Reset to grid
+                        children.forEach(child => child.style.display = '');
+
+                        // Restore visible state based on toggle button
+                        const isExpanded = toggleBtn && toggleBtn.classList.contains('expanded');
+                        group.style.display = isExpanded ? 'block' : 'none';
+                        return;
+                    }
+
+                    // Search Check
+                    const parentText = parent.textContent.toLowerCase();
+                    const pMatch = parentText.includes(term);
+                    let hasVisibleChildren = false;
+
+                    children.forEach(child => {
+                        const childText = child.textContent.toLowerCase();
+                        const cMatch = childText.includes(term);
+
+                        if (pMatch || cMatch) {
+                            child.style.display = '';
+                            hasVisibleChildren = true;
+                        } else {
+                            child.style.display = 'none';
+                        }
+                    });
+
+                    if (pMatch || hasVisibleChildren) {
+                        parent.style.display = '';
+                        group.style.display = 'block';
+                    } else {
+                        parent.style.display = 'none';
+                        group.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
 </script>
 {% endblock %}
