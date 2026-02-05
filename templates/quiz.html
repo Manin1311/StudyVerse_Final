@@ -147,8 +147,19 @@
 
     let selectedExample = {
         count: 5,
-        difficulty: 'medium'
+        difficulty: 'medium',
+        syllabus_id: null
     };
+
+    // Check URL params for syllabus context
+    const urlParams = new URLSearchParams(window.location.search);
+    const sourceSyllabusId = urlParams.get('source_id') || urlParams.get('syllabus_id');
+    if (sourceSyllabusId) {
+        selectedExample.syllabus_id = parseInt(sourceSyllabusId);
+        console.log("Quiz Context Set: Syllabus ID", sourceSyllabusId);
+        // Optional: Update UI to show we are practicing a specific course?
+        // document.querySelector('h2').innerText += " (Specific Course)";
+    }
 
     function selectOption(btn, type, value) {
         // Update UI
@@ -182,7 +193,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     num_questions: selectedExample.count,
-                    difficulty: selectedExample.difficulty
+                    difficulty: selectedExample.difficulty,
+                    syllabus_id: selectedExample.syllabus_id
                 })
             });
             const data = await res.json();
