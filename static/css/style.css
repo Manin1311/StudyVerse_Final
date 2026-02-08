@@ -786,19 +786,10 @@ body.theme_cyberpunk::before {
    THEME OVERRIDES FOR LIGHT MODE
    ======================================== */
 /* When a theme is active, it should override light mode settings */
-[data-theme="light"].theme_cyberpunk,
-[data-theme="light"].theme_aurora,
-[data-theme="light"].theme_synthwave,
-[data-theme="light"].theme_sakura,
-[data-theme="light"].theme_ocean {
-    /* Override light mode backgrounds with theme backgrounds */
-    --bg-main: var(--bg-main) !important;
-    --bg-card: var(--bg-card) !important;
-    --bg-sidebar: var(--bg-sidebar) !important;
-}
+/* Note: data-theme is on <html>, theme classes are on <body> */
 
 /* Cyberpunk theme overrides for light mode */
-[data-theme="light"].theme_cyberpunk {
+html[data-theme="light"] body.theme_cyberpunk {
     --bg-main: #0a0a0f !important;
     --bg-card: #13131a !important;
     --bg-sidebar: #0d0d14 !important;
@@ -807,7 +798,7 @@ body.theme_cyberpunk::before {
 }
 
 /* Aurora theme overrides for light mode */
-[data-theme="light"].theme_aurora {
+html[data-theme="light"] body.theme_aurora {
     --bg-main: #0f0a1f !important;
     --bg-card: #1a1333 !important;
     --bg-sidebar: #140e28 !important;
@@ -816,7 +807,7 @@ body.theme_cyberpunk::before {
 }
 
 /* Synthwave theme overrides for light mode */
-[data-theme="light"].theme_synthwave {
+html[data-theme="light"] body.theme_synthwave {
     --bg-main: #0d0221 !important;
     --bg-card: #1a0b2e !important;
     --bg-sidebar: #110726 !important;
@@ -825,7 +816,7 @@ body.theme_cyberpunk::before {
 }
 
 /* Sakura theme overrides for light mode */
-[data-theme="light"].theme_sakura {
+html[data-theme="light"] body.theme_sakura {
     --bg-main: #1a0f1f !important;
     --bg-card: #2a1a2e !important;
     --bg-sidebar: #1f1426 !important;
@@ -834,7 +825,7 @@ body.theme_cyberpunk::before {
 }
 
 /* Ocean theme overrides for light mode */
-[data-theme="light"].theme_ocean {
+html[data-theme="light"] body.theme_ocean {
     --bg-main: #0a1929 !important;
     --bg-card: #132f4c !important;
     --bg-sidebar: #0e1f30 !important;
@@ -846,20 +837,21 @@ body.theme_cyberpunk::before {
    TIMER/FOCUS MODE OVERRIDES FOR THEMES IN LIGHT MODE
    ======================================== */
 /* When a theme is active in light mode, timer should use theme styling */
-[data-theme="light"].theme_cyberpunk .timer-bg-overlay,
-[data-theme="light"].theme_aurora .timer-bg-overlay,
-[data-theme="light"].theme_synthwave .timer-bg-overlay,
-[data-theme="light"].theme_sakura .timer-bg-overlay,
-[data-theme="light"].theme_ocean .timer-bg-overlay {
+/* Note: data-theme is on <html>, theme classes are on <body> */
+html[data-theme="light"] body.theme_cyberpunk .timer-bg-overlay,
+html[data-theme="light"] body.theme_aurora .timer-bg-overlay,
+html[data-theme="light"] body.theme_synthwave .timer-bg-overlay,
+html[data-theme="light"] body.theme_sakura .timer-bg-overlay,
+html[data-theme="light"] body.theme_ocean .timer-bg-overlay {
     background: rgba(0, 0, 0, 0.3) !important;
     backdrop-filter: blur(10px) !important;
 }
 
-[data-theme="light"].theme_cyberpunk .timer-digits,
-[data-theme="light"].theme_aurora .timer-digits,
-[data-theme="light"].theme_synthwave .timer-digits,
-[data-theme="light"].theme_sakura .timer-digits,
-[data-theme="light"].theme_ocean .timer-digits {
+html[data-theme="light"] body.theme_cyberpunk .timer-digits,
+html[data-theme="light"] body.theme_aurora .timer-digits,
+html[data-theme="light"] body.theme_synthwave .timer-digits,
+html[data-theme="light"] body.theme_sakura .timer-digits,
+html[data-theme="light"] body.theme_ocean .timer-digits {
     color: #ffffff !important;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9),
         0 0 40px rgba(0, 0, 0, 0.8),
