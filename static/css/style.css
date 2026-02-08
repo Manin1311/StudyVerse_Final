@@ -783,6 +783,66 @@ body.theme_cyberpunk::before {
 }
 
 /* ========================================
+   THEME OVERRIDES FOR LIGHT MODE
+   ======================================== */
+/* When a theme is active, it should override light mode settings */
+[data-theme="light"].theme_cyberpunk,
+[data-theme="light"].theme_aurora,
+[data-theme="light"].theme_synthwave,
+[data-theme="light"].theme_sakura,
+[data-theme="light"].theme_ocean {
+    /* Override light mode backgrounds with theme backgrounds */
+    --bg-main: var(--bg-main) !important;
+    --bg-card: var(--bg-card) !important;
+    --bg-sidebar: var(--bg-sidebar) !important;
+}
+
+/* Cyberpunk theme overrides for light mode */
+[data-theme="light"].theme_cyberpunk {
+    --bg-main: #0a0a0f !important;
+    --bg-card: #13131a !important;
+    --bg-sidebar: #0d0d14 !important;
+    --text-primary: #f0f0ff !important;
+    --text-secondary: #b794f6 !important;
+}
+
+/* Aurora theme overrides for light mode */
+[data-theme="light"].theme_aurora {
+    --bg-main: #0f0a1f !important;
+    --bg-card: #1a1333 !important;
+    --bg-sidebar: #140e28 !important;
+    --text-primary: #f3e8ff !important;
+    --text-secondary: #c4b5fd !important;
+}
+
+/* Synthwave theme overrides for light mode */
+[data-theme="light"].theme_synthwave {
+    --bg-main: #0d0221 !important;
+    --bg-card: #1a0b2e !important;
+    --bg-sidebar: #110726 !important;
+    --text-primary: #ffd9e8 !important;
+    --text-secondary: #f72585 !important;
+}
+
+/* Sakura theme overrides for light mode */
+[data-theme="light"].theme_sakura {
+    --bg-main: #1a0f1f !important;
+    --bg-card: #2a1a2e !important;
+    --bg-sidebar: #1f1426 !important;
+    --text-primary: #ffd9e8 !important;
+    --text-secondary: #ffb3d9 !important;
+}
+
+/* Ocean theme overrides for light mode */
+[data-theme="light"].theme_ocean {
+    --bg-main: #0a1929 !important;
+    --bg-card: #132f4c !important;
+    --bg-sidebar: #0e1f30 !important;
+    --text-primary: #e3f2fd !important;
+    --text-secondary: #90caf9 !important;
+}
+
+/* ========================================
 
 /* ========================================
    AURORA THEME (PREMIUM)
