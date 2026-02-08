@@ -471,10 +471,10 @@
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
-/* Item Shop Overrides */
-[data-theme="light"] .main-content {
+/* Item Shop Overrides - REMOVED white background to allow themes to apply */
+/* [data-theme="light"] .main-content {
     background: #ffffff !important;
-}
+} */
 
 [data-theme="light"] .page-header .page-title {
     color: var(--text-primary) !important;
@@ -1024,8 +1024,6 @@ body.theme_sakura .theme-icon-light {
 /* ========================================
    EXCLUSIVE FRAMES - PREMIUM
    ======================================== */
-
-}
 
 /* Ensure all new themes don't break theme toggle */
 body.theme_aurora #theme-toggle,
