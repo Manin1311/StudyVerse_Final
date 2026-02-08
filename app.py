@@ -4683,36 +4683,46 @@ def init_db_schema():
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
 def run_xp_update():
-    """Updates specific user XP and recalculates levels on startup."""
-    try:
-        with app.app_context():
-            # 1. Update Daksh's XP (Case-insensitive)
-            target_name = 'daksh'
-            users_found = User.query.filter(User.first_name.ilike(target_name)).all()
-            
-            if users_found:
-                print(f"--- Running XP Update for '{target_name}' ---")
-                for user in users_found:
-                    user.total_xp += 100000
-                    print(f"  > Incremented {user.first_name}'s XP by 100,000. New XP: {user.total_xp}")
-
-            # 2. Recalculate Levels for ALL users
-            print("--- Recalculating Levels/Ranks for All Users ---")
-            all_users = User.query.all()
-            updated_count = 0
-            for u in all_users:
-                correct_level = GamificationService.calculate_level(u.total_xp)
-                if u.level != correct_level:
-                    u.level = correct_level
-                    updated_count += 1
-            
-            if updated_count > 0:
-                print(f"  > Adjusted levels for {updated_count} users.")
-                
-            db.session.commit()
-            print("--- User Status Synchronization Complete ---")
-    except Exception as e:
-        print(f"XP/Rank Update failed: {e}")
+    """
+    DISABLED: Updates specific user XP and recalculates levels on startup.
+    
+    This function was automatically adding 100,000 XP to 'daksh' user on every server restart.
+    Commented out to prevent unwanted XP increases for demo accounts.
+    
+    If you need to manually update XP, use the admin panel or database directly.
+    """
+    pass  # Function disabled - was causing automatic XP increases
+    
+    # ORIGINAL CODE (DISABLED):
+    # try:
+    #     with app.app_context():
+    #         # 1. Update Daksh's XP (Case-insensitive)
+    #         target_name = 'daksh'
+    #         users_found = User.query.filter(User.first_name.ilike(target_name)).all()
+    #         
+    #         if users_found:
+    #             print(f"--- Running XP Update for '{target_name}' ---")
+    #             for user in users_found:
+    #                 user.total_xp += 100000
+    #                 print(f"  > Incremented {user.first_name}'s XP by 100,000. New XP: {user.total_xp}")
+    #
+    #         # 2. Recalculate Levels for ALL users
+    #         print("--- Recalculating Levels/Ranks for All Users ---")
+    #         all_users = User.query.all()
+    #         updated_count = 0
+    #         for u in all_users:
+    #             correct_level = GamificationService.calculate_level(u.total_xp)
+    #             if u.level != correct_level:
+    #                 u.level = correct_level
+    #                 updated_count += 1
+    #         
+    #         if updated_count > 0:
+    #             print(f"  > Adjusted levels for {updated_count} users.")
+    #             
+    #         db.session.commit()
+    #         print("--- User Status Synchronization Complete ---")
+    # except Exception as e:
+    #     print(f"XP/Rank Update failed: {e}")
 
 # Global scheduler flag to prevent duplicates
 SCHEDULER_STARTED = False
