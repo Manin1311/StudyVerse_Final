@@ -1,8 +1,10 @@
+{# Extends base layout with sidebar and navigation #}
 {% extends "layout.html" %}
 
 {% block title %}Assignments - StudyVerse{% endblock %}
 
 {% block content %}
+{# Top header with user avatar #}
 <header class="top-bar todos-header">
     <div class="page-title">All Assignments</div>
     <div class="top-actions">
@@ -38,11 +40,11 @@
                 <div class="col-action">Action</div>
             </div>
 
-            <!-- Personal Tasks Container -->
+            {# Personal tasks grouped by category #}
             <div id="personal-tasks-container">
-                <!-- We manually group by iterating twice to avoid Jinja sort errors on None types -->
+                {# Group tasks by category to show parent-child hierarchy #}
 
-                <!-- 1. Tasks with Categories -->
+                {# 1. Tasks with Categories #}
                 {% set categories = [] %}
                 {% for t in personal_todos %}
                 {% if t.category and t.category not in categories %}
@@ -96,7 +98,7 @@
                     <div class="col-action"></div>
                 </div>
 
-                <!-- Subtasks -->
+                {# Subtasks under each category #}
                 <div class="task-group" style="display: {% if cat_finished %}none{% else %}block{% endif %};">
                     {% for t in personal_todos %}
                     {% if t.category == cat %}
@@ -141,7 +143,7 @@
                 </div>
                 {% endfor %}
 
-                <!-- 2. Uncategorized Tasks -->
+                {# 2. Uncategorized Tasks (Inbox) #}
                 {% set has_uncategorized = false %}
                 {% for t in personal_todos %}{% if not t.category %}{% set has_uncategorized = true %}{% endif %}{%
                 endfor %}
@@ -243,7 +245,7 @@
     </div>
 </div>
 
-<!-- Add Task Modal -->
+{# Modal for creating new task groups with subtasks #}
 <div id="addTaskModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
@@ -678,6 +680,7 @@
         }
     }
 
+    // Submit task group with all subtasks to backend
     function submitTask() {
         if (currentSubtasks.length === 0) return;
 
@@ -725,7 +728,7 @@
         }
     }
 
-    // Search Logic
+    // Real-time search filter for tasks
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.querySelector('.search-input-todos');
         if (searchInput) {
