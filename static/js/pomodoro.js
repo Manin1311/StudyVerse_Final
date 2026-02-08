@@ -1,19 +1,132 @@
-// Pomodoro Timer JavaScript
+/**
+ * StudyVerse - Pomodoro Timer & Focus Session Manager
+ * ====================================================
+ * 
+ * Purpose: Implement the Pomodoro Technique for productivity and focus tracking
+ * 
+ * POMODORO TECHNIQUE:
+ * ------------------
+ * A time management method that uses a timer to break work into intervals:
+ * 1. Focus Session: 25 minutes of concentrated work
+ * 2. Short Break: 5 minutes of rest
+ * 3. After 4 focus sessions: 15-minute long break (optional)
+ * 
+ * Benefits:
+ * - Improves focus and concentration
+ * - Reduces mental fatigue
+ * - Increases productivity awareness
+ * - Gamifies study sessions with XP rewards
+ * 
+ * FEATURES:
+ * --------
+ * 1. **Three Timer Modes**:
+ *    - Focus Mode: 25-minute countdown (earns XP)
+ *    - Short Break: 5-minute countdown
+ *    - Stopwatch: Count-up timer for flexible sessions
+ * 
+ * 2. **State Persistence**:
+ *    - Timer state saved to localStorage
+ *    - Survives page refreshes and browser restarts
+ *    - Calculates elapsed time when returning to page
+ * 
+ * 3. **Session Tracking**:
+ *    - Saves completed sessions to database
+ *    - Earns XP based on duration (1 XP per minute)
+ *    - Session history for analytics
+ * 
+ * 4. **Session Goals**:
+ *    - Set specific goals for focus sessions
+ *    - Track completion status
+ *    - Inline editing and deletion
+ * 
+ * 5. **Brain Dump**:
+ *    - Quick note-taking area
+ *    - Auto-save to localStorage
+ *    - Helps clear mind before focusing
+ * 
+ * 6. **Knowledge Feedback**:
+ *    - Rate understanding after focus sessions
+ *    - Updates knowledge heatmap
+ *    - Tracks proficiency over time
+ * 
+ * DATA STRUCTURES:
+ * ---------------
+ * - Timer State Object: {mode, isRunning, timeLeft, elapsedSeconds, lastUpdated}
+ * - Session Goals Array: [{id, title, completed, created_at}]
+ * - Timer Config Map: {mode: {duration, label, color}}
+ * 
+ * ALGORITHMS:
+ * ----------
+ * 1. **Countdown Timer**:
+ *    - setInterval with 1-second ticks
+ *    - Time Complexity: O(1) per tick
+ *    - Updates display and checks for completion
+ * 
+ * 2. **State Persistence**:
+ *    - Save absolute timestamps (not relative times)
+ *    - On load: Calculate elapsed time from timestamp
+ *    - Formula: elapsed = now - startTime
+ * 
+ * 3. **XP Calculation**:
+ *    - Base: 1 XP per minute of focus
+ *    - Multipliers applied from power-ups
+ *    - Daily cap: 500 XP from focus sessions
+ * 
+ * 4. **Auto-save**:
+ *    - Debounce input with 1-second delay
+ *    - Prevents excessive localStorage writes
+ * 
+ * DESIGN PATTERNS:
+ * ---------------
+ * - State Machine: Timer transitions between states (stopped, running, paused)
+ * - Observer Pattern: Event listeners for UI updates
+ * - Persistence Layer: localStorage abstraction
+ * - Debouncing: Auto-save optimization
+ * 
+ * API ENDPOINTS:
+ * -------------
+ * - POST /pomodoro/sessions: Save completed session
+ * - GET /pomodoro/goals: Fetch session goals
+ * - POST /pomodoro/goals: Create new goal
+ * - POST /pomodoro/goals/:id/toggle: Mark goal complete/incomplete
+ * - POST /pomodoro/goals/:id/update: Edit goal title
+ * - POST /pomodoro/goals/:id/delete: Delete goal
+ * - POST /api/update_proficiency: Update knowledge heatmap
+ * 
+ * BROWSER APIs USED:
+ * -----------------
+ * - localStorage: Persist timer state and brain dump
+ * - setInterval/clearInterval: Timer countdown
+ * - Fetch API: Save sessions to backend
+ * - Page Visibility API: Sync state when tab becomes visible
+ * - beforeunload: Save state before leaving page
+ */
 
-let timerInterval = null;
-let timeLeft = 25 * 60; // seconds (used for countdown)
-let elapsedSeconds = 0; // seconds (used for stopwatch)
-let isRunning = false;
-let currentMode = 'focus'; // 'focus', 'shortBreak', 'stopwatch'
+// ============================================================================
+// GLOBAL STATE VARIABLES
+// ============================================================================
 
+// Timer state
+let timerInterval = null;  // Reference to setInterval for cleanup
+let timeLeft = 25 * 60;  // Countdown timer in seconds (default: 25 minutes)
+let elapsedSeconds = 0;  // Stopwatch elapsed time in seconds
+let isRunning = false;  // Whether timer is currently active
+let currentMode = 'focus';  // Current timer mode: 'focus', 'shortBreak', 'stopwatch'
+
+// Timer configuration for each mode
+// Structure: {duration: seconds, label: display name, color: CSS variable}
 const timerConfig = {
     focus: { duration: 25 * 60, label: 'Focus', color: 'var(--accent-green)' },
     shortBreak: { duration: 5 * 60, label: 'Short Break', color: 'var(--accent-green)' },
     stopwatch: { duration: 0, label: 'Stopwatch', color: 'var(--accent-green)' }
 };
 
+// ============================================================================
+// DOM INITIALIZATION
+// ============================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    // New IDs from inspiration template
+    // Get DOM element references
     const timerDisplay = document.getElementById('timer-display');
     const startBtn = document.getElementById('start-btn');
     const resetBtn = document.getElementById('reset-btn');

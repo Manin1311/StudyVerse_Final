@@ -1,15 +1,110 @@
+"""
+StudyVerse - AI-Powered Study Companion Platform
+=================================================
+
+OVERVIEW:
+---------
+StudyVerse is a comprehensive web-based study management platform that combines
+gamification, AI assistance, and collaborative features to enhance student productivity.
+
+KEY FEATURES:
+-------------
+1. **AI-Powered Study Assistant**: Context-aware chatbot using Google Gemini API
+2. **Gamification System**: XP, levels, ranks, badges, and streaks to motivate learning
+3. **Task Management**: Smart todo system with priorities, categories, and syllabus integration
+4. **Pomodoro Timer**: Focus sessions with XP rewards and productivity tracking
+5. **Quiz System**: AI-generated quizzes based on uploaded syllabus
+6. **Battle Mode**: Competitive quiz battles between users
+7. **Group Study**: Real-time collaborative chat rooms with file sharing
+8. **Friends System**: Social features with friend requests and leaderboards
+9. **Shop System**: Virtual currency (coins) to purchase power-ups and cosmetics
+10. **Calendar Integration**: Event scheduling with reminders
+
+ARCHITECTURE & DESIGN PATTERNS:
+-------------------------------
+- **MVC Pattern**: Flask routes (Controller), SQLAlchemy models (Model), Jinja templates (View)
+- **Service Layer Pattern**: Separate service classes (AuthService, GamificationService, etc.)
+- **Repository Pattern**: Database operations abstracted through SQLAlchemy ORM
+- **Real-time Communication**: Socket.IO for chat and live updates
+- **Data Structures**: Custom implementations (Stack for undo, LRU Cache for optimization)
+
+TECHNOLOGIES USED:
+------------------
+Backend:
+- Flask (Web framework)
+- SQLAlchemy (ORM for database operations)
+- Flask-Login (User session management)
+- Flask-SocketIO (Real-time bidirectional communication)
+- Eventlet (Asynchronous server for Socket.IO)
+- Google Gemini AI (Natural language processing and quiz generation)
+- OAuth 2.0 (Google authentication)
+
+Frontend:
+- HTML5, CSS3, JavaScript (ES6+)
+- Socket.IO Client (Real-time features)
+- Particles.js (Visual effects)
+- Font Awesome (Icons)
+
+Database:
+- PostgreSQL (Production - Render.com)
+- SQLite (Development)
+
+DEPLOYMENT:
+-----------
+- Platform: Render.com
+- Proxy: WhiteNoise for static file serving
+- Environment: Production-ready with SSL/HTTPS support
+
+DATA STRUCTURES & ALGORITHMS:
+-----------------------------
+1. **Stack**: LIFO structure for undo functionality in todos
+2. **LRU Cache**: Least Recently Used cache for optimizing repeated queries
+3. **Hash Maps**: Dictionary-based lookups for O(1) performance
+4. **Sorting Algorithms**: Leaderboard ranking and quiz question ordering
+
+GAMIFICATION LOGIC:
+-------------------
+- XP System: Users earn experience points from various activities
+- Level Calculation: level = floor(total_xp / 500) + 1
+- Ranks: Bronze → Silver → Gold → Platinum → Diamond → Heroic → Master → Grandmaster
+- Badges: Achievement system based on streaks, levels, and milestones
+- Streaks: Daily activity tracking with longest streak records
+
+SECURITY FEATURES:
+------------------
+- Password hashing using Werkzeug's security functions
+- CSRF protection via Flask-WTF
+- Session management with secure cookies (HTTPS in production)
+- OAuth 2.0 for secure third-party authentication
+- Environment-based configuration for sensitive data
+
+AUTHORS: StudyVerse Development Team
+VERSION: 2.0
+LAST UPDATED: February 2026
+"""
+
+# ============================================================================
+# IMPORTS AND INITIALIZATION
+# ============================================================================
+
+# Eventlet must be patched first for async Socket.IO support
 import eventlet
 eventlet.monkey_patch()
 
+# Database and ORM imports
 from sqlalchemy.pool import NullPool
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_socketio import SocketIO, join_room, emit
+
+# Security and authentication
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from authlib.integrations.flask_client import OAuth
+
+# Utilities
 import base64
 import io
 import json
@@ -24,55 +119,88 @@ import time
 import re
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env file for configuration
 load_dotenv()
 
-# Allow OAuth over HTTP for local testing
+# ============================================================================
+# AI API CONFIGURATION
+# ============================================================================
+
+# Allow OAuth over HTTP for local testing (commented out for production security)
 # os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-# Check for required API Key
+# Check for required API Key - Google Gemini API for AI features
 if not os.getenv("AI_API_KEY"):
-    pass 
+    pass  # Application will work without AI features if key is missing
 
+# Try to import Google Generative AI library for quiz generation and chat
 try:
     import google.generativeai as genai
     GEMINI_AVAILABLE = True
 except ImportError:
-    GEMINI_AVAILABLE = False
+    GEMINI_AVAILABLE = False  # Graceful degradation if library not installed
 
+# ============================================================================
+# FLASK APPLICATION INITIALIZATION
+# ============================================================================
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 from whitenoise import WhiteNoise
 
 app = Flask(__name__)
-# Fix for Render/Heroku (Reverse Proxy) - Critical for OAuth and HTTPS
+
+# ProxyFix: Critical for deployment on Render/Heroku behind reverse proxy
+# Ensures correct handling of HTTPS, host headers, and client IP addresses
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-# Serve static files directly efficiently
+
+# WhiteNoise: Efficiently serve static files (CSS, JS, images) in production
+# Reduces load on Flask app by handling static content directly
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 
+# ============================================================================
+# APPLICATION CONFIGURATION
+# ============================================================================
+
+# Secret key for session encryption and CSRF protection
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-# Production: Must use DATABASE_URL from environment (e.g. Render)
+
+# Database Configuration
+# Production: Uses PostgreSQL from Render.com (DATABASE_URL environment variable)
+# Development: Falls back to SQLite for local testing
 database_url = os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db')
+
+# Fix for Heroku/Render: Replace old 'postgres://' with 'postgresql://'
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable modification tracking to save memory
 
-
-
-# Connection pool settings for cloud PostgreSQL (Render, Heroku, etc.)
-# Optimized for concurrent users - prevents crashes and SSL errors
+# Connection Pool Settings for Cloud PostgreSQL
+# NullPool: Disables connection pooling to prevent "un-acquired lock" errors with eventlet
+# pool_pre_ping: Tests connections before use to handle dropped connections
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'poolclass': NullPool,      # Disable pooling to fix "un-acquired lock" with eventlet
-    'pool_pre_ping': True,     # Validate connections
+    'poolclass': NullPool,      # No connection pooling (eventlet compatibility)
+    'pool_pre_ping': True,      # Validate connections before use
 }
+
+# File upload configuration for profile images and syllabus PDFs
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 
-# Google OAuth Config - Use environment variables
+# ============================================================================
+# GOOGLE OAUTH 2.0 CONFIGURATION
+# ============================================================================
+
+# Google OAuth credentials from environment variables
+# Allows users to sign in with their Google account
 app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
 app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
 
+# Initialize OAuth client
 oauth = OAuth(app)
+
+# Register Google as an OAuth provider
+# Scopes: openid (authentication), email (user email), profile (name, picture)
 google = oauth.register(
     name='google',
     client_id=app.config['GOOGLE_CLIENT_ID'],
@@ -81,49 +209,83 @@ google = oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-# Session Configuration - Environment-aware security
-IS_PRODUCTION = os.getenv('RENDER', False) or os.getenv('PRODUCTION', False)
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION  # True on HTTPS (Render)
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
-app.config['REMEMBER_COOKIE_SECURE'] = IS_PRODUCTION  # True on HTTPS
-app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+# ============================================================================
+# SESSION AND COOKIE CONFIGURATION
+# ============================================================================
 
+# Detect production environment (Render.com or manual PRODUCTION flag)
+IS_PRODUCTION = os.getenv('RENDER', False) or os.getenv('PRODUCTION', False)
+
+# Session lifetime: User stays logged in for 7 days
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# Security settings for session cookies
+app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION  # HTTPS only in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access (XSS protection)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
+
+# "Remember Me" functionality settings
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)  # 30-day remember me
+app.config['REMEMBER_COOKIE_SECURE'] = IS_PRODUCTION  # HTTPS only in production
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access
+
+# Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize SocketIO with production settings - optimized for concurrent users
+# ============================================================================
+# SOCKET.IO INITIALIZATION (Real-Time Communication)
+# ============================================================================
+
+# Initialize Socket.IO for real-time features:
+# - Group chat messaging
+# - Live battle updates
+# - Friend status updates
+# - Real-time notifications
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",  # Allow all origins (or set to your domain)
-    async_mode='threading',      # Use threading for compatibility with Python 3.13
-    ping_timeout=120,           # 2 min timeout for slow connections
-    ping_interval=25,           # Keep connection alive every 25s
-    max_http_buffer_size=1e8,   # 100MB max message size
-    logger=False,               # Disable noisy logs
-    engineio_logger=False,      # Disable noisy engineio logs
-    # Support both polling and websocket, starting with polling for stability
-    transports=['polling', 'websocket'],
-    cookie=None                 # Helps avoid session conflicts on some proxies
+    cors_allowed_origins="*",    # Allow all origins (configure for specific domain in production)
+    async_mode='threading',       # Threading mode for Python 3.13 compatibility
+    ping_timeout=120,             # 2-minute timeout for slow/mobile connections
+    ping_interval=25,             # Send ping every 25 seconds to keep connection alive
+    max_http_buffer_size=1e8,     # 100MB max message size (for file sharing)
+    logger=False,                 # Disable verbose Socket.IO logs
+    engineio_logger=False,        # Disable verbose Engine.IO logs
+    transports=['polling', 'websocket'],  # Support both transports for compatibility
+    cookie=None                   # Avoid session conflicts with some reverse proxies
 )
 
-# AI API Configuration
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_API_TYPE = os.getenv("AI_API_TYPE", "google")
+# ============================================================================
+# AI API CONFIGURATION (Google Gemini)
+# ============================================================================
 
+# Load AI API credentials from environment
+AI_API_KEY = os.getenv("AI_API_KEY", "")
+AI_API_TYPE = os.getenv("AI_API_TYPE", "google")  # Currently only Google Gemini supported
+
+# Configure Gemini API if available
 if GEMINI_AVAILABLE and AI_API_KEY:
     try:
         genai.configure(api_key=AI_API_KEY)
     except Exception as e:
         print(f"Failed to configure Gemini: {e}")
 
-# IST Timezone
+# ============================================================================
+# TIMEZONE CONFIGURATION
+# ============================================================================
+
+# Indian Standard Time (IST) timezone for displaying times to users
 IST = timezone('Asia/Kolkata')
 
-# Timezone Helper: Convert UTC datetime to IST formatted time
 def to_ist_time(utc_datetime):
-    """Convert UTC datetime to IST and return formatted 12-hour time string."""
+    """
+    Convert UTC datetime to IST and return formatted 12-hour time string.
+    
+    Args:
+        utc_datetime: datetime object in UTC timezone
+    
+    Returns:
+        str: Formatted time string in 12-hour format (e.g., "02:30 PM")
+    """
     if not utc_datetime:
         return ""
     
@@ -137,106 +299,209 @@ def to_ist_time(utc_datetime):
     # Format as 12-hour time with AM/PM
     return ist_datetime.strftime('%I:%M %p')
 
+# ============================================================================
+# DATABASE AND SERVICE INITIALIZATION
+# ============================================================================
+
+# AI Model selection (Gemini 2.5 Flash for fast responses)
 AI_MODEL = os.getenv("AI_MODEL", "models/gemini-2.5-flash")
 
-
+# Initialize SQLAlchemy for database operations
 db = SQLAlchemy(app)
 
-# Initialize email service
+# Initialize email service for welcome emails and reminders
 mail = init_mail(app)
 
+# Initialize Flask-Login for user session management
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth'
+login_manager.login_view = 'auth'  # Redirect to 'auth' route if login required
 
-# Jinja Template Filter for IST Time (must be after app is configured)
+# ============================================================================
+# JINJA TEMPLATE FILTERS AND GLOBALS
+# ============================================================================
+
+# Register custom Jinja filter for timezone conversion in templates
 @app.template_filter('ist_time')
 def ist_time_filter(utc_datetime):
     """Jinja filter to convert UTC datetime to IST time string."""
     return to_ist_time(utc_datetime)
 
-# Also add to_ist_time as a global function for templates
+# Make to_ist_time available as a global function in all templates
 app.jinja_env.globals.update(to_ist_time=to_ist_time)
+# ============================================================================
+# DATABASE MODELS (ORM - Object Relational Mapping)
+# ============================================================================
+# These classes represent database tables using SQLAlchemy ORM
+# Each class maps to a table, and each attribute maps to a column
+# Benefits: Type safety, relationship management, query abstraction, database independence
 
-
-
-# Database Models
 class User(UserMixin, db.Model):
+    """
+    User Model - Core entity representing a StudyVerse user
+    
+    Inherits from:
+    - UserMixin: Provides Flask-Login integration (is_authenticated, is_active, get_id, etc.)
+    - db.Model: SQLAlchemy base class for ORM functionality
+    
+    Database Table: 'user'
+    
+    Field Categories:
+    ----------------
+    1. Authentication & Identity:
+       - email: Unique identifier for login
+       - password_hash: Encrypted password (bcrypt hashing)
+       - google_id: For OAuth Google Sign-In users
+    
+    2. Profile Information:
+       - first_name, last_name: User's name
+       - profile_image: Avatar URL or path
+       - cover_image: Profile banner image
+       - about_me: Bio/description text
+    
+    3. Gamification (Motivation System):
+       - total_xp: Cumulative experience points
+       - level: Calculated from XP (500 XP per level)
+       - current_streak: Consecutive days of activity
+       - longest_streak: Record streak achievement
+       - last_activity_date: For streak calculation
+    
+    4. Privacy & Status:
+       - is_public_profile: Profile visibility setting
+       - last_seen: Last activity timestamp
+    
+    Design Patterns Used:
+    --------------------
+    - Active Record: Model contains both data and behavior
+    - Property Pattern: Computed fields (rank_info, active_frame_color)
+    - Serialization: to_dict() for JSON API responses
+    """
+    
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=True) # Nullable for OAuth users
+    
+    # Authentication Fields
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=True)  # Nullable for OAuth-only users
+    google_id = db.Column(db.String(100), nullable=True, unique=True)  # Google OAuth ID
+    
+    # Profile Fields
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
-    google_id = db.Column(db.String(100), nullable=True)
     profile_image = db.Column(db.String(255), nullable=True)
     cover_image = db.Column(db.String(255), nullable=True)
+    about_me = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Gamification Fields
-    total_xp = db.Column(db.Integer, default=0)
-    level = db.Column(db.Integer, default=1)
-    current_streak = db.Column(db.Integer, default=0)
-    longest_streak = db.Column(db.Integer, default=0)
-    last_activity_date = db.Column(db.Date, nullable=True)
-    about_me = db.Column(db.Text, nullable=True)
+    # Gamification Fields (Core motivation system)
+    total_xp = db.Column(db.Integer, default=0)  # Total experience points earned
+    level = db.Column(db.Integer, default=1)  # User level (calculated from XP)
+    current_streak = db.Column(db.Integer, default=0)  # Current daily activity streak
+    longest_streak = db.Column(db.Integer, default=0)  # Best streak record
+    last_activity_date = db.Column(db.Date, nullable=True)  # For streak tracking
 
     @property
     def rank_info(self):
-        """Returns the dictionary of rank details (name, icon, color)."""
+        """
+        Computed property: Returns rank details based on current level
+        
+        Returns:
+            dict: {'name': str, 'icon': str, 'color': str}
+            Example: {'name': 'Gold', 'icon': 'fa-shield-halved', 'color': '#FFD700'}
+        """
         return GamificationService.get_rank(self.level)
 
     @property
     def active_frame_color(self):
-        """Returns the color of the user's currently active frame, or None."""
+        """
+        Computed property: Returns the color of the user's equipped profile frame
+        
+        Profile frames are cosmetic items purchased from the shop.
+        This property checks UserItem table for active frame items.
+        
+        Returns:
+            str: Hex color code (e.g., '#FF5733') or None if no frame equipped
+        """
         try:
+            # Query all active items for this user
             active_items = UserItem.query.filter_by(user_id=self.id, is_active=True).all()
             for u_item in active_items:
+                # Look up item details in shop catalog
                 cat_item = ShopService.ITEMS.get(u_item.item_id)
                 if cat_item and cat_item.get('type') == 'frame':
                     return cat_item.get('color')
         except Exception:
-            pass
+            pass  # Graceful degradation if shop system unavailable
         return None
 
+    # Backward Compatibility Properties
+    # These properties maintain compatibility with older template code
     @property
     def rank(self):
-        """Backward compatibility for templates using user.rank."""
+        """Backward compatibility: Returns rank name string"""
         return self.rank_info['name']
 
     @property
     def rank_name(self):
-        """Backward compatibility for templates using user.rank_name."""
+        """Backward compatibility: Returns rank name string"""
         return self.rank_info['name']
 
     @property
     def rank_icon(self):
-        """Backward compatibility for templates using user.rank_icon."""
+        """Backward compatibility: Returns FontAwesome icon class"""
         return self.rank_info['icon']
 
     @property
     def rank_color(self):
-        """Backward compatibility for templates using user.rank_color."""
+        """Backward compatibility: Returns rank color hex code"""
         return self.rank_info['color']
     
     def get_avatar(self, size=200):
+        """
+        Generate avatar URL for the user
+        
+        Logic:
+        1. If user uploaded custom image, use it
+        2. Otherwise, generate initials-based avatar using UI Avatars API
+        
+        Args:
+            size (int): Avatar size in pixels (default: 200)
+        
+        Returns:
+            str: Avatar image URL
+        """
+        # Use uploaded profile image if available
         if self.profile_image and "ui-avatars.com" not in self.profile_image:
             return self.profile_image
         
-        # Robust initial extraction
+        # Extract initials from name
         f_name = (self.first_name or '').strip()
         l_name = (self.last_name or '').strip()
         
         f = f_name[0] if f_name else ''
         l = l_name[0] if l_name else ''
         
-        # Force at least one character
+        # Create initials (fallback to 'U' for User if no name)
         initials = f"{f}{l}".upper()
         if not initials:
             initials = "U"
-            
+        
+        # Generate avatar using UI Avatars API
         return f"https://ui-avatars.com/api/?name={initials}&background=0ea5e9&color=fff&size={size}"
     
     def to_dict(self):
+        """
+        Serialize user data to dictionary for JSON API responses
+        
+        Use cases:
+        - REST API endpoints
+        - AJAX responses
+        - Friend list data
+        - Leaderboard entries
+        
+        Returns:
+            dict: User data with computed fields
+        """
         rank_data = GamificationService.get_rank(self.level)
         return {
             'id': self.id,
@@ -251,56 +516,149 @@ class User(UserMixin, db.Model):
             'is_public': self.is_public_profile
         }
 
-    # Privacy & Status
-    is_public_profile = db.Column(db.Boolean, default=True)
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    # Privacy & Status Fields
+    is_public_profile = db.Column(db.Boolean, default=True)  # Profile visibility
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # Last activity timestamp
 
 class Friendship(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    friend_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending') # pending, accepted, rejected
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    """
+    Friendship Model - Manages friend connections between users
     
-    # We can use backrefs in User if preferred, or just query directly
+    Purpose: Track friend requests and relationships
+    
+    Relationship Type: Many-to-Many (User ↔ User)
+    - A user can have many friends
+    - Each friendship has a status (pending/accepted/rejected)
+    
+    Status Flow:
+    1. User A sends friend request → status='pending'
+    2. User B accepts → status='accepted'
+    3. User B rejects → status='rejected'
+    
+    Database Design:
+    - user_id: The user who sent the friend request
+    - friend_id: The user who received the friend request
+    - Foreign keys ensure referential integrity
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Request sender
+    friend_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Request receiver
+    status = db.Column(db.String(20), default='pending')  # pending, accepted, rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Request timestamp
+    
+    # Optional: Bidirectional relationships (commented out for simplicity)
     # user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('friendships_sent', lazy='dynamic'))
     # friend = db.relationship('User', foreign_keys=[friend_id], backref=db.backref('friendships_received', lazy='dynamic'))
 
 class Badge(db.Model):
+    """
+    Badge Model - Achievement badges for gamification
+    
+    Purpose: Define available achievement badges
+    
+    Badge Types:
+    - Streak Badges: Awarded for consecutive daily activity
+    - Level Badges: Awarded for reaching specific levels
+    - Activity Badges: Awarded for completing specific tasks
+    
+    Fields:
+    - name: Badge title (e.g., "Consistency King")
+    - description: What the badge represents
+    - icon: FontAwesome icon class (e.g., 'fa-fire')
+    - criteria_type: What triggers the badge (streak, level, wins)
+    - criteria_value: Threshold value (e.g., 30 for 30-day streak)
+    """
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    icon = db.Column(db.String(50), default='fa-medal') # FontAwesome class
-    criteria_type = db.Column(db.String(50)) # e.g., 'streak', 'xp', 'wins'
-    criteria_value = db.Column(db.Integer)
+    name = db.Column(db.String(100), nullable=False)  # Badge name
+    description = db.Column(db.String(255), nullable=False)  # Badge description
+    icon = db.Column(db.String(50), default='fa-medal')  # FontAwesome icon class
+    criteria_type = db.Column(db.String(50))  # Type: 'streak', 'level', 'wins', etc.
+    criteria_value = db.Column(db.Integer)  # Threshold value
 
 class UserBadge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    badge_id = db.Column(db.Integer, db.ForeignKey('badge.id'), nullable=False)
-    earned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    """
+    UserBadge Model - Junction table for user-badge relationships
     
-    user = db.relationship('User', backref='badges')
-    badge = db.relationship('Badge')
+    Purpose: Track which badges each user has earned
+    
+    Relationship: Many-to-Many (User ↔ Badge)
+    - A user can earn multiple badges
+    - A badge can be earned by multiple users
+    
+    Design Pattern: Association Object
+    - Links User and Badge tables
+    - Stores additional data (earned_at timestamp)
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # User who earned badge
+    badge_id = db.Column(db.Integer, db.ForeignKey('badge.id'), nullable=False)  # Badge earned
+    earned_at = db.Column(db.DateTime, default=datetime.utcnow)  # When badge was earned
+    
+    # Relationships for easy access
+    user = db.relationship('User', backref='badges')  # Access user.badges
+    badge = db.relationship('Badge')  # Access badge details
 
 class XPHistory(db.Model):
+    """
+    XPHistory Model - Log of all XP transactions
+    
+    Purpose: Track XP gains and losses for analytics and debugging
+    
+    Use Cases:
+    1. Daily XP caps (prevent farming)
+    2. XP source analytics (which features earn most XP)
+    3. User activity timeline
+    4. Debugging XP discrepancies
+    
+    Sources:
+    - 'battle': XP from quiz battles
+    - 'task': XP from completing todos
+    - 'focus': XP from Pomodoro sessions
+    - 'quiz': XP from solo quizzes
+    """
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    source = db.Column(db.String(50), nullable=False) # battle, task, focus
-    amount = db.Column(db.Integer, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # User who earned/lost XP
+    source = db.Column(db.String(50), nullable=False)  # Source: battle, task, focus, quiz
+    amount = db.Column(db.Integer, nullable=False)  # XP amount (can be negative for losses)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # When XP was earned/lost
 
 class GamificationService:
-    """Central logic for XP, Levels, Ranks, and Badges."""
+    """
+    GamificationService - Business logic for XP, levels, ranks, and badges
     
+    Design Pattern: Service Layer Pattern
+    - Separates business logic from routes and models
+    - Provides reusable methods for gamification features
+    - Centralizes complex calculations and rules
+    
+    Responsibilities:
+    1. XP Management: Add/deduct experience points with multipliers
+    2. Level Calculation: Convert XP to levels (500 XP per level)
+    3. Rank Assignment: Map levels to ranks (Bronze → Grandmaster)
+    4. Badge Awards: Check criteria and award achievement badges
+    5. Streak Tracking: Daily activity streak management
+    
+    Key Algorithms:
+    - Level formula: level = floor(total_xp / 500) + 1
+    - Rank lookup: O(1) dictionary lookup by level range
+    - Daily cap: Prevents XP farming (max 500 XP/day from focus)
+    
+    Power-up Integration:
+    - XP Multipliers: Boost XP gains (2x, 3x)
+    - Time Multipliers: Double focus session rewards
+    - XP Protection: Prevent XP loss in battles
+    """
+    
+    # Rank System: Maps level ranges to rank details
+    # Format: (min_level, max_level): (name, icon, color)
     RANKS = {
-        (1, 5): ('Bronze', 'fa-shield-halved', '#CD7F32'),
-        (6, 10): ('Silver', 'fa-shield-halved', '#C0C0C0'),
-        (11, 20): ('Gold', 'fa-shield-halved', '#FFD700'),
-        (21, 35): ('Platinum', 'fa-gem', '#E5E4E2'),
-        (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),
-        (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),
-        (76, 100): ('Master', 'fa-crown', '#ff0000'),
+        (1, 5): ('Bronze', 'fa-shield-halved', '#CD7F32'),  # Beginner
+        (6, 10): ('Silver', 'fa-shield-halved', '#C0C0C0'),  # Intermediate
+        (11, 20): ('Gold', 'fa-shield-halved', '#FFD700'),  # Advanced
+        (21, 35): ('Platinum', 'fa-gem', '#E5E4E2'),  # Expert
+        (36, 50): ('Diamond', 'fa-gem', '#b9f2ff'),  # Master
+        (51, 75): ('Heroic', 'fa-crown', '#ff4d4d'),  # Elite
+        (76, 100): ('Master', 'fa-crown', '#ff0000'),  # Legendary
         (101, 10000000000000): ('Grandmaster', 'fa-dragon', '#800080')
     }
 
@@ -322,6 +680,14 @@ class GamificationService:
         user = User.query.get(user_id)
         if not user:
             return
+        
+        # Prevent XP changes for demo/test users
+        # This stops automatic XP increments for presentation/demo accounts
+        demo_emails = ['daksh@gmail.com', 'daksh@studyverse.com', 'demo@studyverse.com']
+        if user.email and user.email.lower() in demo_emails:
+            print(f"XP change blocked for demo user: {user.email}")
+            return {'earned': 0, 'message': 'Demo account - XP locked'}
+
 
         # 1. Fetch ALL active power-ups for the user
         active_powerups = ActivePowerUp.query.filter_by(
@@ -4435,7 +4801,9 @@ def fix_db_schema():
     """Manual trigger to fix DB schema in production."""
     try:
         from sqlalchemy import text
-        with db.engine.connect() as conn:
+        with db.engine.connect(
+            
+        ) as conn:
             # Postgres specific: Try adding the column directly
             try:
                 conn.execute(text("ALTER TABLE todo ADD COLUMN IF NOT EXISTS syllabus_id INTEGER REFERENCES syllabus_document(id)"))

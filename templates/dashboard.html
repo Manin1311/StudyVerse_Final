@@ -1,16 +1,47 @@
-{% extends "layout.html" %}
+{#
+DASHBOARD TEMPLATE - Main User Interface
+=========================================
 
-{% block title %}Dashboard - StudyVerse{% endblock %}
+Purpose: Central hub displaying user stats, tasks, calendar, and quick actions
 
-{% block content %}
+Template Inheritance: Extends layout.html for consistent navigation and styling
+
+Backend Connection:
+- Route: @app.route('/dashboard') in app.py
+- Function: dashboard() returns render_template('dashboard.html', **context_data)
+
+Data Flow:
+1. Backend fetches user data from database (User, Todo, Event, PomodoroSession models)
+2. Calculates stats (XP, weekly hours, completed tasks, proficiency)
+3. Passes data as Jinja2 variables to this template
+4. Template renders HTML with dynamic data
+5. JavaScript (dashboard_calendar.js) adds interactivity
+#}
+
+{% extends "layout.html" %} {# Inherit from base layout (sidebar, header, footer) #}
+
+{% block title %}Dashboard - StudyVerse{% endblock %} {# Set browser tab title #}
+
+{% block content %} {# Main content area - replaces {% block content %} in layout.html #}
 <div style="max-width: 1300px; margin: 0 auto; padding: 0 20px;">
-    <!-- Hero Banner (Maintain Original) -->
+
+    {# ========================================================================
+    HERO BANNER - Video Background
+    ========================================================================
+    Purpose: Eye-catching welcome banner with background video
+    Backend: Static video file served from static/img/bg3.mp4
+    Note: Uses HTML5 video element with autoplay, loop, muted for UX
+    #}
     <div class="pixel-banner"
         style="overflow: hidden; position: relative; height: 260px; border-radius: 20px; margin-bottom: 24px;">
+
+        {# Background video - Flask url_for() generates correct static file path #}
         <video autoplay loop muted playsinline
             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
             <source src="{{ url_for('static', filename='img/bg3.mp4') }}" type="video/mp4">
         </video>
+
+        {# Overlay text on top of video (z-index: 1 to appear above video) #}
         <div class="banner-overlay" style="z-index: 1;">
             <h1
                 style="font-size: 2.8rem; font-family: var(--font-heading); color: #fff; margin: 0; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
@@ -19,444 +50,489 @@
         </div>
     </div>
 
-    <!-- TOP STATS ROW (Ultra Mini) -->
-    <div class="top-stats-grid">
+    {# ========================================================================
+    TOP STATS ROW - Quick Overview Cards
+    ========================================================================
+    Purpose: Display key metrics at a glance
+    Backend Variables (from app.py dashboard() function):
+    - current_user.total_xp: Total XP earned (from User model)
+    - weekly_hours: Hours studied this week (calculated from PomodoroSession)
+    - completed_todos: Number of completed tasks (from Todo model)
+    - avg_proficiency: Average knowledge proficiency % (from Proficiency model)
+
+    Data Flow:
+    1. Backend queries database for user stats
+    2. Jinja2 {{ variable }} syntax inserts values into HTML
+    3. CSS classes (bento-card, glass) provide styling
+    #}
+    <div class="top-stats-grid"> {# Grid layout: 4 equal columns #}
+
+        {# XP Card - Shows total experience points #}
         <div class="bento-card glass"
             style="padding: 10px; text-align: center; border-bottom: 2px solid var(--accent-green);">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">XP
             </div>
+            {# Jinja2 variable: current_user is Flask-Login's current logged-in user #}
             <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ current_user.total_xp }}
             </div>
         </div>
+
+        {# Study Hours Card - Weekly focus time #}
         <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #60a5fa;">
             <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
                 Hours</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{% if weekly_hours > 0 %}{{
+            {# Jinja2 conditional: Show hours if > 0, otherwise show "<1h" #} <div
+                style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{% if weekly_hours > 0 %}{{
                 weekly_hours
-                }}h{% else %}&lt;1h{% endif %}</div>
-        </div>
-        <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #fbbf24;">
-            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
-                Tasks</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ completed_todos or 0 }}
-            </div>
-        </div>
-        <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #a78bfa;">
-            <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
-                Level</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ avg_proficiency or 0 }}%
-            </div>
+                }}h{% else %}&lt;1h{% endif %}
         </div>
     </div>
 
-    <!-- NEW DASHBOARD GRID -->
-    <div class="dashboard-grid-container">
-
-        <!-- ROW 1: CLOCK, FOCUS, IMPORTANT -->
-
-        <!-- 1. Green Clock Card -->
-        <!-- 1. Green Clock Card (Flip Style) -->
-        <div class="card-clock-green">
-            <div class="flip-clock">
-                <!-- Hours -->
-                <div class="clock-group">
-                    <div class="flip-digit green-tint" id="flip-h1">0</div>
-                    <div class="flip-digit green-tint" id="flip-h2">0</div>
-                </div>
-                <div class="clock-divider">:</div>
-                <!-- Minutes -->
-                <div class="clock-group">
-                    <div class="flip-digit green-tint" id="flip-m1">0</div>
-                    <div class="flip-digit green-tint" id="flip-m2">0</div>
-                </div>
-                <div class="clock-divider">:</div>
-                <!-- Seconds -->
-                <div class="clock-group">
-                    <div class="flip-digit green-tint" id="flip-s1">0</div>
-                    <div class="flip-digit green-tint" id="flip-s2">0</div>
-                </div>
-            </div>
-
-            <div class="card-clock-date" id="clock-day">DATE</div>
-
-            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <div class="clock-ampm-badge" id="badge-am">AM</div>
-                <div class="clock-ampm-badge" id="badge-pm">PM</div>
-            </div>
+    {# Tasks Card - Completed tasks count #}
+    <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #fbbf24;">
+        <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+            Tasks</div>
+        {# Jinja2 filter: 'or 0' provides default value if completed_todos is None #}
+        <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ completed_todos or 0 }}
         </div>
-
-        <!-- 2. Productivity Chart Card (Circular 24h) -->
-        <div class="card-focus-wide"
-            style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px;">
-            <div style="flex: 1;">
-                <div class="focus-header" style="margin-bottom: 12px;">
-                    <div class="focus-badge">
-                        <i class="fa-solid fa-chart-pie"></i> Daily Productivity
-                    </div>
-                </div>
-                <h3 class="focus-title" style="font-size: 1.8rem; margin-bottom: 8px;">
-                    {{ (today_study_mins / 60)|round(1) }}<span style="font-size: 1rem; color: #888;">h</span>
-                </h3>
-                <p class="focus-subtitle" style="margin: 0;">of 24h Goal</p>
-                <div style="margin-top: 16px; font-size: 0.8rem; color: var(--text-muted);">
-                    {% if today_study_mins > 0 %}
-                    Keep going! Every minute counts.
-                    {% else %}
-                    Start your first session today!
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Circular Chart -->
-            <div style="width: 140px; height: 140px; position: relative; display: grid; place-items: center;">
-                <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                    <!-- Background Circle -->
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#222" stroke-width="8"></circle>
-                    <!-- Progress Circle -->
-                    {% set per_24h = (today_study_mins / 1440 * 100) %}
-                    <!-- Cap at 100% for visual sanity, though 24h study is unlikely -->
-                    {% if per_24h > 100 %}{% set per_24h = 100 %}{% endif %}
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--accent-green)" stroke-width="8"
-                        stroke-dasharray="282.7" stroke-dashoffset="{{ 282.7 - (282.7 * (per_24h / 100)) }}"
-                        stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;">
-                    </circle>
-                </svg>
-                <div style="position: absolute; text-align: center;">
-                    <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ per_24h|round(1) }}%</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Important Card (Red) -->
-        <div class="card-important-red" style="height: auto; min-height: 200px;">
-            <div class="important-label">
-                <i class="fa-solid fa-bullhorn"></i> Important
-            </div>
-
-            {% if important_event %}
-            <div class="important-item"
-                style="margin-bottom: 12px; border-left-color: #fbbf24; background: rgba(251, 191, 36, 0.05);">
-                <div
-                    style="font-size: 0.65rem; color: #fbbf24; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
-                    Next Event</div>
-                <div class="important-title" style="color: #fff;">{{ important_event.title }}</div>
-                <div class="important-meta" style="color: #fbbf24;">{{ important_event.date }} • {{ important_event.time
-                    }}</div>
-            </div>
-            {% endif %}
-
-            {% if important_todo %}
-            {% set is_high = (important_todo_label == 'High Priority Task') %}
-            {% set todo_color = '#ef4444' if is_high else '#3b82f6' %}
-            <div class="important-item"
-                style="border-left-color: {{ todo_color }}; {{ 'background: rgba(59, 130, 246, 0.05);' if not is_high }}">
-                <div
-                    style="font-size: 0.65rem; color: {{ todo_color }}; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
-                    {{ important_todo_label }}</div>
-                <div class="important-title">{{ important_todo.title }}</div>
-                <div class="important-meta" style="{{ 'color: ' + todo_color if not is_high }}">Due {{
-                    important_todo.due_date if important_todo.due_date else 'Soon' }}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if not important_event and not important_todo %}
-            <div class="important-item">
-                <div class="important-title">All Clear!</div>
-                <div class="important-meta">No urgent events or high priority tasks.</div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- ROW 2: IMAGE, SCHEDULE, TODOS -->
-
-        <!-- 1. Active Tasks Widget -->
-        <div class="active-tasks-card">
-            <div class="active-tasks-header">
-                <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-list-check" style="color: #ef4444;"></i> Active Tasks
-                </div>
-                <div class="task-count-badge">{{ upcoming_todos|length }} TASKS</div>
-            </div>
-
-            <div class="active-task-list">
-                {% for todo in upcoming_todos[:5] %}
-                <div class="active-task-item" onclick="window.location.href='/todos'">
-                    <div class="task-item-left">
-                        <div
-                            class="task-status-dot {% if todo.priority == 'high' %}status-dot-red{% elif todo.priority == 'medium' %}status-dot-orange{% else %}status-dot-green{% endif %}">
-                        </div>
-                        <div class="task-item-content">
-                            <h4>{{ todo.title }}</h4>
-                            <p>0% complete • Priority {{ todo.priority|upper }}</p>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right task-item-arrow"></i>
-                </div>
-                {% else %}
-                <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                    No active tasks
-                </div>
-                {% endfor %}
-            </div>
-
-            <button class="btn-add-new-task" onclick="window.location.href='/todos'">
-                ADD NEW TASK <i class="fa-solid fa-plus"></i>
-            </button>
-        </div>
-
-        <!-- 2. Temporal Grid (Calendar & Events) -->
-        <div class="temporal-grid-card">
-            <div class="temporal-header">
-                <div><i class="fa-regular fa-calendar"></i> Temporal Grid</div>
-                <div style="color: var(--destructive); opacity: 0.8;"><i class="fa-solid fa-circle"
-                        style="font-size: 6px; vertical-align: middle;"></i> LIVE</div>
-            </div>
-
-            <!-- Left: Calendar Widget -->
-            <div class="calendar-widget">
-                <div class="cal-header">
-                    <button class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span>January 2026</span>
-                    <button class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-                <div class="cal-days-grid">
-                    <div class="cal-day-label">SU</div>
-                    <div class="cal-day-label">MO</div>
-                    <div class="cal-day-label">TU</div>
-                    <div class="cal-day-label">WE</div>
-                    <div class="cal-day-label">TH</div>
-                    <div class="cal-day-label">FR</div>
-                    <div class="cal-day-label">SA</div>
-
-                    <!-- Week 1 -->
-                    <div class="cal-day empty"></div>
-                    <div class="cal-day empty"></div>
-                    <div class="cal-day empty"></div>
-                    <div class="cal-day empty"></div>
-                    <div class="cal-day">1</div>
-                    <div class="cal-day">2</div>
-                    <div class="cal-day">3</div>
-
-                    <!-- Week 2 -->
-                    <div class="cal-day">4</div>
-                    <div class="cal-day">5</div>
-                    <div class="cal-day">6</div>
-                    <div class="cal-day">7</div>
-                    <div class="cal-day">8</div>
-                    <div class="cal-day">9</div>
-                    <div class="cal-day">10</div>
-
-                    <!-- Week 3 -->
-                    <div class="cal-day">11</div>
-                    <div class="cal-day">12</div>
-                    <div class="cal-day">13</div>
-                    <div class="cal-day">14</div>
-                    <div class="cal-day">15</div>
-                    <div class="cal-day">16</div>
-                    <div class="cal-day">17</div>
-
-                    <!-- Week 4 -->
-                    <div class="cal-day">18</div>
-                    <div class="cal-day">19</div>
-                    <div class="cal-day">20</div>
-                    <div class="cal-day">21</div>
-                    <div class="cal-day">22</div>
-                    <div class="cal-day">23</div>
-                    <div class="cal-day">24</div>
-
-                    <!-- Week 5 -->
-                    <div class="cal-day active" style="position: relative;">
-                        25
-                        <div
-                            style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #000; border-radius: 50%;">
-                        </div>
-                    </div>
-                    <div class="cal-day">26</div>
-                    <div class="cal-day">27</div>
-                    <div class="cal-day">28</div>
-                    <div class="cal-day">29</div>
-                    <div class="cal-day">30</div>
-                    <div class="cal-day">31</div>
-                </div>
-            </div>
-
-            <!-- Right: Event Manager -->
-            <div class="events-widget">
-                <div class="timeline-info">
-                    <i class="fa-regular fa-clock"></i> Timeline // Jan 25
-                </div>
-
-                <div id="eventListContainer" style="flex: 1; overflow-y: auto; padding-right: 5px; max-height: 250px;">
-                    <div class="event-placeholder" id="eventPlaceholder">
-                        <i class="fa-regular fa-clock"></i>
-                        <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
-                        <div style="font-size: 0.7rem;">No scheduled events for today</div>
-                    </div>
-                </div>
-
-                <button class="btn-init-event" onclick="openCreateEventModal()" style="margin-top: 12px;">
-                    <i class="fa-solid fa-plus"></i> Initialize Event
-                </button>
-            </div>
-        </div>
-
-        <!-- 3. Weekly To-Dos & Small Image -->
-        <div class="card-todos-right">
-            <div>
-                <h3 class="weekly-todos-header">Weekly To-Dos</h3>
-
-                <div id="weekly-todos-trigger" onclick="toggleWeeklyTodos()"
-                    style="font-size: 0.9rem; margin: 12px 0; color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none;">
-                    <i class="fa-solid fa-caret-down" id="todos-caret" style="transition: transform 0.3s ease;"></i>
-                    This Week
-                </div>
-
-                <div id="weekly-todos-content"
-                    style="transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; overflow: hidden; max-height: 1000px;">
-                    <ul class="todos-list-minimal">
-                        {% for todo in upcoming_todos[:3] %}
-                        <li>{{ todo.title }}</li>
-                        {% endfor %}
-
-                        {% for parent in completed_parent_tasks[:2] %}
-                        <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
-                            <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
-                            {{ parent }}
-                        </li>
-                        {% endfor %}
-
-                        {% if not upcoming_todos and not completed_parent_tasks %}
-                        <li>Digital Electronics Project</li>
-                        <li>Math Assignment 3</li>
-                        <li>Physics Lab Report</li>
-                        {% endif %}
-                    </ul>
-
-                    {% if completed_events_week %}
-                    <div
-                        style="font-size: 0.9rem; margin-top: 20px; margin-bottom: 12px; color: var(--accent-green); font-weight: 700;">
-                        <i class="fa-solid fa-check-double"></i> Completed (Events)
-                    </div>
-                    <ul class="todos-list-minimal">
-                        {% for event in completed_events_week[:3] %}
-                        <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
-                            <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
-                            {{ event.title }}
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="card-image-small">
-                <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=300&h=200"
-                    style="width: 100%; height: 100%; object-fit: cover;" alt="Book">
-            </div>
-        </div>
-
     </div>
 
-    <!-- ROW 3: Banner + Weekly Stats -->
-    <div class="bottom-stats-grid">
-        <!-- Left: Habit Tracker (Chart Only) -->
-        <div class="weekly-stats-card" style="padding: 24px 24px 0 24px; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">Habit Consistency</h3>
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #888;">
-                    <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>
-                    <span>Completion %</span>
-                </div>
-            </div>
+    {# Proficiency Card - Average knowledge level #}
+    <div class="bento-card glass" style="padding: 10px; text-align: center; border-bottom: 2px solid #a78bfa;">
+        <div style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+            Level</div>
+        {# Backend calculates average proficiency from Proficiency model #}
+        <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">{{ avg_proficiency or 0 }}%
+        </div>
+    </div>
+</div>
 
-            <div id="dashboard-habit-chart"
-                style="flex: 1; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 0; border-bottom: 1px solid #1a1a1a; margin-top: auto;">
-                <!-- JS will populate this from LocalStorage -->
-                <div style="color: var(--text-muted); align-self: center;">Loading habit data...</div>
+<!-- NEW DASHBOARD GRID -->
+<div class="dashboard-grid-container">
+
+    <!-- ROW 1: CLOCK, FOCUS, IMPORTANT -->
+
+    <!-- 1. Green Clock Card -->
+    <!-- 1. Green Clock Card (Flip Style) -->
+    <div class="card-clock-green">
+        <div class="flip-clock">
+            <!-- Hours -->
+            <div class="clock-group">
+                <div class="flip-digit green-tint" id="flip-h1">0</div>
+                <div class="flip-digit green-tint" id="flip-h2">0</div>
+            </div>
+            <div class="clock-divider">:</div>
+            <!-- Minutes -->
+            <div class="clock-group">
+                <div class="flip-digit green-tint" id="flip-m1">0</div>
+                <div class="flip-digit green-tint" id="flip-m2">0</div>
+            </div>
+            <div class="clock-divider">:</div>
+            <!-- Seconds -->
+            <div class="clock-group">
+                <div class="flip-digit green-tint" id="flip-s1">0</div>
+                <div class="flip-digit green-tint" id="flip-s2">0</div>
             </div>
         </div>
 
-        <!-- Right: Weekly Stats -->
-        <div class="weekly-stats-card">
-            <div class="w-stats-header">
-                <div>
-                    <h3 style="margin: 0; font-size: 1rem; color: #fff;">Weekly Stats</h3>
-                </div>
-                <div style="font-size: 0.7rem; color: #888; display: flex; gap: 8px; align-items: center;">
-                    <span><span class="legend-dot" style="background: #ef4444;"></span> Focus Time</span>
+        <div class="card-clock-date" id="clock-day">DATE</div>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <div class="clock-ampm-badge" id="badge-am">AM</div>
+            <div class="clock-ampm-badge" id="badge-pm">PM</div>
+        </div>
+    </div>
+
+    <!-- 2. Productivity Chart Card (Circular 24h) -->
+    <div class="card-focus-wide"
+        style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px;">
+        <div style="flex: 1;">
+            <div class="focus-header" style="margin-bottom: 12px;">
+                <div class="focus-badge">
+                    <i class="fa-solid fa-chart-pie"></i> Daily Productivity
                 </div>
             </div>
-
-            <div class="stats-row-3">
-                <div class="mini-stat-box" style="background: rgba(239, 68, 68, 0.1);">
-                    <div class="stat-label" style="color: #ef4444;">Focus Time</div>
-                    <div class="stat-val">{{ weekly_stats.total_focus }} <span style="font-size: 0.7rem;">mins</span>
-                    </div>
-                </div>
-                <div class="mini-stat-box" style="background: rgba(16, 185, 129, 0.1);">
-                    <div class="stat-label" style="color: #10b981;">Tasks Done</div>
-                    <div class="stat-val">{{ weekly_stats.total_tasks }}</div>
-                </div>
-            </div>
-
-            <!-- Weekly Stats Dual Chart -->
-            <div class="weekly-stats-chart"
-                style="display: flex; justify-content: space-around; align-items: flex-end; height: 180px; margin-top: 20px; padding: 20px 10px; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                {% if weekly_stats and weekly_stats.chart %}
-                {% for day in weekly_stats.chart %}
-                <div
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; gap: 8px;">
-                    <!-- Bars Container - Always show both bars side by side -->
-                    <div style="display: flex; align-items: flex-end; justify-content: center; height: 100%; gap: 6px;">
-                        <!-- Red bar for focus time - Show if focus_mins > 0 -->
-                        {% if day.focus_mins > 0 %}
-                        <div class="stat-bar bar-focus"
-                            style="height: {% if day.focus_pct > 10 %}{{ day.focus_pct }}{% else %}10{% endif %}%;">
-                            <span class="bar-value">{{ day.focus_mins }}m</span>
-                        </div>
-                        {% else %}
-                        <div style="width: 18px; height: 2%; background: transparent;"></div>
-                        {% endif %}
-
-                        <!-- Green bar for tasks - Show if task_count > 0 -->
-                        {% if day.task_count > 0 %}
-                        <div class="stat-bar bar-task"
-                            style="height: {% if day.task_pct > 10 %}{{ day.task_pct }}{% else %}10{% endif %}%;">
-                            <span class="bar-value">{{ day.task_count }}</span>
-                        </div>
-                        {% else %}
-                        <div style="width: 18px; height: 2%; background: transparent;"></div>
-                        {% endif %}
-                    </div>
-                    <!-- Day label -->
-                    <div style="color: #888; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">{{ day.day
-                        }}</div>
-                </div>
-                {% endfor %}
+            <h3 class="focus-title" style="font-size: 1.8rem; margin-bottom: 8px;">
+                {{ (today_study_mins / 60)|round(1) }}<span style="font-size: 1rem; color: #888;">h</span>
+            </h3>
+            <p class="focus-subtitle" style="margin: 0;">of 24h Goal</p>
+            <div style="margin-top: 16px; font-size: 0.8rem; color: var(--text-muted);">
+                {% if today_study_mins > 0 %}
+                Keep going! Every minute counts.
                 {% else %}
-                <div style="width: 100%; text-align: center; color: #888; padding: 20px;">
-                    No activity data this week
-                </div>
+                Start your first session today!
                 {% endif %}
             </div>
         </div>
+
+        <!-- Circular Chart -->
+        <div style="width: 140px; height: 140px; position: relative; display: grid; place-items: center;">
+            <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                <!-- Background Circle -->
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#222" stroke-width="8"></circle>
+                <!-- Progress Circle -->
+                {% set per_24h = (today_study_mins / 1440 * 100) %}
+                <!-- Cap at 100% for visual sanity, though 24h study is unlikely -->
+                {% if per_24h > 100 %}{% set per_24h = 100 %}{% endif %}
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--accent-green)" stroke-width="8"
+                    stroke-dasharray="282.7" stroke-dashoffset="{{ 282.7 - (282.7 * (per_24h / 100)) }}"
+                    stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;">
+                </circle>
+            </svg>
+            <div style="position: absolute; text-align: center;">
+                <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">{{ per_24h|round(1) }}%</div>
+            </div>
+        </div>
     </div>
 
-    <!-- Maintain Original Globe/Stats if desired, or remove. For now, removing to match "Clean" look of reference. -->
+    <!-- 3. Important Card (Red) -->
+    <div class="card-important-red" style="height: auto; min-height: 200px;">
+        <div class="important-label">
+            <i class="fa-solid fa-bullhorn"></i> Important
+        </div>
 
-    <!-- Quick Navigation (Floating Minimal) -->
-    <div class="quick-nav-floating"
-        style="position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 1000; background: rgba(15,15,15,0.9); backdrop-filter: blur(20px); padding: 10px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1);">
-        <a href="/pomodoro" class="btn-primary"
-            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: var(--accent-green); color: #000;">Focus
-            Mode</a>
-        <a href="/todos" class="btn-secondary"
-            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: transparent; color: #fff; border: 1px solid #444;">Tasks</a>
-        <a href="/chat" class="btn-secondary"
-            style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: #8b5cf6; color: #fff; border: none; display: inline-block; text-align: center;">AI
-            Coach</a>
+        {% if important_event %}
+        <div class="important-item"
+            style="margin-bottom: 12px; border-left-color: #fbbf24; background: rgba(251, 191, 36, 0.05);">
+            <div
+                style="font-size: 0.65rem; color: #fbbf24; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
+                Next Event</div>
+            <div class="important-title" style="color: #fff;">{{ important_event.title }}</div>
+            <div class="important-meta" style="color: #fbbf24;">{{ important_event.date }} • {{ important_event.time
+                }}</div>
+        </div>
+        {% endif %}
+
+        {% if important_todo %}
+        {% set is_high = (important_todo_label == 'High Priority Task') %}
+        {% set todo_color = '#ef4444' if is_high else '#3b82f6' %}
+        <div class="important-item"
+            style="border-left-color: {{ todo_color }}; {{ 'background: rgba(59, 130, 246, 0.05);' if not is_high }}">
+            <div
+                style="font-size: 0.65rem; color: {{ todo_color }}; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">
+                {{ important_todo_label }}</div>
+            <div class="important-title">{{ important_todo.title }}</div>
+            <div class="important-meta" style="{{ 'color: ' + todo_color if not is_high }}">Due {{
+                important_todo.due_date if important_todo.due_date else 'Soon' }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not important_event and not important_todo %}
+        <div class="important-item">
+            <div class="important-title">All Clear!</div>
+            <div class="important-meta">No urgent events or high priority tasks.</div>
+        </div>
+        {% endif %}
     </div>
+
+    {# ========================================================================
+    ACTIVE TASKS WIDGET
+    ========================================================================
+    Purpose: Display incomplete tasks for quick access
+    Backend: upcoming_todos list (filtered by completed=False)
+    Note: Only shows incomplete tasks, completed tasks are filtered out
+    #}
+    <div class="active-tasks-card">
+        <div class="active-tasks-header">
+            <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-list-check" style="color: #ef4444;"></i> Active Tasks
+            </div>
+            {# Task count badge - shows number of incomplete tasks #}
+            <div class="task-count-badge">{{ upcoming_todos|length }} TASKS</div>
+        </div>
+
+        <div class="active-task-list">
+            {# Loop through first 5 incomplete tasks #}
+            {% for todo in upcoming_todos[:5] %}
+            {# Only show if task is NOT completed #}
+            {% if not todo.completed %}
+            <div class="active-task-item" onclick="window.location.href='/todos'">
+                <div class="task-item-left">
+                    {# Color-coded priority indicator #}
+                    <div
+                        class="task-status-dot {% if todo.priority == 'high' %}status-dot-red{% elif todo.priority == 'medium' %}status-dot-orange{% else %}status-dot-green{% endif %}">
+                    </div>
+                    <div class="task-item-content">
+                        <h4>{{ todo.title }}</h4>
+                        {# Show due date if available, otherwise just priority #}
+                        <p>
+                            {% if todo.due_date %}
+                            Due: {{ todo.due_date }}
+                            {% else %}
+                            Priority {{ todo.priority|upper }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right task-item-arrow"></i>
+            </div>
+            {% endif %}
+            {% else %}
+            {# Show message if no active tasks #}
+            <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                No active tasks
+            </div>
+            {% endfor %}
+        </div>
+
+        <button class="btn-add-new-task" onclick="window.location.href='/todos'">
+            ADD NEW TASK <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- 2. Temporal Grid (Calendar & Events) -->
+    <div class="temporal-grid-card">
+        <div class="temporal-header">
+            <div><i class="fa-regular fa-calendar"></i> Temporal Grid</div>
+            <div style="color: var(--destructive); opacity: 0.8;"><i class="fa-solid fa-circle"
+                    style="font-size: 6px; vertical-align: middle;"></i> LIVE</div>
+        </div>
+
+        <!-- Left: Calendar Widget -->
+        <div class="calendar-widget">
+            <div class="cal-header">
+                <button class="cal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                <span>January 2026</span>
+                <button class="cal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="cal-days-grid">
+                <div class="cal-day-label">SU</div>
+                <div class="cal-day-label">MO</div>
+                <div class="cal-day-label">TU</div>
+                <div class="cal-day-label">WE</div>
+                <div class="cal-day-label">TH</div>
+                <div class="cal-day-label">FR</div>
+                <div class="cal-day-label">SA</div>
+
+                <!-- Week 1 -->
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day">1</div>
+                <div class="cal-day">2</div>
+                <div class="cal-day">3</div>
+
+                <!-- Week 2 -->
+                <div class="cal-day">4</div>
+                <div class="cal-day">5</div>
+                <div class="cal-day">6</div>
+                <div class="cal-day">7</div>
+                <div class="cal-day">8</div>
+                <div class="cal-day">9</div>
+                <div class="cal-day">10</div>
+
+                <!-- Week 3 -->
+                <div class="cal-day">11</div>
+                <div class="cal-day">12</div>
+                <div class="cal-day">13</div>
+                <div class="cal-day">14</div>
+                <div class="cal-day">15</div>
+                <div class="cal-day">16</div>
+                <div class="cal-day">17</div>
+
+                <!-- Week 4 -->
+                <div class="cal-day">18</div>
+                <div class="cal-day">19</div>
+                <div class="cal-day">20</div>
+                <div class="cal-day">21</div>
+                <div class="cal-day">22</div>
+                <div class="cal-day">23</div>
+                <div class="cal-day">24</div>
+
+                <!-- Week 5 -->
+                <div class="cal-day active" style="position: relative;">
+                    25
+                    <div
+                        style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #000; border-radius: 50%;">
+                    </div>
+                </div>
+                <div class="cal-day">26</div>
+                <div class="cal-day">27</div>
+                <div class="cal-day">28</div>
+                <div class="cal-day">29</div>
+                <div class="cal-day">30</div>
+                <div class="cal-day">31</div>
+            </div>
+        </div>
+
+        <!-- Right: Event Manager -->
+        <div class="events-widget">
+            <div class="timeline-info">
+                <i class="fa-regular fa-clock"></i> Timeline // Jan 25
+            </div>
+
+            <div id="eventListContainer" style="flex: 1; overflow-y: auto; padding-right: 5px; max-height: 250px;">
+                <div class="event-placeholder" id="eventPlaceholder">
+                    <i class="fa-regular fa-clock"></i>
+                    <div style="font-size: 0.85rem; font-weight: 600;">Zero Collisions Detected</div>
+                    <div style="font-size: 0.7rem;">No scheduled events for today</div>
+                </div>
+            </div>
+
+            <button class="btn-init-event" onclick="openCreateEventModal()" style="margin-top: 12px;">
+                <i class="fa-solid fa-plus"></i> Initialize Event
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. Weekly To-Dos & Small Image -->
+    <div class="card-todos-right">
+        <div>
+            <h3 class="weekly-todos-header">Weekly To-Dos</h3>
+
+            <div id="weekly-todos-trigger" onclick="toggleWeeklyTodos()"
+                style="font-size: 0.9rem; margin: 12px 0; color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none;">
+                <i class="fa-solid fa-caret-down" id="todos-caret" style="transition: transform 0.3s ease;"></i>
+                This Week
+            </div>
+
+            <div id="weekly-todos-content"
+                style="transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; overflow: hidden; max-height: 1000px;">
+                <ul class="todos-list-minimal">
+                    {% for todo in upcoming_todos[:3] %}
+                    <li>{{ todo.title }}</li>
+                    {% endfor %}
+
+                    {% for parent in completed_parent_tasks[:2] %}
+                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                        {{ parent }}
+                    </li>
+                    {% endfor %}
+
+                    {% if not upcoming_todos and not completed_parent_tasks %}
+                    <li>Digital Electronics Project</li>
+                    <li>Math Assignment 3</li>
+                    <li>Physics Lab Report</li>
+                    {% endif %}
+                </ul>
+
+                {% if completed_events_week %}
+                <div
+                    style="font-size: 0.9rem; margin-top: 20px; margin-bottom: 12px; color: var(--accent-green); font-weight: 700;">
+                    <i class="fa-solid fa-check-double"></i> Completed (Events)
+                </div>
+                <ul class="todos-list-minimal">
+                    {% for event in completed_events_week[:3] %}
+                    <li style="text-decoration: line-through; opacity: 0.7; color: var(--accent-green);">
+                        <i class="fa-solid fa-check" style="margin-right: 8px; font-size: 0.7rem;"></i>
+                        {{ event.title }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-image-small">
+            <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=300&h=200"
+                style="width: 100%; height: 100%; object-fit: cover;" alt="Book">
+        </div>
+    </div>
+
+</div>
+
+<!-- ROW 3: Banner + Weekly Stats -->
+<div class="bottom-stats-grid">
+    <!-- Left: Habit Tracker (Chart Only) -->
+    <div class="weekly-stats-card" style="padding: 24px 24px 0 24px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">Habit Consistency</h3>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #888;">
+                <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>
+                <span>Completion %</span>
+            </div>
+        </div>
+
+        <div id="dashboard-habit-chart"
+            style="flex: 1; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 0; border-bottom: 1px solid #1a1a1a; margin-top: auto;">
+            <!-- JS will populate this from LocalStorage -->
+            <div style="color: var(--text-muted); align-self: center;">Loading habit data...</div>
+        </div>
+    </div>
+
+    <!-- Right: Weekly Stats -->
+    <div class="weekly-stats-card">
+        <div class="w-stats-header">
+            <div>
+                <h3 style="margin: 0; font-size: 1rem; color: #fff;">Weekly Stats</h3>
+            </div>
+            <div style="font-size: 0.7rem; color: #888; display: flex; gap: 8px; align-items: center;">
+                <span><span class="legend-dot" style="background: #ef4444;"></span> Focus Time</span>
+            </div>
+        </div>
+
+        <div class="stats-row-3">
+            <div class="mini-stat-box" style="background: rgba(239, 68, 68, 0.1);">
+                <div class="stat-label" style="color: #ef4444;">Focus Time</div>
+                <div class="stat-val">{{ weekly_stats.total_focus }} <span style="font-size: 0.7rem;">mins</span>
+                </div>
+            </div>
+            <div class="mini-stat-box" style="background: rgba(16, 185, 129, 0.1);">
+                <div class="stat-label" style="color: #10b981;">Tasks Done</div>
+                <div class="stat-val">{{ weekly_stats.total_tasks }}</div>
+            </div>
+        </div>
+
+        <!-- Weekly Stats Dual Chart -->
+        <div class="weekly-stats-chart"
+            style="display: flex; justify-content: space-around; align-items: flex-end; height: 180px; margin-top: 20px; padding: 20px 10px; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            {% if weekly_stats and weekly_stats.chart %}
+            {% for day in weekly_stats.chart %}
+            <div
+                style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; gap: 8px;">
+                <!-- Bars Container - Always show both bars side by side -->
+                <div style="display: flex; align-items: flex-end; justify-content: center; height: 100%; gap: 6px;">
+                    <!-- Red bar for focus time - Show if focus_mins > 0 -->
+                    {% if day.focus_mins > 0 %}
+                    <div class="stat-bar bar-focus"
+                        style="height: {% if day.focus_pct > 10 %}{{ day.focus_pct }}{% else %}10{% endif %}%;">
+                        <span class="bar-value">{{ day.focus_mins }}m</span>
+                    </div>
+                    {% else %}
+                    <div style="width: 18px; height: 2%; background: transparent;"></div>
+                    {% endif %}
+
+                    <!-- Green bar for tasks - Show if task_count > 0 -->
+                    {% if day.task_count > 0 %}
+                    <div class="stat-bar bar-task"
+                        style="height: {% if day.task_pct > 10 %}{{ day.task_pct }}{% else %}10{% endif %}%;">
+                        <span class="bar-value">{{ day.task_count }}</span>
+                    </div>
+                    {% else %}
+                    <div style="width: 18px; height: 2%; background: transparent;"></div>
+                    {% endif %}
+                </div>
+                <!-- Day label -->
+                <div style="color: #888; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">{{ day.day
+                    }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="width: 100%; text-align: center; color: #888; padding: 20px;">
+                No activity data this week
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Maintain Original Globe/Stats if desired, or remove. For now, removing to match "Clean" look of reference. -->
+
+<!-- Quick Navigation (Floating Minimal) -->
+<div class="quick-nav-floating"
+    style="position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 1000; background: rgba(15,15,15,0.9); backdrop-filter: blur(20px); padding: 10px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1);">
+    <a href="/pomodoro" class="btn-primary"
+        style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: var(--accent-green); color: #000;">Focus
+        Mode</a>
+    <a href="/todos" class="btn-secondary"
+        style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: transparent; color: #fff; border: 1px solid #444;">Tasks</a>
+    <a href="/chat" class="btn-secondary"
+        style="padding: 10px 20px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 0.8rem; background: #8b5cf6; color: #fff; border: none; display: inline-block; text-align: center;">AI
+        Coach</a>
+</div>
 </div>
 
 <!-- AI Plan Modal (Maintain Original Logic) -->

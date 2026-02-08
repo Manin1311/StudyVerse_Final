@@ -1,12 +1,110 @@
-// BYTE BATTLE FRONTEND LOGIC
+/**
+ * StudyVerse - Battle Mode (Byte Battle)
+ * ========================================
+ * 
+ * Purpose: Real-time competitive quiz battles between two users
+ * 
+ * SYSTEM ARCHITECTURE:
+ * -------------------
+ * - Client-Server Model: Socket.IO for real-time bidirectional communication
+ * - Room-Based System: Each battle is isolated in a unique room
+ * - State Machine: waiting → setup → battle → judging → result
+ * 
+ * BATTLE FLOW:
+ * -----------
+ * 1. **Matchmaking Phase**:
+ *    - Host creates room → receives unique room code
+ *    - Guest requests to join → host accepts/rejects
+ * 
+ * 2. **Setup Phase**:
+ *    - Both players in room
+ *    - Chat enabled for coordination
+ *    - Host configures difficulty and language
+ * 
+ * 3. **Battle Phase**:
+ *    - AI generates coding problem
+ *    - Timer starts (configurable duration)
+ *    - Both players write code simultaneously
+ *    - First to submit or timer expires
+ * 
+ * 4. **Judging Phase**:
+ *    - Backend evaluates code correctness
+ *    - Calculates scores based on:
+ *      * Correctness (pass/fail)
+ *      * Time taken (faster = more points)
+ *      * Code quality (optional)
+ * 
+ * 5. **Result Phase**:
+ *    - Winner announced
+ *    - XP rewards distributed
+ *    - Rematch voting system
+ * 
+ * SOCKET.IO EVENTS:
+ * ----------------
+ * Emitted (Client → Server):
+ * - battle_create: Create new battle room
+ * - battle_join_request: Request to join room
+ * - battle_join_response: Host accepts/rejects join
+ * - battle_confirm_join: Guest confirms entry
+ * - battle_chat_send: Send chat message
+ * - battle_submit: Submit code solution
+ * - battle_rematch_vote: Vote for rematch
+ * - battle_heartbeat: Keep connection alive
+ * - battle_rejoin_attempt: Reconnect to existing room
+ * 
+ * Received (Server → Client):
+ * - battle_created: Room created successfully
+ * - battle_join_request_notify: Notify host of join request
+ * - join_accepted: Join request approved
+ * - battle_entered: Both players in room
+ * - battle_chat_message: Receive chat message
+ * - battle_started: Battle phase begins
+ * - battle_notification: Important event occurred
+ * - battle_state_change: State transition
+ * - battle_result: Battle finished, winner determined
+ * - battle_restart: Rematch approved
+ * - battle_rematch_declined: Rematch rejected
+ * - battle_rejoined: Reconnection successful
+ * - battle_error: Error occurred
+ * 
+ * DATA STRUCTURES:
+ * ---------------
+ * - Room State Object: {room_code, players[], state, problem, timer}
+ * - Player Object: {id, name, score, submitted, code}
+ * - Problem Object: {title, description, input_format, output_format, test_cases}
+ * 
+ * ALGORITHMS:
+ * ----------
+ * - Timer: Countdown using setInterval (1-second ticks)
+ * - Score Calculation: base_points * (time_remaining / total_time)
+ * - Reconnection: Exponential backoff for retry attempts
+ * 
+ * DESIGN PATTERNS:
+ * ---------------
+ * - State Machine: Battle progresses through defined states
+ * - Observer Pattern: Socket.IO event listeners
+ * - Session Persistence: sessionStorage for room code
+ * 
+ * ERROR HANDLING:
+ * --------------
+ * - Connection errors: Auto-reconnect with heartbeat
+ * - Invalid room: Clear session and return to entry
+ * - Timeout: Fallback UI reset after 10 seconds
+ */
+
+// ============================================================================
+// INITIALIZATION AND SETUP
+// ============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Socket Init (Simplified for robustness) ---
-    // Allow auto-detection of transports (Polling -> WebSocket)
+    // --- Socket.IO Initialization ---
+    // Auto-detection of best transport method (Polling first, then upgrade to WebSocket)
     const socket = io();
-    let currentRoom = sessionStorage.getItem('battle_room_code'); // Restore from session
-    let isHost = false;
-    let battleTimer = null;
+
+    // --- State Variables ---
+    let currentRoom = sessionStorage.getItem('battle_room_code'); // Persist room across page refreshes
+    let isHost = false;  // Track if current user created the room
+    let battleTimer = null;  // Reference to countdown interval
 
     // --- Elements ---
     const screens = {

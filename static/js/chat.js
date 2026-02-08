@@ -1,3 +1,83 @@
+/**
+ * StudyVerse - AI Chat Assistant
+ * ================================
+ * 
+ * Purpose: Context-aware AI study assistant using Google Gemini API
+ * 
+ * FEATURES:
+ * --------
+ * 1. **Context-Aware Responses**:
+ *    - Uses uploaded syllabus as context for relevant answers
+ *    - Provides study guidance based on course material
+ *    - Adapts responses to user's learning needs
+ * 
+ * 2. **Chat History**:
+ *    - Maintains conversation context across sessions
+ *    - Stores messages in database for persistence
+ *    - Allows scrolling through past conversations
+ * 
+ * 3. **Markdown Rendering**:
+ *    - Formats AI responses with markdown syntax
+ *    - Code syntax highlighting for programming help
+ *    - Lists, tables, and rich formatting support
+ * 
+ * 4. **Real-Time Messaging**:
+ *    - AJAX-based message sending (no page refresh)
+ *    - Loading indicator during AI processing
+ *    - Auto-scroll to latest messages
+ * 
+ * 5. **Security**:
+ *    - DOMPurify sanitization to prevent XSS attacks
+ *    - Safe markdown parsing
+ *    - Input validation
+ * 
+ * FLOW:
+ * -----
+ * 1. User types message and presses Enter or clicks Send
+ * 2. Message displayed in chat UI immediately (optimistic UI)
+ * 3. Frontend sends message to /chat/send endpoint via AJAX
+ * 4. Backend retrieves syllabus context from database
+ * 5. Backend queries Gemini API with context + user message
+ * 6. AI response generated and returned to frontend
+ * 7. Response parsed with markdown and displayed
+ * 8. Both messages saved to database with timestamps
+ * 
+ * TECHNOLOGIES:
+ * ------------
+ * - **Fetch API**: Asynchronous HTTP requests
+ * - **Marked.js**: Markdown parsing library
+ * - **DOMPurify**: XSS protection and HTML sanitization
+ * - **DOM Manipulation**: Dynamic message rendering
+ * - **CSS Flexbox**: Message layout and alignment
+ * 
+ * DATA STRUCTURES:
+ * ---------------
+ * - Message Object: {role: 'user'|'bot', content: string, timestamp: string}
+ * - Chat State: {isLoading: boolean, messageHistory: Message[]}
+ * 
+ * ALGORITHMS:
+ * ----------
+ * - Auto-scroll: scrollTop = scrollHeight (O(1))
+ * - Message Insertion: DOM appendChild (O(1))
+ * - Markdown Parsing: Marked.js library (O(n) where n = message length)
+ * 
+ * API ENDPOINTS:
+ * -------------
+ * - POST /chat/send: Send user message and get AI response
+ *   Request: {message: string}
+ *   Response: {status: 'success', reply: string, user_timestamp: string, ai_timestamp: string}
+ * 
+ * DESIGN PATTERNS:
+ * ---------------
+ * - Observer Pattern: Event listeners for user input
+ * - Optimistic UI: Show user message immediately before server response
+ * - Error Handling: Graceful degradation with error messages
+ */
+
+// ============================================================================
+// CHAT INITIALIZATION
+// ============================================================================
+
 // Modern Chat JavaScript with Markdown & AJAX
 
 document.addEventListener('DOMContentLoaded', () => {
