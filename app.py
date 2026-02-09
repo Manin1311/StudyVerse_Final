@@ -110,7 +110,6 @@ import io
 import json
 import os
 import requests
-from email_service import init_mail, send_welcome_email, send_task_reminder_email
 from pytz import timezone, utc
 
 import os
@@ -1455,12 +1454,7 @@ def signup():
     try:
         user = AuthService.create_user(email, password, first_name, last_name)
         
-        # Send welcome email to new user
-        try:
-            send_welcome_email(user.email, user.first_name, user.last_name)
-        except Exception as e:
-            print(f"Failed to send welcome email: {e}")
-            # Continue even if email fails
+        # Email functionality removed
             
     except ValueError as e:
         flash(str(e), 'error')
@@ -1565,12 +1559,7 @@ def google_callback():
             db.session.add(user)
             db.session.commit()
             
-            # Send welcome email to new Google user
-            try:
-                send_welcome_email(user.email, user.first_name, user.last_name)
-            except Exception as e:
-                print(f"Failed to send welcome email: {e}")
-                # Continue even if email fails
+            # Email functionality removed
         else:
             # Update existing user info
             if not user.google_id:
@@ -1633,12 +1622,7 @@ def google_auth():
         db.session.add(user)
         db.session.commit()
         
-        # Send welcome email to new Google user
-        try:
-            send_welcome_email(user.email, user.first_name, user.last_name)
-        except Exception as e:
-            print(f"Failed to send welcome email: {e}")
-            # Continue even if email fails
+        # Email functionality removed
     
     # Log in the user
     login_user(user, remember=True)
