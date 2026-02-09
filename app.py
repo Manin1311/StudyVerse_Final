@@ -4763,7 +4763,6 @@ def check_task_reminders():
 
 # IMPORTANT: Order matters. Define logic, THEN run schema check and updates.
 init_db_schema()
-run_xp_update()
 
 @app.route('/fix-db-schema')
 def fix_db_schema():
