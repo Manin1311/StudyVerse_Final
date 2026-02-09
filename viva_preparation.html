@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyVerse - Viva Voce Preparation Guide</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: #0f172a;
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 2rem 1rem;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 280px;
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1200px;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            margin-left: 1rem;
+        }
+
+        /* Q&A Cards */
+        .qa-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .qa-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .qa-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .question {
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid transparent;
+        }
+
+        .question:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .answer {
+            padding: 0 1.5rem;
+            color: var(--text-muted);
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease-out;
+            line-height: 1.7;
+        }
+
+        .qa-card.active .question {
+            border-bottom-color: var(--border);
+            color: var(--primary);
+        }
+
+        .qa-card.active .answer {
+            padding: 1.5rem;
+            max-height: 1000px;
+            /* Arbitrary large number */
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        .highlight {
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #e2e8f0;
+            font-size: 0.9em;
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                max-width: none;
+            }
+
+            body {
+                background: white;
+                color: black;
+            }
+
+            .qa-card {
+                background: white;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+                margin-bottom: 1rem;
+            }
+
+            .question {
+                color: black;
+                border-bottom: 1px solid #eee;
+            }
+
+            .answer {
+                display: block;
+                max-height: none;
+                padding: 1rem;
+                color: #333;
+            }
+
+            .answer p {
+                margin-bottom: 0.5rem;
+            }
+
+            .header h1 {
+                color: black;
+                -webkit-text-fill-color: black;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-graduation-cap"></i>
+            Study<span>Verse</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#overview" class="nav-link"><i class="fa-solid fa-layer-group"></i> Project Overview</a></li>
+            <li><a href="#tech" class="nav-link"><i class="fa-solid fa-code"></i> Data Structures</a></li>
+            <li><a href="#database" class="nav-link"><i class="fa-solid fa-database"></i> Database & Schema</a></li>
+            <li><a href="#backend" class="nav-link"><i class="fa-solid fa-server"></i> Backend & Logic</a></li>
+            <li><a href="#architecture" class="nav-link"><i class="fa-solid fa-sitemap"></i> Design Patterns</a></li>
+            <li><a href="#features" class="nav-link"><i class="fa-solid fa-star"></i> Key Features (AI)</a></li>
+            <li><a href="#gamification" class="nav-link"><i class="fa-solid fa-gamepad"></i> Gamification</a></li>
+            <li><a href="#deployment" class="nav-link"><i class="fa-solid fa-rocket"></i> Deployment & Security</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <header class="header">
+            <h1>Viva Preparation Guide</h1>
+            <p>Comprehensive Q&A for the Faculty Review | <strong>Project: StudyVerse</strong></p>
+        </header>
+
+        <!-- PROJECT OVERVIEW -->
+        <section id="overview" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> Project Overview</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card active">
+                    <div class="question">1. What is the core idea of StudyVerse? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>StudyVerse is a comprehensive <strong>AI-powered academic productivity platform</strong> that
+                            gamifies the learning process. It solves the problem of student procrastination and lack of
+                            structure by combining <strong>task management</strong>, <strong>study tools
+                                (Pomodoro)</strong>, and <strong>collaborative features</strong> (Groups, Chat) with a
+                            robust <strong>RPG-style gamification system</strong> (XP, Levels, Ranks, Batles). </p>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">2. What makes this project unique (USP)? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>Unlike standard todo apps or study timers, StudyVerse integrates three distinct pillars:</p>
+                        <ul>
+                            <li><strong>Gamification:</strong> It's not just points; it's a full economy with a Shop,
+                                Inventory, Badges, and "Battle Mode" for competitive learning.</li>
+                            <li><strong>AI Integration:</strong> It uses Google's Gemini API to generate quizzes
+                                directly from uploaded syllabus PDFs and provides an AI tutor.</li>
+                            <li><strong>Social Accountability:</strong> Real-time study rooms and friend leaderboards
+                                drive peer motivation.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">3. What was your role in the development? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p><em>(Customize this based on your actual role, but here is a full-stack answer):</em></p>
+                        <p>I worked as a <strong>Full Stack Developer</strong>. My responsibilities included:</p>
+                        <ul>
+                            <li>Designing the <strong>Database Schema</strong> (ER Diagram) with 18 tables to support
+                                complex relationships like Gamification and Social features.</li>
+                            <li>Implementing the <strong>Flask Backend</strong> API and integrating
+                                <strong>Socket.IO</strong> for real-time features.
+                            </li>
+                            <li>Developing the <strong>AI Logic</strong> to parse PDFs and prompt Engineering for
+                                Gemini.</li>
+                            <li>Deploying the application on <strong>Render</strong> using PostgreSQL.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DATA STRUCTURES -->
+        <section id="tech" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-code"></i> Algorithm & Data Structures</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">4. What Data Structures did you use in the project? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>We implemented several key structures for efficiency:</p>
+                        <ul>
+                            <li><strong>Stack (LIFO):</strong> Used in the "Undo" functionality for Todo tasks (storing
+                                deleted task states to pop them back if needed).</li>
+                            <li><strong>Hash Maps (Dictionaries):</strong> Heavily used for O(1) lookups in the
+                                Gamification Service (Rank lookups based on Level) and socket connection mapping (User
+                                ID to Socket ID).</li>
+                            <li><strong>Lists/Arrays:</strong> For handling ordered data like Leaderboards and Chat
+                                History.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">5. Explain the Ranking Logic/Algorithm. <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>The leveling system uses a <strong>linear progression algorithm</strong> with a floor
+                            function:</p>
+                        <p><code>Level = floor(Total_XP / 500) + 1</code></p>
+                        <p>This means every 500 XP guarantees a level up. The Rank (e.g., Bronze, Silver) is determined
+                            by mapping the calculated Level to predefined ranges defined in a Hash Map (Dictionary) in
+                            `GamificationService`.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DATABASE -->
+        <section id="database" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-database"></i> Database & Schema</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">6. Which Database are you using and why? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p><strong>Development:</strong> SQLite (lightweight, file-based, easy for local testing).</p>
+                        <p><strong>Production:</strong> PostgreSQL (hosted on Render).</p>
+                        <p><strong>Why PostgreSQL?</strong> It is a robust RDBMS that handles complex queries and
+                            concurrent write operations better than SQLite. It supports array types and JSONB if we need
+                            flexibility, and is the industry standard for production web apps.</p>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">7. How many tables are there? Explain the relationships. <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>There are <strong>18 Tables</strong>. Major relationships include:</p>
+                        <ul>
+                            <li><strong>1:N (One-to-Many):</strong> One `User` can have many `Todos`, `StudySessions`,
+                                and `ChatMessages`.</li>
+                            <li><strong>M:N (Many-to-Many):</strong>
+                                <ul>
+                                    <li>`User` ↔ `Badge` (via `user_badge` junction table).</li>
+                                    <li>`User` ↔ `Group` (via `group_member` junction table).</li>
+                                    <li>`User` ↔ `User` (via `friendship` self-referencing relationship).</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">8. What is Normalization? Is your DB normalized? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>Yes, the database adheres to <strong>3rd Normal Form (3NF)</strong>:</p>
+                        <ul>
+                            <li><strong>1NF:</strong> All columns are atomic (no comma-separated lists in cells).</li>
+                            <li><strong>2NF:</strong> No partial dependencies (e.g., Badge details are in a separate
+                                `Badge` table, not repeated in `UserBadge`).</li>
+                            <li><strong>3NF:</strong> No transitive dependencies (e.g., Rank is calculated from XP
+                                dynamically or stored in a lookup, not hardcoded redundantly in the User table).</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- BACKEND -->
+        <section id="backend" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-server"></i> Backend & Technology</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">9. Why did you choose Flask over Django or Node.js? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p><strong>Flask</strong> was chosen because it is:</p>
+                        <ul>
+                            <li><strong>Lightweight & Modular:</strong> We only added what we needed (SQLAlchemy, Login,
+                                SocketIO), unlike Django which is monolithic.</li>
+                            <li><strong>Python-based:</strong> Seamless integration with AI libraries (Google Generative
+                                AI) and data processing, which is Python's strength.</li>
+                            <li><strong>Flexible:</strong> Gives us full control over the architecture (MVC) unlike
+                                Django's strict enforcement.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">10. How does the Real-Time Chat (Groups/Battles) work? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>We use <strong>WebSockets</strong> via the <strong>Flask-SocketIO</strong> library.</p>
+                        <p>Unlike HTTP (Request-Response), WebSockets keep a persistent, bi-directional connection open.
+                            When User A sends a message:</p>
+                        <ol>
+                            <li>Client emits an event (`send_message`) to the server.</li>
+                            <li>Server receives it, saves it to the DB, and broadcasts it to the specific 'Room' (Group
+                                ID).</li>
+                            <li>All clients in that 'Rom' receive the message instantly without refreshing.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">11. Explain the Authentication flow. <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="answer">
+                        <ul>
+                            <li><strong>Standard Auth:</strong> We use <strong>Flask-Login</strong> for session
+                                management. Passwords are never stored as plain text regarding security; they are hashed
+                                using <strong>Bcrypt</strong> (`werkzeug.security`).</li>
+                            <li><strong>OAuth 2.0:</strong> We integrated <strong>Google Sign-In</strong>. When a user
+                                clicks "Login with Google", they are redirected to Google's consent screen. Google
+                                returns an access token, which we verify to create/login the user securely.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ARCHITECTURE -->
+        <section id="architecture" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-sitemap"></i> Design Patterns & Architecture</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">12. What architecture pattern did you follow? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>We followed the <strong>MVC (Model-View-Controller)</strong> pattern:</p>
+                        <ul>
+                            <li><strong>Model (M):</strong> SQLAlchemy classes in `app.py` (representing Database tables
+                                like `User`, `Todo`).</li>
+                            <li><strong>View (V):</strong> Jinja2 HTML Templates in `templates/` folder (Presenting data
+                                to user).</li>
+                            <li><strong>Controller (C):</strong> Flask Routes/Functions in `app.py` (Handling logic,
+                                processing input, querying models).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">13. Did you use any other design patterns? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <ul>
+                            <li><strong>Service Layer Pattern:</strong> We separated complex logic (like XP calculation,
+                                Rank logic) into a static `GamificationService` class rather than stuffing it into
+                                routes.</li>
+                            <li><strong>Observer Pattern:</strong> Used implicitly in Socket.IO where clients
+                                "subscribe" (join rooms) to events and react when the server updates state.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section id="features" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-star"></i> Key Features (AI & Logic)</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">14. How does the AI Quiz Generation work? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <ol>
+                            <li>User uploads a Syllabus PDF.</li>
+                            <li>Backend uses a library (like `pdfplumber` or `pypdf`) to extract raw text.</li>
+                            <li>This text is sent as a context prompt to the <strong>Google Gemini API</strong>.</li>
+                            <li>Prompt: <em>"Generate 5 MCQs based on this text in JSON format."</em></li>
+                            <li>The AI returns the JSON, which we parse and render on the frontend for the user to
+                                solve.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">15. What is the 'Battle Mode'? <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>Battle Mode is a <strong>1v1 real-time quiz competition</strong>. </p>
+                        <ul>
+                            <li>Two users join a shared socket room.</li>
+                            <li>They face the same set of questions simultaneously.</li>
+                            <li>Scores are tracked in real-time.</li>
+                            <li>The winner gets an XP boost, the loser gets base XP (or lose protection if they have an
+                                item).</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- GAMIFICATION & ECONOMY -->
+        <section id="gamification" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-gamepad"></i> Gamification & Economy</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">16. How does the Virtual Economy (Shop) work? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>The shop allows users to spend 'Coins' (earned via tasks) on virtual items.</p>
+                        <ul>
+                            <li><strong>Item Types:</strong> Cosmetic (Profile Frames, Themes) and Functional (XP
+                                Boosters, Streak Freezes).</li>
+                            <li><strong>Implementation:</strong> Items are defined in a dictionary catalog (JSON
+                                structure). When a user buys an item, a record is created in the `UserItem` or
+                                `ActivePowerUp` table.</li>
+                            <li><strong>Validation:</strong> The backend checks if `user.coins >= price` before
+                                deducting.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">17. How do you prevent users from cheating (XP Farming)? <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>We implemented several anti-cheat mechanisms in `GamificationService`:</p>
+                        <ul>
+                            <li><strong>Daily Caps:</strong> Users can earn a maximum of 500 XP per day from 'Focus
+                                Mode' sessions to prevent idling abuse.</li>
+                            <li><strong>Server-Side Validation:</strong> All XP transactions are calculated on the
+                                server. Clients only send "action completed" signals, not "add 500 XP".</li>
+                            <li><strong>XP History Logging:</strong> Every XP change is logged in `xp_history` table for
+                                audit trails.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DEPLOYMENT -->
+        <section id="deployment" class="section">
+            <h2 class="section-title"><i class="fa-solid fa-rocket"></i> Deployment & Security</h2>
+            <div class="qa-grid">
+
+                <div class="qa-card">
+                    <div class="question">18. How is the application secured? <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="answer">
+                        <ul>
+                            <li><strong>Environment Variables:</strong> API keys (Gemini, Google OAuth) and Database
+                                URLs are stored in `.env` files (locally) and Render Environment Variables (production),
+                                never committed to Git.</li>
+                            <li><strong>CSRF Protection:</strong> We use `Flask-WTF` to generate and valid tokens for
+                                forms.</li>
+                            <li><strong>SQL Injection:</strong> SQLAlchemy ORM automatically escapes all values,
+                                preventing injection attacks.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="qa-card">
+                    <div class="question">19. Explain the Deployment process on Render. <i
+                            class="fa-solid fa-chevron-down"></i></div>
+                    <div class="answer">
+                        <p>The deployment pipeline involves:</p>
+                        <ol>
+                            <li><strong>Gunicorn:</strong> A production-grade WSGI HTTP server serves the Flask app
+                                (Development uses the default Flask server).</li>
+                            <li><strong>Eventlet:</strong> Used alongside Gunicorn to support the asynchronous WebSocket
+                                connections required for Socket.IO.</li>
+                            <li><strong>WhiteNoise:</strong> A library hooked into the Flask app to efficiently serve
+                                static files (CSS/JS) directly, reducing the need for a separate Nginx config.</li>
+                            <li><strong>Render.yaml:</strong> Infrastructure-as-code file that tells Render to build the
+                                app (`pip install -r requirements.txt`) and run the start command.</li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Simple Accordion Logic
+        document.querySelectorAll('.qa-card').forEach(card => {
+            card.querySelector('.question').addEventListener('click', () => {
+                // Toggle current card
+                card.classList.toggle('active');
+            });
+        });
+
+        // Smooth Scroll for Sidebar
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                document.querySelector(targetId).scrollIntoView({
+                    behavior: 'smooth'
+                });
+
+                // Update active state
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>
