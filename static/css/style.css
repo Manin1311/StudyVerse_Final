@@ -859,6 +859,32 @@ html[data-theme="light"] body.theme_ocean .timer-digits {
 }
 
 /* ========================================
+   SHOP PAGE & CONTENT THEME OVERRIDES FOR LIGHT MODE
+   ======================================== */
+/* When ANY theme is active in light mode, override white backgrounds */
+html[data-theme="light"] body.theme_cyberpunk .glass-panel,
+html[data-theme="light"] body.theme_aurora .glass-panel,
+html[data-theme="light"] body.theme_synthwave .glass-panel,
+html[data-theme="light"] body.theme_sakura .glass-panel,
+html[data-theme="light"] body.theme_ocean .glass-panel,
+html[data-theme="light"] body.theme_matrix .glass-panel,
+html[data-theme="light"] body.theme_sunset .glass-panel,
+html[data-theme="light"] body.theme_midnight .glass-panel,
+html[data-theme="light"] body.theme_forest .glass-panel,
+html[data-theme="light"] body.theme_lava .glass-panel,
+html[data-theme="light"] body.theme_retro .glass-panel,
+html[data-theme="light"] body.theme_blood_moon .glass-panel,
+html[data-theme="light"] body.theme_toxic .glass-panel,
+html[data-theme="light"] body.theme_neon_city .glass-panel {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow) !important;
+}
+
+/* Ensure main content area uses theme background */
+html[data-theme="light"] body[class*="theme_"] .main-content {
+    background: var(--bg-main) !important;
+}
 
 /* ========================================
    AURORA THEME (PREMIUM)

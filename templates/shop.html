@@ -108,9 +108,9 @@
 
 <style>
     .glass-panel {
-        background: rgba(30, 41, 59, 0.7);
+        background: var(--bg-card);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
         border-radius: 16px;
         transition: transform 0.3s, box-shadow 0.3s;
     }
@@ -118,7 +118,7 @@
     .shop-item-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--border-light);
     }
 
     .buy-btn:not(:disabled):hover {
