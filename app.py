@@ -308,8 +308,7 @@ AI_MODEL = os.getenv("AI_MODEL", "models/gemini-2.5-flash")
 # Initialize SQLAlchemy for database operations
 db = SQLAlchemy(app)
 
-# Initialize email service for welcome emails and reminders
-mail = init_mail(app)
+# Email functionality removed
 
 # Initialize Flask-Login for user session management
 login_manager = LoginManager()
