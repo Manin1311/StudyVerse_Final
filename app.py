@@ -4783,8 +4783,11 @@ def fix_db_schema():
         return f"Database connection error: {str(e)}"
 
 if __name__ == '__main__':
-    # Start Background Scheduler
+    # Start Background Scheduler ONLY in development mode
+    # In production (gunicorn), this block doesn't run, avoiding eventlet conflicts
+    # For production task reminders, use a separate cron job or background worker service
     if not SCHEDULER_STARTED:
+        print("Starting background task reminder scheduler (development mode only)...")
         eventlet.spawn(check_task_reminders)
         SCHEDULER_STARTED = True
 
