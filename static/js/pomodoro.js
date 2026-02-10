@@ -126,6 +126,9 @@ const timerConfig = {
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Current User Context for LocalStorage
+    const USER_ID = window.currentUserId || 'guest';
+
     // Get DOM element references
     const timerDisplay = document.getElementById('timer-display');
     const startBtn = document.getElementById('start-btn');
@@ -156,11 +159,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        localStorage.setItem('pomodoroState', JSON.stringify(state));
+        localStorage.setItem(`pomodoroState_${USER_ID}`, JSON.stringify(state));
     }
 
     function loadState() {
-        const saved = localStorage.getItem('pomodoroState');
+        const saved = localStorage.getItem(`pomodoroState_${USER_ID}`);
         if (!saved) return;
 
         try {
@@ -224,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.error("Error loading pomodoro state", e);
-            localStorage.removeItem('pomodoroState');
+            localStorage.removeItem(`pomodoroState_${USER_ID}`);
         }
     }
 
@@ -354,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = "StudyVerse";
 
         // Clear persistence
-        localStorage.removeItem('pomodoroState');
+        localStorage.removeItem(`pomodoroState_${USER_ID}`);
         // Save the reset state to overwrite any running state
         saveState();
     }
@@ -463,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (dumpArea) {
         // Load saved dump
-        const savedDump = localStorage.getItem('StudyVerse_brainDump');
+        const savedDump = localStorage.getItem(`StudyVerse_brainDump_${USER_ID}`);
         if (savedDump) dumpArea.value = savedDump;
 
         // Auto-save on input
@@ -476,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                localStorage.setItem('StudyVerse_brainDump', dumpArea.value);
+                localStorage.setItem(`StudyVerse_brainDump_${USER_ID}`, dumpArea.value);
                 if (saveStatus) {
                     saveStatus.textContent = 'Saved';
                     setTimeout(() => { saveStatus.style.opacity = '0'; }, 2000);
@@ -489,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearBtn.addEventListener('click', () => {
             if (confirm("Clear your Brain Dump? This cannot be undone.")) {
                 dumpArea.value = '';
-                localStorage.removeItem('StudyVerse_brainDump');
+                localStorage.removeItem(`StudyVerse_brainDump_${USER_ID}`);
                 if (saveStatus) {
                     saveStatus.textContent = 'Cleared';
                     saveStatus.style.opacity = '1';
