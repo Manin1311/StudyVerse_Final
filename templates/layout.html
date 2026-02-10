@@ -402,7 +402,7 @@
             });
         });
 
-        // Theme Toggle Functionality
+        // Theme Toggle Functionality with Override Protection
         (function () {
             const themeToggleBtn = document.getElementById('theme-toggle');
             const htmlElement = document.documentElement;
@@ -412,8 +412,54 @@
             const savedTheme = localStorage.getItem('theme') || 'dark';
             htmlElement.setAttribute('data-theme', savedTheme);
 
+            // Function to check if a specialized theme is active (starts with 'theme_')
+            function checkThemeOverride() {
+                if (!themeToggleBtn) return;
+
+                // Check if any class on body starts with 'theme_'
+                const hasSpecialTheme = Array.from(body.classList).some(cls => cls.startsWith('theme_'));
+
+                if (hasSpecialTheme) {
+                    // Disable toggle
+                    themeToggleBtn.style.opacity = '0.5';
+                    themeToggleBtn.style.cursor = 'not-allowed';
+                    themeToggleBtn.setAttribute('disabled', 'true');
+                    themeToggleBtn.title = "Theme controlled by equipped item";
+
+                    // Optional: Visual indicator (e.g., lock icon)
+                    const icon = themeToggleBtn.querySelector('i');
+                    if (icon) icon.className = 'fa-solid fa-lock';
+                } else {
+                    // Enable toggle
+                    themeToggleBtn.style.opacity = '1';
+                    themeToggleBtn.style.cursor = 'pointer';
+                    themeToggleBtn.removeAttribute('disabled');
+                    themeToggleBtn.title = "Toggle Theme";
+
+                    // Restore icon based on current theme
+                    const currentTheme = htmlElement.getAttribute('data-theme');
+                    const icon = themeToggleBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                    }
+                }
+            }
+
+            // Initial check
+            checkThemeOverride();
+
+            // Observe body class changes to handle dynamic equipping
+            const observer = new MutationObserver(checkThemeOverride);
+            observer.observe(body, { attributes: true, attributeFilter: ['class'] });
+
             if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', function () {
+                themeToggleBtn.addEventListener('click', function (e) {
+                    // Double check if disabled (though pointer-events might block it, explicit check is safer)
+                    if (this.hasAttribute('disabled')) {
+                        e.preventDefault();
+                        return;
+                    }
+
                     // Add switching animation class
                     this.classList.add('switching');
 
@@ -443,6 +489,10 @@
                     setTimeout(() => {
                         htmlElement.setAttribute('data-theme', newTheme);
                         localStorage.setItem('theme', newTheme);
+
+                        // Update icon immediately
+                        const icon = this.querySelector('i');
+                        if (icon) icon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
 
                         // Fade out overlay
                         overlay.style.opacity = '0';
