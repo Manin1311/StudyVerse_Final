@@ -1448,25 +1448,25 @@ def signup():
 
     if not email or not password:
         flash('Email and password are required.', 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     # Password Strength Validation
     import re
     if len(password) < 8:
         flash('Password must be at least 8 characters long.', 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
     
     if not re.search(r"[A-Z]", password):
         flash('Password must contain at least one uppercase letter.', 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     if not re.search(r"[0-9]", password):
         flash('Password must contain at least one number.', 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         flash('Password must contain at least one special character (!@#$%^&*).', 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     try:
         user = AuthService.create_user(email, password, first_name, last_name)
@@ -1475,7 +1475,7 @@ def signup():
             
     except ValueError as e:
         flash(str(e), 'error')
-        return redirect(url_for('auth'))
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
