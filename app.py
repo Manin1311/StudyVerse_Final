@@ -1450,10 +1450,28 @@ def signup():
         flash('Email and password are required.', 'error')
         return redirect(url_for('auth'))
 
+    # Password Strength Validation
+    import re
+    if len(password) < 8:
+        flash('Password must be at least 8 characters long.', 'error')
+        return redirect(url_for('auth'))
+    
+    if not re.search(r"[A-Z]", password):
+        flash('Password must contain at least one uppercase letter.', 'error')
+        return redirect(url_for('auth'))
+
+    if not re.search(r"[0-9]", password):
+        flash('Password must contain at least one number.', 'error')
+        return redirect(url_for('auth'))
+
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        flash('Password must contain at least one special character (!@#$%^&*).', 'error')
+        return redirect(url_for('auth'))
+
     try:
         user = AuthService.create_user(email, password, first_name, last_name)
         
-        # Email functionality removed
+       
             
     except ValueError as e:
         flash(str(e), 'error')
@@ -3248,10 +3266,22 @@ def leaderboard():
     top_users = (
         User.query
         .filter(User.is_public_profile == True)
-        .order_by(User.level.desc(), User.total_xp.desc())
+        .order_by(User.level.desc(), User.total_xp.desc(), User.id.asc())
         .limit(50)
         .all()
     )
+    
+    # Calculate display ranks handling ties (Standard Competition Ranking like 1, 2, 2, 4)
+    for i, user in enumerate(top_users):
+        if i == 0:
+            user.display_rank = 1
+        else:
+            prev = top_users[i-1]
+            # Check for tie
+            if user.total_xp == prev.total_xp and user.level == prev.level:
+                user.display_rank = prev.display_rank
+            else:
+                user.display_rank = i + 1
     
     # Calculate current user's rank much more efficiently
     # Rank is 1 + number of users who have more level OR same level but more XP

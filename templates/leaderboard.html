@@ -191,10 +191,10 @@
                     {% for user in leaderboard %}
                     <tr class="{% if user.id == current_user.id %}user-highlight{% endif %}">
                         <td class="rank-cell">
-                            {% if loop.index == 1 %}🥇
-                            {% elif loop.index == 2 %}🥈
-                            {% elif loop.index == 3 %}🥉
-                            {% else %}<span class="rank-text">#{{ loop.index }}</span>
+                            {% if user.display_rank == 1 %}🥇
+                            {% elif user.display_rank == 2 %}🥈
+                            {% elif user.display_rank == 3 %}🥉
+                            {% else %}<span class="rank-text">#{{ user.display_rank }}</span>
                             {% endif %}
                         </td>
 
