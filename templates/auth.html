@@ -174,8 +174,11 @@
                 style="display: {{ 'none' if active_tab == 'signup' else 'flex' }}; flex-direction: column; gap: 16px;">
                 <input type="email" name="email" placeholder="Email address" required
                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
-                <input type="password" name="password" placeholder="Password" required
-                    style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
+                <div class="password-container">
+                    <input type="password" name="password" id="signin-password" placeholder="Password" required
+                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
+                    <i class="fa-solid fa-eye toggle-password" id="toggle-signin"></i>
+                </div>
                 <button type="submit" class="btn-primary"
                     style="width: 100%; padding: 12px; background: var(--accent-green); color: black; font-weight: 600; border-radius: 12px;">Sign
                     In</button>
@@ -195,8 +198,11 @@
                 <input type="email" name="email" placeholder="Email address"
                     value="{{ form_data.get('email', '') if form_data else '' }}" required
                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
-                <input type="password" name="password" placeholder="Password" required
-                    style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
+                <div class="password-container">
+                    <input type="password" name="password" id="signup-password" placeholder="Password" required
+                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
+                    <i class="fa-solid fa-eye toggle-password" id="toggle-signup"></i>
+                </div>
                 <button type="submit" class="btn-primary"
                     style="width: 100%; padding: 12px; background: var(--accent-green); color: black; font-weight: 600; border-radius: 12px;">Create
                     Account</button>
@@ -213,6 +219,22 @@
             </a>
         </div>
     </div>
+
+    <style>
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+    </style>
 
     <script>
         const tabSignin = document.getElementById('tab-signin');
@@ -233,6 +255,21 @@
             formSignup.style.display = 'flex';
             formSignin.style.display = 'none';
         });
+
+        function setupPasswordToggle(inputId, toggleId) {
+            const input = document.getElementById(inputId);
+            const toggle = document.getElementById(toggleId);
+
+            toggle.addEventListener('click', () => {
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                toggle.classList.toggle('fa-eye');
+                toggle.classList.toggle('fa-eye-slash');
+            });
+        }
+
+        setupPasswordToggle('signin-password', 'toggle-signin');
+        setupPasswordToggle('signup-password', 'toggle-signup');
     </script>
 </body>
 
