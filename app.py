@@ -1648,7 +1648,29 @@ def google_auth():
     return jsonify({'status': 'success', 'message': 'Authentication successful'})
 
 
+
+# ============================================================================
+# LANDING PAGE (Public Homepage)
+# ============================================================================
+
+@app.route('/')
+def landing():
+    """
+    Public landing page - shown to visitors who are not logged in.
+    Showcases StudyVerse features and encourages sign-up.
+    """
+    # If user is already logged in, redirect to dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    return render_template('landing.html')
+
+# ============================================================================
+# DASHBOARD (Main App Interface)
+# ============================================================================
+
 @app.route('/dashboard')
+
 @login_required
 def dashboard():
     total_todos = Todo.query.filter_by(user_id=current_user.id).count()
