@@ -4661,8 +4661,8 @@ def admin_required(f):
 @admin_required
 def admin_dashboard():
     # 1. Comprehensive Stats
-    total_tasks = Task.query.count()
-    completed_tasks = Task.query.filter_by(completed=True).count()
+    total_tasks = Todo.query.count()
+    completed_tasks = Todo.query.filter_by(completed=True).count()
     
     # Calculate total XP across all users
     total_xp_result = db.session.query(db.func.sum(User.total_xp)).scalar()
@@ -4688,8 +4688,8 @@ def admin_dashboard():
     
     # Enrich users with task counts
     for user in users:
-        user.task_count = Task.query.filter_by(user_id=user.id).count()
-        user.completed_task_count = Task.query.filter_by(user_id=user.id, completed=True).count()
+        user.task_count = Todo.query.filter_by(user_id=user.id).count()
+        user.completed_task_count = Todo.query.filter_by(user_id=user.id, completed=True).count()
     
     # 3. Fetch All Syllabi with uploader info
     syllabi = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).all()
@@ -4698,7 +4698,7 @@ def admin_dashboard():
     groups = Group.query.order_by(Group.created_at.desc()).all()
     for group in groups:
         group.member_count = GroupMember.query.filter_by(group_id=group.id).count()
-        group.message_count = GroupMessage.query.filter_by(group_id=group.id).count()
+        group.message_count = GroupChatMessage.query.filter_by(group_id=group.id).count()
     
     # 5. Activity Analytics - User growth over last 30 days
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
