@@ -1,7 +1,6 @@
 Flask==3.0.0             # Core Web Framework
 Flask-SQLAlchemy==3.1.1  # Database ORM
 Flask-Login==0.6.3       # User Session Management
-Flask-Admin==2.0.2       # Admin Panel Interface
 Flask-SocketIO==5.5.1    # Real-Time WebSocket Communication
 Werkzeug==3.0.1          # WSGI Utility Library
 requests==2.31.0         # HTTP Client (Fallback to REST API for Gemini if SDK missing)

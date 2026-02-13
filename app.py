@@ -146,47 +146,9 @@ except ImportError:
 from werkzeug.middleware.proxy_fix import ProxyFix
 from whitenoise import WhiteNoise
 
-from flask_admin import Admin, AdminIndexView
-from flask_admin.contrib.sqla import ModelView
+
 
 app = Flask(__name__)
-
-# ============================================================================
-# FLASK ADMIN CONFIGURATION
-# ============================================================================
-
-# Define Admin Email (REPLACE THIS WITH YOUR EMAIL)
-# Define Admin Email (REPLACE THIS WITH YOUR EMAIL)
-ADMIN_EMAIL = "admin@studyverse.com"
-
-class SecureModelView(ModelView):
-    """
-    Secure Admin View
-    - Only allows access if user is logged in AND has the correct email.
-    """
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.email == ADMIN_EMAIL
-
-    def inaccessible_callback(self, name, **kwargs):
-        # Redirect to login page if user doesn't have access
-        return redirect(url_for('auth', next=request.url))
-
-class SecureAdminIndexView(AdminIndexView):
-    """
-    Secure Admin Dashboard Entry
-    """
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.email == ADMIN_EMAIL
-
-    def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('auth', next=request.url))
-
-# Initialize Flask-Admin with a Dark Theme
-# Swatch 'cyborg' is a dark theme that matches StudyVerse's aesthetic
-admin = Admin(app, name='StudyVerse Admin', index_view=SecureAdminIndexView())
-
-# Note: We will add the views AFTER the DB models are defined later in the file
-
 
 # ProxyFix: Critical for deployment on Render/Heroku behind reverse proxy
 # Ensures correct handling of HTTPS, host headers, and client IP addresses
@@ -222,9 +184,6 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'poolclass': NullPool,      # No connection pooling (eventlet compatibility)
     'pool_pre_ping': True,      # Validate connections before use
 }
-
-# Admin Panel Theme (Dark Mode)
-app.config['FLASK_ADMIN_SWATCH'] = 'cyborg'
 
 # File upload configuration for profile images and syllabus PDFs
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
@@ -1464,17 +1423,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# ============================================================================
-# ADMIN VIEWS REGISTRATION
-# ============================================================================
-# Add views for the models we want to manage
-admin.add_view(SecureModelView(User, db.session, name="Users"))
-admin.add_view(SecureModelView(Todo, db.session, name="Todos"))
-admin.add_view(SecureModelView(Badge, db.session, name="Badges"))
-admin.add_view(SecureModelView(XPHistory, db.session, name="XP History"))
-admin.add_view(SecureModelView(Group, db.session, name="Groups"))
-admin.add_view(SecureModelView(TopicProficiency, db.session, name="Topic Proficiency"))
-admin.add_view(SecureModelView(SyllabusDocument, db.session, name="Syllabus"))
+
 
 # Routes
 @app.route('/')
@@ -4873,27 +4822,7 @@ def fix_db_schema():
     except Exception as e:
         return f"Database connection error: {str(e)}"
 
-@app.route('/create-admin')
-def create_admin_user():
-    """Helper to create the admin user manually if not exists."""
-    try:
-        email = "admin@studyverse.com"
-        password = "admin@1234"
-        
-        user = User.query.filter_by(email=email).first()
-        if user:
-            return f"Admin user {email} already exists."
-            
-        # Create admin user
-        admin_user = AuthService.create_user(
-            email=email, 
-            password=password, 
-            first_name="Admin", 
-            last_name="Superuser"
-        )
-        return f"Successfully created admin user: {email}"
-    except Exception as e:
-        return f"Error creating admin: {str(e)}"
+
 
 if __name__ == '__main__':
     # Start Background Scheduler ONLY in development mode
