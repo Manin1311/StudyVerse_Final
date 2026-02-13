@@ -9,7 +9,8 @@
         content="Transform your study routine with StudyVerse - featuring AI assistance, gamification, Pomodoro timer, quiz battles, and collaborative study groups.">
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap"
         rel="stylesheet">
 
     <!-- Font Awesome -->
@@ -23,9 +24,12 @@
         }
 
         :root {
-            --primary: #0ea5e9;
-            --primary-dark: #0284c7;
+            /* Updated to match Dashboard/Auth Green Theme */
+            --primary: #4ade80;
+            /* Green */
+            --primary-dark: #22c55e;
             --secondary: #8b5cf6;
+            /* Purple (kept as accent) */
             --accent: #f59e0b;
             --success: #10b981;
             --danger: #ef4444;
@@ -33,9 +37,13 @@
             --dark-light: #1e293b;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
-            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+            /* Updated Gradients */
+            --gradient-1: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            /* Green Gradient */
             --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-3: linear-gradient(135deg, #4ade80 0%, #fff 100%);
+            /* Green to White text gradient */
             --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         }
 
@@ -126,13 +134,19 @@
         }
 
         .logo {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'DM Serif Display', serif;
             font-size: 1.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 400;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .logo i {
+            color: var(--primary);
         }
 
         .nav-links {
@@ -155,7 +169,7 @@
 
         .btn {
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.3s;
@@ -166,24 +180,26 @@
 
         .btn-primary {
             background: var(--primary);
-            color: white;
+            color: #000;
         }
 
         .btn-primary:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
+            box-shadow: 0 10px 25px rgba(74, 222, 128, 0.3);
         }
 
         .btn-outline {
-            border: 2px solid var(--primary);
-            color: var(--primary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
             background: transparent;
+            backdrop-filter: blur(5px);
         }
 
         .btn-outline:hover {
-            background: var(--primary);
-            color: white;
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(74, 222, 128, 0.1);
         }
 
         /* Hero Section */
@@ -201,15 +217,15 @@
         }
 
         .hero h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(2.5rem, 5vw, 4.5rem);
-            font-weight: 800;
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(3rem, 6vw, 5.5rem);
+            font-weight: 400;
             margin-bottom: 1.5rem;
-            line-height: 1.2;
+            line-height: 1.1;
         }
 
         .gradient-text {
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
