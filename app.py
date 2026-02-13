@@ -1475,13 +1475,11 @@ def signup():
 
     try:
         user = AuthService.create_user(email, password, first_name, last_name)
-        
-       
-            
     except ValueError as e:
         flash(str(e), 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
+    # Automatically log in the user after signup
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
     return redirect(url_for('dashboard'))
@@ -4627,6 +4625,80 @@ def dismiss_event(event_id):
     db.session.commit()
     return jsonify({'status': 'success'})
 
+# ============================================================================
+# CUSTOM ADMIN PANEL
+# ============================================================================
+
+from functools import wraps
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("Please log in to access the admin panel.", "error")
+            return redirect(url_for('auth'))
+        
+        if current_user.email != "admin@studyverse.com":
+            flash("ACCESS DENIED: You are not authorized to view the Command Center.", "error")
+            return redirect(url_for('dashboard'))
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    # 1. Fetch Stats
+    stats = {
+        'users': User.query.count(),
+        'groups': Group.query.count(),
+        'uploads': SyllabusDocument.query.count()
+    }
+    
+    # 2. Fetch Users (excluding admin for safety in some views, but we want to see all)
+    users = User.query.order_by(User.created_at.desc()).all()
+    
+    # 3. Fetch Recent Uploads
+    recent_uploads = SyllabusDocument.query.order_by(SyllabusDocument.uploaded_at.desc()).limit(10).all()
+    
+    return render_template('admin_dashboard.html', stats=stats, users=users, recent_uploads=recent_uploads)
+
+@app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    if user.email == "admin@studyverse.com":
+        flash("CRITICAL ERROR: You cannot delete the Super Admin.", "error")
+        return redirect(url_for('admin_dashboard'))
+        
+    try:
+        # Cascade delete is handled by database foreign keys usually, 
+        # but SQLAlchemy might need manual help if relationships aren't set to cascade.
+        # For now, let's try direct delete and let SQL handle constraints or errors.
+        # Better: Manually delete related items to be safe.
+        
+        # 1. Delete Todos
+        Todo.query.filter_by(user_id=user.id).delete()
+        # 2. Delete Events
+        Event.query.filter_by(user_id=user.id).delete()
+        # 3. Delete StudySessions
+        StudySession.query.filter_by(user_id=user.id).delete()
+        
+        # 4. Remove from Groups (GroupMember)
+        GroupMember.query.filter_by(user_id=user.id).delete()
+        
+        # Finally delete user
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f"User {user.email} has been terminated from the system.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting user: {str(e)}", "error")
+        
+    return redirect(url_for('admin_dashboard'))
+
 def init_db_schema():
     from sqlalchemy import text, inspect
     
@@ -4719,6 +4791,34 @@ def init_db_schema():
                         
                 conn.commit()
             print("Migration checks completed.")
+            
+            # --- SEED SUPER ADMIN ---
+            admin_email = "admin@studyverse.com"
+            admin = User.query.filter_by(email=admin_email).first()
+            if not admin:
+                print("creating super admin...")
+                try:
+                    admin_user = User(
+                        email=admin_email,
+                        first_name="Super",
+                        last_name="Admin",
+                        password_hash=generate_password_hash("adminfinal@123"), # Hardcoded as requested
+                        level=100, # Max level for admin
+                        total_xp=999999,
+                        is_public_profile=False
+                    )
+                    db.session.add(admin_user)
+                    db.session.commit()
+                    print(f"SUPER ADMIN CREATED: {admin_email}")
+                except Exception as e:
+                    print(f"Failed to create admin: {e}")
+            else:
+                # Ensure admin has max stats if they exist
+                if admin.level < 100:
+                    admin.level = 100
+                    admin.total_xp = 999999
+                    db.session.commit()
+                    print("Admin stats maximized.")
         except Exception as e:
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
