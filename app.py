@@ -4660,20 +4660,60 @@ def admin_required(f):
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    # 1. Fetch Stats
+    # 1. Comprehensive Stats
+    total_tasks = Task.query.count()
+    completed_tasks = Task.query.filter_by(completed=True).count()
+    
+    # Calculate total XP across all users
+    total_xp_result = db.session.query(db.func.sum(User.total_xp)).scalar()
+    total_xp = total_xp_result if total_xp_result else 0
+    
+    # Active users (logged in within last 24 hours)
+    yesterday = datetime.utcnow() - timedelta(days=1)
+    active_today = User.query.filter(User.last_seen >= yesterday).count()
+    
     stats = {
         'users': User.query.count(),
         'groups': Group.query.count(),
-        'uploads': SyllabusDocument.query.count()
+        'uploads': SyllabusDocument.query.count(),
+        'total_xp': total_xp,
+        'active_today': active_today,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'completion_rate': round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
     }
     
-    # 2. Fetch Users (excluding admin for safety in some views, but we want to see all)
+    # 2. Fetch All Users with detailed info
     users = User.query.order_by(User.created_at.desc()).all()
     
-    # 3. Fetch Recent Uploads
-    recent_uploads = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).limit(10).all()
+    # Enrich users with task counts
+    for user in users:
+        user.task_count = Task.query.filter_by(user_id=user.id).count()
+        user.completed_task_count = Task.query.filter_by(user_id=user.id, completed=True).count()
     
-    return render_template('admin_dashboard.html', stats=stats, users=users, recent_uploads=recent_uploads)
+    # 3. Fetch All Syllabi with uploader info
+    syllabi = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).all()
+    
+    # 4. Fetch All Groups with member counts
+    groups = Group.query.order_by(Group.created_at.desc()).all()
+    for group in groups:
+        group.member_count = GroupMember.query.filter_by(group_id=group.id).count()
+        group.message_count = GroupMessage.query.filter_by(group_id=group.id).count()
+    
+    # 5. Activity Analytics - User growth over last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_signups = User.query.filter(User.created_at >= thirty_days_ago).count()
+    
+    # 6. Top users by XP
+    top_users = User.query.order_by(User.total_xp.desc()).limit(10).all()
+    
+    return render_template('admin_dashboard.html', 
+                         stats=stats, 
+                         users=users, 
+                         syllabi=syllabi,
+                         groups=groups,
+                         top_users=top_users,
+                         recent_signups=recent_signups)
 
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
 @admin_required

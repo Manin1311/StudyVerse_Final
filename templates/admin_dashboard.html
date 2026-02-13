@@ -7,58 +7,93 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-    /* Admin Dashboard Custom Styles - Aligned with StudyVerse Design */
-    .admin-dashboard-wrapper {
+    /* ========================================
+       ADMIN DASHBOARD - FULLY SCROLLABLE
+       ======================================== */
+
+    .admin-wrapper {
         background: var(--bg-main);
         min-height: 100vh;
-        color: var(--text-primary);
-        font-family: 'Outfit', 'Inter', sans-serif;
-        padding: 2rem 0;
+        width: 100%;
         overflow-y: auto;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        font-family: 'Outfit', 'Inter', sans-serif;
     }
 
-    /* Glass Panel Effect */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow);
-        transition: all 0.3s ease;
-    }
-
-    .glass-card:hover {
-        border-color: rgba(74, 222, 128, 0.3);
-        box-shadow: var(--shadow-elevated);
-    }
-
-    /* Header Section */
-    .admin-header {
-        background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-        border: 1px solid rgba(74, 222, 128, 0.2);
-        border-radius: var(--radius-lg);
+    .admin-container {
+        max-width: 1800px;
+        margin: 0 auto;
         padding: 2rem;
-        margin-bottom: 2rem;
+    }
+
+    /* Header - Sticky */
+    .admin-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(12, 12, 12, 0.95);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+        padding: 1.5rem 2rem;
+        margin: -2rem -2rem 2rem -2rem;
     }
 
     .admin-title {
         font-family: var(--font-heading);
-        font-size: 2.5rem;
+        font-size: 2rem;
         font-weight: 800;
         background: linear-gradient(135deg, #fff 0%, var(--accent-green) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-bottom: 0.5rem;
+        margin: 0;
     }
 
     .admin-subtitle {
         color: var(--text-muted);
-        font-size: 1.1rem;
+        font-size: 0.9rem;
+        margin: 0;
     }
 
-    /* Stats Cards */
+    /* Glass Card */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+    }
+
+    .glass-card:hover {
+        border-color: rgba(74, 222, 128, 0.2);
+    }
+
+    /* Section Header */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .section-header i {
+        font-size: 1.5rem;
+        color: var(--accent-green);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    /* Stat Cards */
     .stat-card {
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -67,6 +102,7 @@
         position: relative;
         overflow: hidden;
         transition: all 0.3s ease;
+        height: 100%;
     }
 
     .stat-card::before {
@@ -106,6 +142,14 @@
         --gradient-color: linear-gradient(90deg, #a78bfa, #8b5cf6);
     }
 
+    .stat-card.red {
+        --gradient-color: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .stat-card.cyan {
+        --gradient-color: linear-gradient(90deg, #22d3ee, #06b6d4);
+    }
+
     .stat-icon {
         width: 60px;
         height: 60px;
@@ -137,6 +181,16 @@
         color: #a78bfa;
     }
 
+    .stat-icon.red {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .stat-icon.cyan {
+        background: rgba(34, 211, 238, 0.15);
+        color: #22d3ee;
+    }
+
     .stat-label {
         font-size: 0.85rem;
         text-transform: uppercase;
@@ -153,29 +207,7 @@
         line-height: 1;
     }
 
-    /* Section Headers */
-    .section-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .section-header i {
-        font-size: 1.5rem;
-        color: var(--accent-green);
-    }
-
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
-    }
-
-    /* Table Styles */
+    /* Table Styles - NO MAX HEIGHT */
     .admin-table {
         width: 100%;
         border-collapse: separate;
@@ -192,7 +224,7 @@
         padding: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         position: sticky;
-        top: 0;
+        top: 90px;
         z-index: 10;
     }
 
@@ -208,6 +240,7 @@
         padding: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         color: var(--text-secondary);
+        vertical-align: middle;
     }
 
     /* User Avatar */
@@ -223,6 +256,13 @@
         color: #000;
         font-size: 1.1rem;
         flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
     .user-info {
@@ -273,6 +313,14 @@
         border: 1px solid rgba(251, 191, 36, 0.3);
     }
 
+    .badge-rank {
+        padding: 0.3rem 0.7rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
     /* Buttons */
     .btn-admin {
         padding: 0.5rem 1rem;
@@ -282,6 +330,9 @@
         border: none;
         cursor: pointer;
         font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .btn-admin-primary {
@@ -317,127 +368,154 @@
         border-color: rgba(255, 255, 255, 0.2);
     }
 
-    /* Scrollable Container */
-    .scrollable-container {
-        max-height: 500px;
-        overflow-y: auto;
-        padding-right: 0.5rem;
+    .btn-admin-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
     }
 
-    .scrollable-container::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-thumb {
-        background: rgba(74, 222, 128, 0.3);
-        border-radius: 4px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-thumb:hover {
-        background: rgba(74, 222, 128, 0.5);
-    }
-
-    /* Upload Item */
-    .upload-item {
+    /* Grid Items */
+    .syllabus-item,
+    .group-item {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: var(--radius-md);
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        padding: 1.5rem;
         transition: all 0.2s ease;
+        height: 100%;
     }
 
-    .upload-item:hover {
+    .syllabus-item:hover,
+    .group-item:hover {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(74, 222, 128, 0.3);
+        transform: translateY(-3px);
     }
 
-    .upload-icon {
-        width: 40px;
-        height: 40px;
+    .syllabus-icon,
+    .group-icon {
+        width: 50px;
+        height: 50px;
         background: rgba(251, 191, 36, 0.15);
         border-radius: var(--radius-sm);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fbbf24;
-        font-size: 1.2rem;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
     }
 
-    .upload-info h4 {
-        margin: 0;
-        font-size: 0.95rem;
+    .group-icon {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+    }
+
+    .item-title {
+        font-size: 1rem;
         font-weight: 600;
         color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        word-break: break-word;
+    }
+
+    .item-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted);
         margin-bottom: 0.25rem;
     }
 
-    .upload-info p {
-        margin: 0;
-        font-size: 0.8rem;
-        color: var(--text-muted);
+    /* Scrollbar */
+    .admin-wrapper::-webkit-scrollbar {
+        width: 12px;
     }
 
-    /* Alert Box */
-    .alert-box {
-        background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-        border: 1px solid rgba(74, 222, 128, 0.3);
-        border-radius: var(--radius-md);
-        padding: 1.5rem;
+    .admin-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
     }
 
-    .alert-box h5 {
-        color: var(--accent-green);
-        font-weight: 700;
-        margin-bottom: 0.75rem;
+    .admin-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(74, 222, 128, 0.3);
+        border-radius: 6px;
+    }
+
+    .admin-wrapper::-webkit-scrollbar-thumb:hover {
+        background: rgba(74, 222, 128, 0.5);
+    }
+
+    /* Back to Top Button */
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 50px;
+        height: 50px;
+        background: var(--accent-green);
+        color: #000;
+        border-radius: 50%;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        box-shadow: 0 5px 15px rgba(74, 222, 128, 0.3);
     }
 
-    .alert-box p {
-        color: var(--text-secondary);
-        line-height: 1.6;
-        margin: 0;
-        font-size: 0.9rem;
+    .back-to-top.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .back-to-top:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(74, 222, 128, 0.4);
     }
 
     /* Responsive */
     @media (max-width: 768px) {
+        .admin-container {
+            padding: 1rem;
+        }
+
+        .admin-header {
+            padding: 1rem;
+            margin: -1rem -1rem 1rem -1rem;
+        }
+
         .admin-title {
-            font-size: 2rem;
+            font-size: 1.5rem;
         }
 
         .stat-value {
             font-size: 2rem;
         }
 
-        .scrollable-container {
-            max-height: 400px;
+        .admin-table {
+            font-size: 0.85rem;
+        }
+
+        .admin-table thead th,
+        .admin-table tbody td {
+            padding: 0.75rem 0.5rem;
         }
     }
 
-    /* Light Mode Overrides */
-    [data-theme="light"] .admin-dashboard-wrapper {
+    /* Light Mode */
+    [data-theme="light"] .admin-wrapper {
         background: #f8fafc;
+    }
+
+    [data-theme="light"] .admin-header {
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom-color: rgba(22, 163, 74, 0.2);
     }
 
     [data-theme="light"] .glass-card {
         background: #ffffff;
         border-color: var(--border);
-    }
-
-    [data-theme="light"] .admin-header {
-        background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(21, 128, 61, 0.05) 100%);
-        border-color: rgba(22, 163, 74, 0.2);
     }
 
     [data-theme="light"] .stat-card {
@@ -449,44 +527,57 @@
         background: var(--bg-card);
     }
 
-    [data-theme="light"] .upload-item {
+    [data-theme="light"] .syllabus-item,
+    [data-theme="light"] .group-item {
         background: var(--bg-card);
         border-color: var(--border);
     }
 
-    [data-theme="light"] .alert-box {
-        background: rgba(22, 163, 74, 0.1);
-        border-color: rgba(22, 163, 74, 0.3);
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        font-size: 1.1rem;
     }
 </style>
 
-<div class="admin-dashboard-wrapper">
-    <div class="container-fluid" style="max-width: 1600px;">
+<div class="admin-wrapper">
+    <div class="admin-container">
 
-        <!-- Header -->
+        <!-- Sticky Header -->
         <div class="admin-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h1 class="admin-title">
                         <i class="fas fa-shield-halved"></i> Admin Command Center
                     </h1>
-                    <p class="admin-subtitle">Complete system oversight and management dashboard</p>
+                    <p class="admin-subtitle">Complete platform oversight and management</p>
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn-admin btn-admin-secondary"
                         onclick="window.location.href='{{ url_for('dashboard') }}'">
-                        <i class="fas fa-home me-2"></i>Dashboard
+                        <i class="fas fa-home"></i> Dashboard
                     </button>
                     <button class="btn-admin btn-admin-danger" onclick="window.location.href='{{ url_for('logout') }}'">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-sm-6 col-lg-3">
+        <!-- Section 1: Overview Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="stat-card green">
                     <div class="stat-icon green">
                         <i class="fas fa-users"></i>
@@ -495,7 +586,16 @@
                     <div class="stat-value">{{ stats.users }}</div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <div class="stat-card cyan">
+                    <div class="stat-icon cyan">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-label">Active Today</div>
+                    <div class="stat-value">{{ stats.active_today }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="stat-card blue">
                     <div class="stat-icon blue">
                         <i class="fas fa-user-group"></i>
@@ -504,165 +604,326 @@
                     <div class="stat-value">{{ stats.groups }}</div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="stat-card yellow">
                     <div class="stat-icon yellow">
                         <i class="fas fa-file-pdf"></i>
                     </div>
-                    <div class="stat-label">Syllabus Uploads</div>
+                    <div class="stat-label">Syllabi</div>
                     <div class="stat-value">{{ stats.uploads }}</div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="stat-card purple">
                     <div class="stat-icon purple">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-star"></i>
                     </div>
-                    <div class="stat-label">System Status</div>
-                    <div class="stat-value" style="font-size: 1.5rem; color: #4ade80;">Online</div>
+                    <div class="stat-label">Total XP</div>
+                    <div class="stat-value">{{ "{:,}".format(stats.total_xp) }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <div class="stat-card red">
+                    <div class="stat-icon red">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-label">Tasks</div>
+                    <div class="stat-value">{{ stats.total_tasks }}</div>
+                    <div class="stat-label" style="margin-top: 0.5rem;">{{ stats.completion_rate }}% Complete</div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="row g-4">
-
-            <!-- User Management Section -->
-            <div class="col-12 col-xl-8">
-                <div class="glass-card p-4">
-                    <div class="section-header">
-                        <i class="fas fa-users-cog"></i>
-                        <h2 class="section-title">User Management</h2>
-                    </div>
-
-                    <div class="scrollable-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User</th>
-                                    <th>Progress</th>
-                                    <th>Joined</th>
-                                    <th style="text-align: right;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for user in users %}
-                                <tr>
-                                    <td style="color: var(--text-muted);">#{{ user.id }}</td>
-                                    <td>
-                                        <div class="user-info">
-                                            <div class="user-avatar">
-                                                {% if user.profile_image %}
-                                                <img src="{{ user.profile_image }}"
-                                                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                                {% else %}
-                                                {{ user.first_name[0] if user.first_name else 'U' }}
-                                                {% endif %}
-                                            </div>
-                                            <div class="user-details">
-                                                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
-                                                <p>{{ user.email }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-column gap-2">
-                                            <span class="badge-custom badge-level">Level {{ user.level }}</span>
-                                            <span class="badge-custom badge-xp">{{ user.total_xp }} XP</span>
-                                        </div>
-                                    </td>
-                                    <td style="color: var(--text-muted);">
-                                        {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
-                                    </td>
-                                    <td style="text-align: right;">
-                                        {% if user.email != 'admin@studyverse.com' %}
-                                        <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST"
-                                            class="d-inline"
-                                            onsubmit="return confirm('⚠️ WARNING: Delete user {{ user.first_name }} {{ user.last_name }}? This action cannot be undone and will delete all associated data.');">
-                                            <button type="submit" class="btn-admin btn-admin-danger"
-                                                title="Delete User">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                        {% else %}
-                                        <span class="badge-custom badge-admin">
-                                            <i class="fas fa-crown me-1"></i>Super Admin
-                                        </span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- Section 2: User Management -->
+        <div class="glass-card p-4">
+            <div class="section-header">
+                <i class="fas fa-users-cog"></i>
+                <h2 class="section-title">User Management</h2>
+                <span class="ms-auto badge-custom badge-level">{{ users|length }} Total Users</span>
             </div>
 
-            <!-- Sidebar Section -->
-            <div class="col-12 col-xl-4">
-
-                <!-- Recent Uploads -->
-                <div class="glass-card p-4 mb-4">
-                    <div class="section-header">
-                        <i class="fas fa-file-upload"></i>
-                        <h2 class="section-title">Recent Uploads</h2>
-                    </div>
-
-                    <div class="scrollable-container" style="max-height: 400px;">
-                        {% if recent_uploads %}
-                        {% for doc in recent_uploads %}
-                        <div class="upload-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="upload-icon">
-                                    <i class="fas fa-file-alt"></i>
+            {% if users %}
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Rank</th>
+                            <th>Progress</th>
+                            <th>Tasks</th>
+                            <th>Joined</th>
+                            <th>Last Seen</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td style="color: var(--text-muted);">#{{ user.id }}</td>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {% if user.profile_image %}
+                                        <img src="{{ user.profile_image }}" alt="{{ user.first_name }}">
+                                        {% else %}
+                                        {{ user.first_name[0] if user.first_name else 'U' }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-details">
+                                        <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                                        <p>{{ user.email }}</p>
+                                    </div>
                                 </div>
-                                <div class="upload-info">
-                                    <h4>{{ doc.filename }}</h4>
-                                    <p>Uploaded by User #{{ doc.user_id }}</p>
+                            </td>
+                            <td>
+                                <span class="badge-rank"
+                                    style="background: {{ user.rank_color }}20; color: {{ user.rank_color }}; border: 1px solid {{ user.rank_color }}40;">
+                                    <i class="{{ user.rank_icon }}"></i> {{ user.rank_name }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-2">
+                                    <span class="badge-custom badge-level">Level {{ user.level }}</span>
+                                    <span class="badge-custom badge-xp">{{ "{:,}".format(user.total_xp) }} XP</span>
                                 </div>
-                            </div>
+                            </td>
+                            <td>
+                                <div style="font-size: 0.9rem;">
+                                    <div style="color: var(--text-primary);">{{ user.completed_task_count }}/{{
+                                        user.task_count }}</div>
+                                    <div style="color: var(--text-muted); font-size: 0.8rem;">
+                                        {% if user.task_count > 0 %}
+                                        {{ "%.0f"|format((user.completed_task_count / user.task_count * 100)) }}% done
+                                        {% else %}
+                                        No tasks
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                {{ user.last_seen.strftime('%b %d, %Y') if user.last_seen else 'Never' }}
+                            </td>
+                            <td style="text-align: right;">
+                                {% if user.email != 'admin@studyverse.com' %}
+                                <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST"
+                                    class="d-inline"
+                                    onsubmit="return confirm('⚠️ WARNING: Delete user {{ user.first_name }} {{ user.last_name }}?\n\nThis will permanently delete:\n• User account\n• All tasks and progress\n• All uploads\n• Group memberships\n• XP history\n\nThis action CANNOT be undone!');">
+                                    <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm"
+                                        title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="badge-custom badge-admin">
+                                    <i class="fas fa-crown"></i> Super Admin
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>No users found</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section 3: Syllabus Management -->
+        <div class="glass-card p-4">
+            <div class="section-header">
+                <i class="fas fa-file-pdf"></i>
+                <h2 class="section-title">Syllabus Management</h2>
+                <span class="ms-auto badge-custom badge-level">{{ syllabi|length }} Uploads</span>
+            </div>
+
+            {% if syllabi %}
+            <div class="row g-3">
+                {% for doc in syllabi %}
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                    <div class="syllabus-item">
+                        <div class="syllabus-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="item-title">{{ doc.filename }}</div>
+                        <div class="item-meta">
+                            <i class="fas fa-user"></i> User #{{ doc.user_id }}
+                        </div>
+                        <div class="item-meta">
+                            <i class="fas fa-calendar"></i> {{ doc.created_at.strftime('%b %d, %Y') if doc.created_at
+                            else 'N/A' }}
+                        </div>
+                        <div class="mt-3">
                             <a href="{{ url_for('static', filename='uploads/' + doc.filename) }}" target="_blank"
-                                class="btn-admin btn-admin-secondary" title="View Syllabus">
-                                <i class="fas fa-external-link-alt"></i>
+                                class="btn-admin btn-admin-secondary btn-admin-sm w-100">
+                                <i class="fas fa-external-link-alt"></i> View PDF
                             </a>
                         </div>
-                        {% endfor %}
-                        {% else %}
-                        <div class="text-center py-5" style="color: var(--text-muted);">
-                            <i class="fas fa-folder-open mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
-                            <p>No syllabus uploads yet</p>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <p>No syllabus uploads yet</p>
+            </div>
+            {% endif %}
+        </div>
 
-                <!-- System Info -->
-                <div class="alert-box">
-                    <h5>
-                        <i class="fas fa-info-circle"></i>
-                        System Information
-                    </h5>
-                    <p>
-                        <strong>Access Level:</strong> Root Administrator<br>
-                        <strong>Permissions:</strong> Full System Control<br><br>
+        <!-- Section 4: Group Management -->
+        <div class="glass-card p-4">
+            <div class="section-header">
+                <i class="fas fa-user-group"></i>
+                <h2 class="section-title">Study Groups</h2>
+                <span class="ms-auto badge-custom badge-level">{{ groups|length }} Groups</span>
+            </div>
+
+            {% if groups %}
+            <div class="row g-3">
+                {% for group in groups %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="group-item">
+                        <div class="group-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="item-title">{{ group.name }}</div>
+                        <div class="item-meta">
+                            <i class="fas fa-user"></i> {{ group.member_count }} members
+                        </div>
+                        <div class="item-meta">
+                            <i class="fas fa-message"></i> {{ group.message_count }} messages
+                        </div>
+                        <div class="item-meta">
+                            <i class="fas fa-calendar"></i> Created {{ group.created_at.strftime('%b %d, %Y') if
+                            group.created_at else 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-user-group"></i>
+                <p>No study groups created yet</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section 5: Top Users -->
+        <div class="glass-card p-4">
+            <div class="section-header">
+                <i class="fas fa-trophy"></i>
+                <h2 class="section-title">Top Users by XP</h2>
+            </div>
+
+            {% if top_users %}
+            <div class="row g-3">
+                {% for user in top_users %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="d-flex align-items-center gap-3 p-3"
+                        style="background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.08);">
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-green); min-width: 30px;">
+                            #{{ loop.index }}
+                        </div>
+                        <div class="user-avatar" style="width: 50px; height: 50px;">
+                            {% if user.profile_image %}
+                            <img src="{{ user.profile_image }}" alt="{{ user.first_name }}">
+                            {% else %}
+                            {{ user.first_name[0] if user.first_name else 'U' }}
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ user.first_name }} {{
+                                user.last_name }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Level {{ user.level }} • {{
+                                "{:,}".format(user.total_xp) }} XP</div>
+                        </div>
+                        <span class="badge-rank"
+                            style="background: {{ user.rank_color }}20; color: {{ user.rank_color }}; border: 1px solid {{ user.rank_color }}40;">
+                            <i class="{{ user.rank_icon }}"></i>
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-trophy"></i>
+                <p>No user data available</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section 6: System Info -->
+        <div class="glass-card p-4">
+            <div class="section-header">
+                <i class="fas fa-info-circle"></i>
+                <h2 class="section-title">System Information</h2>
+            </div>
+
+            <div
+                style="background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: var(--radius-md); padding: 1.5rem;">
+                <h5
+                    style="color: var(--accent-green); font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-shield-halved"></i> Administrator Access
+                </h5>
+                <div style="color: var(--text-secondary); line-height: 1.8;">
+                    <p style="margin-bottom: 1rem;"><strong style="color: var(--text-primary);">Access Level:</strong>
+                        Root Administrator</p>
+                    <p style="margin-bottom: 1rem;"><strong style="color: var(--text-primary);">Permissions:</strong>
+                        Full System Control</p>
+                    <p style="margin-bottom: 1rem;"><strong style="color: var(--text-primary);">Recent Signups (30
+                            days):</strong> {{ recent_signups }} users</p>
+                    <hr style="border-color: rgba(74, 222, 128, 0.2); margin: 1rem 0;">
+                    <p style="margin: 0; font-size: 0.9rem;">
+                        <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
                         All administrative actions are logged. User deletion is permanent and cascades to all associated
                         data including tasks, progress, groups, and uploads. Exercise caution when performing
                         destructive operations.
                     </p>
                 </div>
-
             </div>
-
         </div>
 
     </div>
+</div>
+
+<!-- Back to Top Button -->
+<div class="back-to-top" id="backToTop">
+    <i class="fas fa-arrow-up"></i>
 </div>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // Back to Top Button
+    const backToTop = document.getElementById('backToTop');
+    const adminWrapper = document.querySelector('.admin-wrapper');
+
+    adminWrapper.addEventListener('scroll', function () {
+        if (adminWrapper.scrollTop > 300) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    });
+
+    backToTop.addEventListener('click', function () {
+        adminWrapper.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
     // Smooth animations on load
     document.addEventListener('DOMContentLoaded', function () {
         const cards = document.querySelectorAll('.stat-card, .glass-card');
