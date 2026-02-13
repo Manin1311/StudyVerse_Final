@@ -1,260 +1,594 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- INJECT BOOTSTRAP 5 FOR ADMIN PANEL LAYOUT (Since base.html lacks it) -->
+<!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-    /* RESET & OVERRIDES to fix conflicts between style.css and Bootstrap */
-    .admin-wrapper {
-        background-color: #0c0c0c;
-        /* Match main bg */
+    /* Admin Dashboard Custom Styles - Aligned with StudyVerse Design */
+    .admin-dashboard-wrapper {
+        background: var(--bg-main);
         min-height: 100vh;
-        color: #fff;
+        color: var(--text-primary);
         font-family: 'Outfit', 'Inter', sans-serif;
-        padding-bottom: 50px;
+        padding: 2rem 0;
+        overflow-y: auto;
     }
 
-    /* Bootstrap overrides for Dark Mode */
-    .admin-wrapper .row {
-        --bs-gutter-x: 1.5rem;
-    }
-
-    .glass-panel {
-        background: rgba(24, 24, 27, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+    /* Glass Panel Effect */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        border-radius: 16px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
     }
 
-    .icon-box {
+    .glass-card:hover {
+        border-color: rgba(74, 222, 128, 0.3);
+        box-shadow: var(--shadow-elevated);
+    }
+
+    /* Header Section */
+    .admin-header {
+        background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .admin-title {
+        font-family: var(--font-heading);
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, var(--accent-green) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .admin-subtitle {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-color);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card.green {
+        --gradient-color: linear-gradient(90deg, #4ade80, #22c55e);
+    }
+
+    .stat-card.blue {
+        --gradient-color: linear-gradient(90deg, #60a5fa, #3b82f6);
+    }
+
+    .stat-card.yellow {
+        --gradient-color: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
+    .stat-card.purple {
+        --gradient-color: linear-gradient(90deg, #a78bfa, #8b5cf6);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--radius-md);
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        font-size: 1.2rem;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon.green {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+    }
+
+    .stat-icon.blue {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+    }
+
+    .stat-icon.yellow {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+    }
+
+    .stat-icon.purple {
+        background: rgba(167, 139, 250, 0.15);
+        color: #a78bfa;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .section-header i {
+        font-size: 1.5rem;
+        color: var(--accent-green);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
     }
 
     /* Table Styles */
-    .table-dark {
-        --bs-table-bg: transparent;
-        --bs-table-border-color: rgba(255, 255, 255, 0.05);
+    .admin-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
-    .table td,
-    .table th {
-        vertical-align: middle;
+    .admin-table thead th {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
         padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .admin-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .admin-table tbody tr:hover {
+        background: rgba(74, 222, 128, 0.05);
+    }
+
+    .admin-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+    }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #000;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .user-details h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .user-details p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    /* Badges */
+    .badge-custom {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-level {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .badge-xp {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+
+    .badge-admin {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.3);
     }
 
     /* Buttons */
-    .btn-outline-danger {
-        border-color: rgba(239, 68, 68, 0.5);
-        color: #f87171;
+    .btn-admin {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
     }
 
-    .btn-outline-danger:hover {
-        background-color: rgba(239, 68, 68, 0.1);
-        border-color: #f87171;
-        color: #fff;
+    .btn-admin-primary {
+        background: var(--accent-green);
+        color: #000;
     }
 
-    /* Scrollbar for container */
-    ::-webkit-scrollbar {
+    .btn-admin-primary:hover {
+        background: var(--accent-green-bright);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 222, 128, 0.3);
+    }
+
+    .btn-admin-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-admin-danger:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: #ef4444;
+    }
+
+    .btn-admin-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-admin-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Scrollable Container */
+    .scrollable-container {
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .scrollable-container::-webkit-scrollbar {
         width: 8px;
     }
 
-    ::-webkit-scrollbar-track {
-        background: #0c0c0c;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #333;
+    .scrollable-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 4px;
     }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background: #444;
+    .scrollable-container::-webkit-scrollbar-thumb {
+        background: rgba(74, 222, 128, 0.3);
+        border-radius: 4px;
     }
 
-    /* Ensure links don't have weird underlines */
-    a {
-        text-decoration: none;
+    .scrollable-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(74, 222, 128, 0.5);
+    }
+
+    /* Upload Item */
+    .upload-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+    }
+
+    .upload-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .upload-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(251, 191, 36, 0.15);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fbbf24;
+        font-size: 1.2rem;
+    }
+
+    .upload-info h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .upload-info p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    /* Alert Box */
+    .alert-box {
+        background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+    }
+
+    .alert-box h5 {
+        color: var(--accent-green);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .alert-box p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .admin-title {
+            font-size: 2rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+        }
+
+        .scrollable-container {
+            max-height: 400px;
+        }
+    }
+
+    /* Light Mode Overrides */
+    [data-theme="light"] .admin-dashboard-wrapper {
+        background: #f8fafc;
+    }
+
+    [data-theme="light"] .glass-card {
+        background: #ffffff;
+        border-color: var(--border);
+    }
+
+    [data-theme="light"] .admin-header {
+        background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(21, 128, 61, 0.05) 100%);
+        border-color: rgba(22, 163, 74, 0.2);
+    }
+
+    [data-theme="light"] .stat-card {
+        background: #ffffff;
+        border-color: var(--border);
+    }
+
+    [data-theme="light"] .admin-table thead th {
+        background: var(--bg-card);
+    }
+
+    [data-theme="light"] .upload-item {
+        background: var(--bg-card);
+        border-color: var(--border);
+    }
+
+    [data-theme="light"] .alert-box {
+        background: rgba(22, 163, 74, 0.1);
+        border-color: rgba(22, 163, 74, 0.3);
     }
 </style>
 
-<div class="admin-wrapper">
-    <div class="container-fluid px-4 py-4" style="max-width: 1600px;">
+<div class="admin-dashboard-wrapper">
+    <div class="container-fluid" style="max-width: 1600px;">
 
         <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-5 pt-3">
-            <div>
-                <h1
-                    style="font-weight: 800; font-size: 2.5rem; letter-spacing: -1px; background: linear-gradient(135deg, #fff 0%, #4ade80 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0;">
-                    <i class="fas fa-shield-alt me-3" style="color: #4ade80;"></i>Command Center
-                </h1>
-                <p class="text-secondary mb-0 mt-2" style="font-size: 1.1rem;">System Overview & Management Console</p>
-            </div>
-            <div class="d-flex gap-3">
-                <button class="btn btn-outline-danger px-4 py-2"
-                    onclick="window.location.href='{{ url_for('logout') }}'">
-                    <i class="fas fa-sign-out-alt me-2"></i>Secure Logout
-                </button>
-            </div>
-        </div>
-
-        <!-- HUD Stats Cards -->
-        <div class="row g-4 mb-5">
-            <!-- Card 1 -->
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="glass-panel p-4 h-100"
-                    style="background: linear-gradient(145deg, rgba(16, 185, 129, 0.05) 0%, rgba(0,0,0,0) 100%); border-color: rgba(16, 185, 129, 0.2);">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-secondary text-uppercase small mb-2"
-                                style="letter-spacing: 1px; font-weight: 600;">Total Users</p>
-                            <h2 class="mb-0 display-5" style="font-weight: 700; color: #4ade80;">{{ stats.users }}</h2>
-                        </div>
-                        <div class="icon-box" style="background: rgba(16, 185, 129, 0.1);">
-                            <i class="fas fa-users text-success"></i>
-                        </div>
-                    </div>
+        <div class="admin-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h1 class="admin-title">
+                        <i class="fas fa-shield-halved"></i> Admin Command Center
+                    </h1>
+                    <p class="admin-subtitle">Complete system oversight and management dashboard</p>
                 </div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="glass-panel p-4 h-100"
-                    style="background: linear-gradient(145deg, rgba(59, 130, 246, 0.05) 0%, rgba(0,0,0,0) 100%); border-color: rgba(59, 130, 246, 0.2);">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-secondary text-uppercase small mb-2"
-                                style="letter-spacing: 1px; font-weight: 600;">Study Groups</p>
-                            <h2 class="mb-0 display-5" style="font-weight: 700; color: #60a5fa;">{{ stats.groups }}</h2>
-                        </div>
-                        <div class="icon-box" style="background: rgba(59, 130, 246, 0.1);">
-                            <i class="fas fa-layer-group text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="glass-panel p-4 h-100"
-                    style="background: linear-gradient(145deg, rgba(245, 158, 11, 0.05) 0%, rgba(0,0,0,0) 100%); border-color: rgba(245, 158, 11, 0.2);">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-secondary text-uppercase small mb-2"
-                                style="letter-spacing: 1px; font-weight: 600;">Syllabus Uploads</p>
-                            <h2 class="mb-0 display-5" style="font-weight: 700; color: #fbbf24;">{{ stats.uploads }}
-                            </h2>
-                        </div>
-                        <div class="icon-box" style="background: rgba(245, 158, 11, 0.1);">
-                            <i class="fas fa-file-pdf text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 4 -->
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="glass-panel p-4 h-100"
-                    style="background: linear-gradient(145deg, rgba(34, 197, 94, 0.05) 0%, rgba(0,0,0,0) 100%); border-color: rgba(34, 197, 94, 0.2);">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-secondary text-uppercase small mb-2"
-                                style="letter-spacing: 1px; font-weight: 600;">System Status</p>
-                            <h2 class="mb-0 display-6" style="font-weight: 700; color: #22c55e;">Online</h2>
-                        </div>
-                        <div class="icon-box" style="background: rgba(34, 197, 94, 0.1);">
-                            <i class="fas fa-server text-success"></i>
-                        </div>
-                    </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-admin btn-admin-secondary"
+                        onclick="window.location.href='{{ url_for('dashboard') }}'">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </button>
+                    <button class="btn-admin btn-admin-danger" onclick="window.location.href='{{ url_for('logout') }}'">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Control Panel -->
+        <!-- Stats Grid -->
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card green">
+                    <div class="stat-icon green">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value">{{ stats.users }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card blue">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-user-group"></i>
+                    </div>
+                    <div class="stat-label">Study Groups</div>
+                    <div class="stat-value">{{ stats.groups }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card yellow">
+                    <div class="stat-icon yellow">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="stat-label">Syllabus Uploads</div>
+                    <div class="stat-value">{{ stats.uploads }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card purple">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-label">System Status</div>
+                    <div class="stat-value" style="font-size: 1.5rem; color: #4ade80;">Online</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
         <div class="row g-4">
-            <!-- User Management -->
-            <div class="col-lg-8">
-                <div class="glass-panel p-4 h-100">
-                    <h4 class="mb-4"
-                        style="font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
-                        <i class="fas fa-users-cog me-2 text-primary"></i>User Integrity Management
-                    </h4>
 
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0">
+            <!-- User Management Section -->
+            <div class="col-12 col-xl-8">
+                <div class="glass-card p-4">
+                    <div class="section-header">
+                        <i class="fas fa-users-cog"></i>
+                        <h2 class="section-title">User Management</h2>
+                    </div>
+
+                    <div class="scrollable-container">
+                        <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th class="text-muted text-uppercase small" style="font-weight: 600;">ID</th>
-                                    <th class="text-muted text-uppercase small" style="font-weight: 600;">User Identity
-                                    </th>
-                                    <th class="text-muted text-uppercase small" style="font-weight: 600;">Progression
-                                    </th>
-                                    <th class="text-muted text-uppercase small" style="font-weight: 600;">Joined</th>
-                                    <th class="text-end text-muted text-uppercase small" style="font-weight: 600;">
-                                        Controls</th>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Progress</th>
+                                    <th>Joined</th>
+                                    <th style="text-align: right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for user in users %}
                                 <tr>
-                                    <td class="text-secondary">#{{ user.id }}</td>
+                                    <td style="color: var(--text-muted);">#{{ user.id }}</td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar-sm"
-                                                style="width: 40px; height: 40px; border-radius: 50%; background: #334155; overflow: hidden; flex-shrink: 0;">
+                                        <div class="user-info">
+                                            <div class="user-avatar">
                                                 {% if user.profile_image %}
                                                 <img src="{{ user.profile_image }}"
-                                                    style="width: 100%; height: 100%; object-fit: cover;">
+                                                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                                 {% else %}
-                                                <div
-                                                    class="w-100 h-100 d-flex align-items-center justify-content-center text-white font-weight-bold">
-                                                    {{ user.first_name[0] if user.first_name else 'U' }}
-                                                </div>
+                                                {{ user.first_name[0] if user.first_name else 'U' }}
                                                 {% endif %}
                                             </div>
-                                            <div>
-                                                <div style="font-weight: 600; color: #f1f5f9;">{{ user.first_name }} {{
-                                                    user.last_name }}</div>
-                                                <div style="font-size: 0.85rem; color: #94a3b8;">{{ user.email }}</div>
+                                            <div class="user-details">
+                                                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                                                <p>{{ user.email }}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="badge bg-dark border border-secondary text-secondary"
-                                                style="width: fit-content;">Level {{ user.level }}</span>
-                                            <span class="badge bg-dark border border-success text-success"
-                                                style="width: fit-content;">{{ user.total_xp }} XP</span>
+                                        <div class="d-flex flex-column gap-2">
+                                            <span class="badge-custom badge-level">Level {{ user.level }}</span>
+                                            <span class="badge-custom badge-xp">{{ user.total_xp }} XP</span>
                                         </div>
                                     </td>
-                                    <td class="text-secondary">
-                                        {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}
+                                    <td style="color: var(--text-muted);">
+                                        {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
                                     </td>
-                                    <td class="text-end">
+                                    <td style="text-align: right;">
                                         {% if user.email != 'admin@studyverse.com' %}
                                         <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST"
                                             class="d-inline"
-                                            onsubmit="return confirm('CRITICAL WARNING: Are you sure you want to delete this user? This action cannot be undone.');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onsubmit="return confirm('⚠️ WARNING: Delete user {{ user.first_name }} {{ user.last_name }}? This action cannot be undone and will delete all associated data.');">
+                                            <button type="submit" class="btn-admin btn-admin-danger"
                                                 title="Delete User">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
                                         {% else %}
-                                        <span
-                                            class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">Super
-                                            Admin</span>
+                                        <span class="badge-custom badge-admin">
+                                            <i class="fas fa-crown me-1"></i>Super Admin
+                                        </span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -265,55 +599,83 @@
                 </div>
             </div>
 
-            <!-- System Logs / Quick Actions -->
-            <div class="col-lg-4">
-                <div class="glass-panel p-4 mb-4">
-                    <h5 class="mb-4"
-                        style="font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
-                        <i class="fas fa-file-pdf me-2 text-warning"></i>Intercepted Uploads
-                    </h5>
-                    <div class="d-flex flex-column gap-3" style="max-height: 400px; overflow-y: auto;">
+            <!-- Sidebar Section -->
+            <div class="col-12 col-xl-4">
+
+                <!-- Recent Uploads -->
+                <div class="glass-card p-4 mb-4">
+                    <div class="section-header">
+                        <i class="fas fa-file-upload"></i>
+                        <h2 class="section-title">Recent Uploads</h2>
+                    </div>
+
+                    <div class="scrollable-container" style="max-height: 400px;">
+                        {% if recent_uploads %}
                         {% for doc in recent_uploads %}
-                        <div class="p-3 d-flex align-items-center justify-content-between"
-                            style="background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                        <div class="upload-item">
                             <div class="d-flex align-items-center gap-3">
-                                <div
-                                    style="width: 32px; height: 32px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-file-alt text-warning"></i>
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-alt"></i>
                                 </div>
-                                <div style="overflow: hidden;">
-                                    <div class="text-truncate text-white" style="max-width: 150px; font-weight: 500;">{{
-                                        doc.filename }}</div>
-                                    <div class="small text-secondary">by User #{{ doc.user_id }}</div>
+                                <div class="upload-info">
+                                    <h4>{{ doc.filename }}</h4>
+                                    <p>Uploaded by User #{{ doc.user_id }}</p>
                                 </div>
                             </div>
                             <a href="{{ url_for('static', filename='uploads/' + doc.filename) }}" target="_blank"
-                                class="btn btn-sm btn-dark border-secondary text-secondary hover-text-white">
+                                class="btn-admin btn-admin-secondary" title="View Syllabus">
                                 <i class="fas fa-external-link-alt"></i>
                             </a>
                         </div>
-                        {% else %}
-                        <div class="text-center py-5 text-muted">
-                            <i class="fas fa-folder-open mb-3" style="font-size: 2rem; opacity: 0.5;"></i>
-                            <p>No documents found in system.</p>
-                        </div>
                         {% endfor %}
+                        {% else %}
+                        <div class="text-center py-5" style="color: var(--text-muted);">
+                            <i class="fas fa-folder-open mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p>No syllabus uploads yet</p>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div class="glass-panel p-4"
-                    style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.4) 100%); border: 1px solid rgba(16, 185, 129, 0.3);">
-                    <h5 class="mb-3 text-success" style="font-weight: 700;"><i class="fas fa-terminal me-2"></i>System
-                        Protocol</h5>
-                    <p class="small text-light mb-0" style="opacity: 0.8; line-height: 1.6;">
-                        <strong class="text-white">Notice:</strong> You are accessing the StudyVerse Root Command
-                        Control. All administrative actions are logged.
-                        User deletion is permanent and destructive (cascades to all associated data). Proceed with
-                        caution.
+                <!-- System Info -->
+                <div class="alert-box">
+                    <h5>
+                        <i class="fas fa-info-circle"></i>
+                        System Information
+                    </h5>
+                    <p>
+                        <strong>Access Level:</strong> Root Administrator<br>
+                        <strong>Permissions:</strong> Full System Control<br><br>
+                        All administrative actions are logged. User deletion is permanent and cascades to all associated
+                        data including tasks, progress, groups, and uploads. Exercise caution when performing
+                        destructive operations.
                     </p>
                 </div>
+
             </div>
+
         </div>
+
     </div>
 </div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Smooth animations on load
+    document.addEventListener('DOMContentLoaded', function () {
+        const cards = document.querySelectorAll('.stat-card, .glass-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
+    });
+</script>
+
 {% endblock %}
