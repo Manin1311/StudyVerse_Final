@@ -188,7 +188,7 @@ class SecureAdminIndexView(AdminIndexView):
 
 # Initialize Flask-Admin with a Dark Theme
 # Swatch 'cyborg' is a dark theme that matches StudyVerse's aesthetic
-admin = Admin(app, name='StudyVerse Admin', template_mode='bootstrap3', index_view=SecureAdminIndexView(), base_template='admin/master.html')
+admin = Admin(app, name='StudyVerse Admin', index_view=SecureAdminIndexView(), base_template='admin/master.html')
 
 # Note: We will add the views AFTER the DB models are defined later in the file
 
