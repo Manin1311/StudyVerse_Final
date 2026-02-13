@@ -501,7 +501,7 @@
 
             <div class="hero-stats">
                 <div class="stat">
-                    <div class="stat-number">10+</div>
+                    <div class="stat-number"><span class="counter" data-target="10">0</span>+</div>
                     <div class="stat-label">Powerful Features</div>
                 </div>
                 <div class="stat">
@@ -560,7 +560,7 @@
 
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-swords"></i>
+                    <i class="fas fa-khanda"></i>
                 </div>
                 <h3>Battle Mode</h3>
                 <p>Challenge friends to competitive quiz battles! Compete in real-time, earn XP for victories, and prove
@@ -631,6 +631,47 @@
                 }
             });
         });
+    </script>
+    <script>
+        // Counter Animation
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200; // The lower the slower
+
+        const animateCounters = () => {
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText;
+
+                    // Lower inc to slow and higher to slow
+                    const inc = target / speed;
+
+                    if (count < target) {
+                        // Add inc to count and output in counter
+                        counter.innerText = Math.ceil(count + inc);
+                        // Call function every ms
+                        setTimeout(updateCount, 20);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+
+                updateCount();
+            });
+        }
+
+        // Trigger animation when stats section is in view
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                animateCounters();
+                observer.disconnect(); // Run once
+            }
+        });
+
+        const statsSection = document.querySelector('.hero-stats');
+        if (statsSection) {
+            observer.observe(statsSection);
+        }
     </script>
 </body>
 
