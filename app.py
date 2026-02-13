@@ -89,7 +89,7 @@ LAST UPDATED: February 2026
 
 # Eventlet must be patched first for async Socket.IO support
 import eventlet
-eventlet.monkey_patch()
+# eventlet.monkey_patch()  <-- REMOVED: Causing Gunicorn loop crash. Worker handles this.
 
 # Database and ORM imports
 from sqlalchemy.pool import NullPool
@@ -4825,6 +4825,9 @@ def fix_db_schema():
 
 
 if __name__ == '__main__':
+    # Patch for local development
+    eventlet.monkey_patch()
+
     # Start Background Scheduler ONLY in development mode
     # In production (gunicorn), this block doesn't run, avoiding eventlet conflicts
     # For production task reminders, use a separate cron job or background worker service
