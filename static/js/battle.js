@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setStatus(text, active = false) {
         display.status.textContent = text;
+        display.status.classList.remove('judging');
         if (active) display.status.classList.add('active');
         else display.status.classList.remove('active');
     }
@@ -508,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('battle_state_change', (data) => {
         if (data.state === 'judging') {
             setStatus("JUDGING...");
+            display.status.classList.add('judging');
             stopTimer();
         }
     });
@@ -515,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. Result & Rematch ---
 
     socket.on('battle_result', (data) => {
+        display.status.classList.remove('judging');
         modals.result.style.display = 'flex';
         document.getElementById('res-winner').textContent = `Winner: ${data.winner}`;
         document.getElementById('res-reason').textContent = data.reason;
