@@ -1676,6 +1676,10 @@ def landing():
 
 @login_required
 def dashboard():
+    # Redirect Admin to Admin Panel
+    if current_user.email == "admin@studyverse.com":
+        return redirect(url_for('admin_dashboard'))
+
     total_todos = Todo.query.filter_by(user_id=current_user.id).count()
     completed_todos = Todo.query.filter_by(user_id=current_user.id, completed=True).count()
     remaining_todos = max(total_todos - completed_todos, 0)
