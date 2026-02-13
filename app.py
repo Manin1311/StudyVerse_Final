@@ -1428,7 +1428,7 @@ def index():
             return redirect(url_for('dashboard'))
     except:
         pass
-    return redirect(url_for('auth'))
+    return render_template('landing.html')
 
 @app.route('/auth')
 def auth():
