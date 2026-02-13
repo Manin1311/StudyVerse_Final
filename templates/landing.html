@@ -635,22 +635,21 @@
     <script>
         // Counter Animation
         const counters = document.querySelectorAll('.counter');
-        const speed = 200; // The lower the slower
+        const duration = 2500; // Total animation time in ms (2.5 seconds)
 
         const animateCounters = () => {
             counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const stepTime = Math.abs(Math.floor(duration / target));
+
+                let current = 0;
+
                 const updateCount = () => {
-                    const target = +counter.getAttribute('data-target');
-                    const count = +counter.innerText;
+                    current += 1;
 
-                    // Lower inc to slow and higher to slow
-                    const inc = target / speed;
-
-                    if (count < target) {
-                        // Add inc to count and output in counter
-                        counter.innerText = Math.ceil(count + inc);
-                        // Call function every ms
-                        setTimeout(updateCount, 20);
+                    if (current <= target) {
+                        counter.innerText = current;
+                        setTimeout(updateCount, stepTime);
                     } else {
                         counter.innerText = target;
                     }
