@@ -1,6 +1,6 @@
 # StudyVerse - AI Study Partner
 
-A Flask-based study companion application converted from React/TypeScript. StudyVerse helps university students manage their studies with AI assistance, Pomodoro timers, task management, and progress tracking.
+A Flask-based study companion application. StudyVerse helps university students manage their studies with AI assistance, Pomodoro timers, task management, and progress tracking.
 
 ## Features
 
