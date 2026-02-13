@@ -1482,6 +1482,10 @@ def signup():
     # Automatically log in the user after signup
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
+    
+    if user.email == "admin@studyverse.com":
+        return redirect(url_for('admin_dashboard'))
+        
     return redirect(url_for('dashboard'))
 
 @app.route('/signin', methods=['POST'])
@@ -1506,6 +1510,10 @@ def signin():
 
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
+    
+    if user.email == "admin@studyverse.com":
+        return redirect(url_for('admin_dashboard'))
+
     return redirect(url_for('dashboard'))
 
 @app.route('/logout', methods=['GET', 'POST'])
