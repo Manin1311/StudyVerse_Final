@@ -1483,8 +1483,7 @@ def signup():
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
     
-    if user.email == "admin@studyverse.com":
-        return redirect(url_for('admin_dashboard'))
+
         
     return redirect(url_for('dashboard'))
 
@@ -1511,8 +1510,7 @@ def signin():
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
     
-    if user.email == "admin@studyverse.com":
-        return redirect(url_for('admin_dashboard'))
+
 
     return redirect(url_for('dashboard'))
 
@@ -1684,9 +1682,7 @@ def landing():
 
 @login_required
 def dashboard():
-    # Redirect Admin to Admin Panel
-    if current_user.email == "admin@studyverse.com":
-        return redirect(url_for('admin_dashboard'))
+    # Dashboard logic starts here
 
     total_todos = Todo.query.filter_by(user_id=current_user.id).count()
     completed_todos = Todo.query.filter_by(user_id=current_user.id, completed=True).count()
@@ -4637,153 +4633,6 @@ def dismiss_event(event_id):
     db.session.commit()
     return jsonify({'status': 'success'})
 
-# ============================================================================
-# CUSTOM ADMIN PANEL
-# ============================================================================
-
-from functools import wraps
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Please log in to access the admin panel.", "error")
-            return redirect(url_for('auth'))
-        
-        if current_user.email != "admin@studyverse.com":
-            flash("ACCESS DENIED: You are not authorized to view the Command Center.", "error")
-            return redirect(url_for('dashboard'))
-            
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.route('/admin')
-@admin_required
-def admin_dashboard():
-    # 1. Comprehensive Stats
-    total_tasks = Todo.query.count()
-    completed_tasks = Todo.query.filter_by(completed=True).count()
-    
-    # Calculate total XP across all users
-    total_xp_result = db.session.query(db.func.sum(User.total_xp)).scalar()
-    total_xp = total_xp_result if total_xp_result else 0
-    
-    # Active users (logged in within last 24 hours)
-    yesterday = datetime.utcnow() - timedelta(days=1)
-    active_today = User.query.filter(User.last_seen >= yesterday).count()
-    
-    stats = {
-        'users': User.query.count(),
-        'groups': Group.query.count(),
-        'uploads': SyllabusDocument.query.count(),
-        'total_xp': total_xp,
-        'active_today': active_today,
-        'total_tasks': total_tasks,
-        'completed_tasks': completed_tasks,
-        'completion_rate': round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
-    }
-    
-    # 2. Fetch All Users with detailed info
-    users = User.query.order_by(User.created_at.desc()).all()
-    
-    # Enrich users with task counts
-    for user in users:
-        user.task_count = Todo.query.filter_by(user_id=user.id).count()
-        user.completed_task_count = Todo.query.filter_by(user_id=user.id, completed=True).count()
-    
-    # 3. Fetch All Syllabi with uploader info
-    syllabi = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).all()
-    
-    # 4. Fetch All Groups with member counts
-    groups = Group.query.order_by(Group.created_at.desc()).all()
-    for group in groups:
-        group.member_count = GroupMember.query.filter_by(group_id=group.id).count()
-        group.message_count = GroupChatMessage.query.filter_by(group_id=group.id).count()
-    
-    # 5. Activity Analytics - User growth over last 30 days
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    recent_signups = User.query.filter(User.created_at >= thirty_days_ago).count()
-    
-    # 6. Top users by XP
-    top_users = User.query.order_by(User.total_xp.desc()).limit(10).all()
-    
-    return render_template('admin_dashboard.html', 
-                         stats=stats, 
-                         users=users, 
-                         syllabi=syllabi,
-                         groups=groups,
-                         top_users=top_users,
-                         recent_signups=recent_signups)
-
-@app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
-@admin_required
-def admin_delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    
-    if user.email == "admin@studyverse.com":
-        flash("CRITICAL ERROR: You cannot delete the Super Admin.", "error")
-        return redirect(url_for('admin_dashboard'))
-        
-    try:
-        # Cascade delete is handled by database foreign keys usually, 
-        # but SQLAlchemy might need manual help if relationships aren't set to cascade.
-        # For now, let's try direct delete and let SQL handle constraints or errors.
-        # Better: Manually delete related items to be safe.
-        
-        # 1. Delete Todos
-        Todo.query.filter_by(user_id=user.id).delete()
-        # 2. Delete Events
-        Event.query.filter_by(user_id=user.id).delete()
-        # 3. Delete StudySessions
-        StudySession.query.filter_by(user_id=user.id).delete()
-        
-        # 4. Remove from Groups (GroupMember)
-        GroupMember.query.filter_by(user_id=user.id).delete()
-        
-        # Finally delete user
-        db.session.delete(user)
-        db.session.commit()
-        
-        flash(f"User {user.email} has been terminated from the system.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error deleting user: {str(e)}", "error")
-        
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/force-admin-setup')
-def force_admin_setup():
-    """Manually force the creation/reset of the super admin account."""
-    try:
-        email = "admin@studyverse.com"
-        password = "adminfinal@123"
-        
-        user = User.query.filter_by(email=email).first()
-        
-        if user:
-            # Reset password to ensure access
-            user.password_hash = generate_password_hash(password)
-            user.level = 100
-            user.total_xp = 999999
-            db.session.commit()
-            return f"Admin Exists. Password reset to: {password}. <a href='/auth'>Login Here</a>"
-        else:
-            # Create new admin
-            new_admin = User(
-                email=email,
-                first_name="Super",
-                last_name="Admin",
-                password_hash=generate_password_hash(password),
-                level=100,
-                total_xp=999999,
-                is_public_profile=False
-            )
-            db.session.add(new_admin)
-            db.session.commit()
-            return f"Admin Created Successfully. Email: {email}, Password: {password}. <a href='/auth'>Login Here</a>"
-    except Exception as e:
-        return f"Error creating admin: {str(e)}"
-
 def init_db_schema():
     from sqlalchemy import text, inspect
     
@@ -4876,34 +4725,6 @@ def init_db_schema():
                         
                 conn.commit()
             print("Migration checks completed.")
-            
-            # --- SEED SUPER ADMIN ---
-            admin_email = "admin@studyverse.com"
-            admin = User.query.filter_by(email=admin_email).first()
-            if not admin:
-                print("creating super admin...")
-                try:
-                    admin_user = User(
-                        email=admin_email,
-                        first_name="Super",
-                        last_name="Admin",
-                        password_hash=generate_password_hash("adminfinal@123"), # Hardcoded as requested
-                        level=100, # Max level for admin
-                        total_xp=999999,
-                        is_public_profile=False
-                    )
-                    db.session.add(admin_user)
-                    db.session.commit()
-                    print(f"SUPER ADMIN CREATED: {admin_email}")
-                except Exception as e:
-                    print(f"Failed to create admin: {e}")
-            else:
-                # Ensure admin has max stats if they exist
-                if admin.level < 100:
-                    admin.level = 100
-                    admin.total_xp = 999999
-                    db.session.commit()
-                    print("Admin stats maximized.")
         except Exception as e:
             print(f"Migration check failed (safe to ignore if new DB): {e}")
 
