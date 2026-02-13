@@ -4671,7 +4671,7 @@ def admin_dashboard():
     users = User.query.order_by(User.created_at.desc()).all()
     
     # 3. Fetch Recent Uploads
-    recent_uploads = SyllabusDocument.query.order_by(SyllabusDocument.uploaded_at.desc()).limit(10).all()
+    recent_uploads = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).limit(10).all()
     
     return render_template('admin_dashboard.html', stats=stats, users=users, recent_uploads=recent_uploads)
 
