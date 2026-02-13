@@ -156,7 +156,8 @@ app = Flask(__name__)
 # ============================================================================
 
 # Define Admin Email (REPLACE THIS WITH YOUR EMAIL)
-ADMIN_EMAIL = "daksh@studyverse.com"  # Hardcoded for safety, or use os.getenv('ADMIN_EMAIL')
+# Define Admin Email (REPLACE THIS WITH YOUR EMAIL)
+ADMIN_EMAIL = "admin@studyverse.com"
 
 class SecureModelView(ModelView):
     """
@@ -164,10 +165,7 @@ class SecureModelView(ModelView):
     - Only allows access if user is logged in AND has the correct email.
     """
     def is_accessible(self):
-        return current_user.is_authenticated and (
-            current_user.email == ADMIN_EMAIL or 
-            current_user.email == "daksh@gmail.com" # Allow testing email
-        )
+        return current_user.is_authenticated and current_user.email == ADMIN_EMAIL
 
     def inaccessible_callback(self, name, **kwargs):
         # Redirect to login page if user doesn't have access
@@ -178,10 +176,7 @@ class SecureAdminIndexView(AdminIndexView):
     Secure Admin Dashboard Entry
     """
     def is_accessible(self):
-        return current_user.is_authenticated and (
-            current_user.email == ADMIN_EMAIL or 
-            current_user.email == "daksh@gmail.com"
-        )
+        return current_user.is_authenticated and current_user.email == ADMIN_EMAIL
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('auth', next=request.url))
@@ -4877,6 +4872,28 @@ def fix_db_schema():
                 return f"Error executing ALTER: {str(e)}"
     except Exception as e:
         return f"Database connection error: {str(e)}"
+
+@app.route('/create-admin')
+def create_admin_user():
+    """Helper to create the admin user manually if not exists."""
+    try:
+        email = "admin@studyverse.com"
+        password = "admin@1234"
+        
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return f"Admin user {email} already exists."
+            
+        # Create admin user
+        admin_user = AuthService.create_user(
+            email=email, 
+            password=password, 
+            first_name="Admin", 
+            last_name="Superuser"
+        )
+        return f"Successfully created admin user: {email}"
+    except Exception as e:
+        return f"Error creating admin: {str(e)}"
 
 if __name__ == '__main__':
     # Start Background Scheduler ONLY in development mode
