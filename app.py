@@ -146,7 +146,52 @@ except ImportError:
 from werkzeug.middleware.proxy_fix import ProxyFix
 from whitenoise import WhiteNoise
 
+from flask_admin import Admin, AdminIndexView
+from flask_admin.contrib.sqla import ModelView
+
 app = Flask(__name__)
+
+# ============================================================================
+# FLASK ADMIN CONFIGURATION
+# ============================================================================
+
+# Define Admin Email (REPLACE THIS WITH YOUR EMAIL)
+ADMIN_EMAIL = "daksh@studyverse.com"  # Hardcoded for safety, or use os.getenv('ADMIN_EMAIL')
+
+class SecureModelView(ModelView):
+    """
+    Secure Admin View
+    - Only allows access if user is logged in AND has the correct email.
+    """
+    def is_accessible(self):
+        return current_user.is_authenticated and (
+            current_user.email == ADMIN_EMAIL or 
+            current_user.email == "daksh@gmail.com" # Allow testing email
+        )
+
+    def inaccessible_callback(self, name, **kwargs):
+        # Redirect to login page if user doesn't have access
+        return redirect(url_for('auth', next=request.url))
+
+class SecureAdminIndexView(AdminIndexView):
+    """
+    Secure Admin Dashboard Entry
+    """
+    def is_accessible(self):
+        return current_user.is_authenticated and (
+            current_user.email == ADMIN_EMAIL or 
+            current_user.email == "daksh@gmail.com"
+        )
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('auth', next=request.url))
+
+# Initialize Flask-Admin with a Dark Theme
+# Swatch 'cyborg' is a dark theme that matches StudyVerse's aesthetic
+admin = Admin(app, name='StudyVerse Admin', template_mode='bootstrap3', index_view=SecureAdminIndexView(), base_template='admin/master.html')
+
+# Note: We will add the views AFTER the DB models are defined later in the file
+
 
 # ProxyFix: Critical for deployment on Render/Heroku behind reverse proxy
 # Ensures correct handling of HTTPS, host headers, and client IP addresses
@@ -182,6 +227,9 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'poolclass': NullPool,      # No connection pooling (eventlet compatibility)
     'pool_pre_ping': True,      # Validate connections before use
 }
+
+# Admin Panel Theme (Dark Mode)
+app.config['FLASK_ADMIN_SWATCH'] = 'cyborg'
 
 # File upload configuration for profile images and syllabus PDFs
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
@@ -1419,6 +1467,19 @@ def ai_plan():
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+# ============================================================================
+# ADMIN VIEWS REGISTRATION
+# ============================================================================
+# Add views for the models we want to manage
+admin.add_view(SecureModelView(User, db.session, name="Users"))
+admin.add_view(SecureModelView(Todo, db.session, name="Todos"))
+admin.add_view(SecureModelView(Badge, db.session, name="Badges"))
+admin.add_view(SecureModelView(XPHistory, db.session, name="XP History"))
+admin.add_view(SecureModelView(Group, db.session, name="Groups"))
+admin.add_view(SecureModelView(TopicProficiency, db.session, name="Topic Proficiency"))
+admin.add_view(SecureModelView(SyllabusDocument, db.session, name="Syllabus"))
 
 # Routes
 @app.route('/')
