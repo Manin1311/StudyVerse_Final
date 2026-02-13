@@ -4699,6 +4699,39 @@ def admin_delete_user(user_id):
         
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/force-admin-setup')
+def force_admin_setup():
+    """Manually force the creation/reset of the super admin account."""
+    try:
+        email = "admin@studyverse.com"
+        password = "adminfinal@123"
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Reset password to ensure access
+            user.password_hash = generate_password_hash(password)
+            user.level = 100
+            user.total_xp = 999999
+            db.session.commit()
+            return f"Admin Exists. Password reset to: {password}. <a href='/auth'>Login Here</a>"
+        else:
+            # Create new admin
+            new_admin = User(
+                email=email,
+                first_name="Super",
+                last_name="Admin",
+                password_hash=generate_password_hash(password),
+                level=100,
+                total_xp=999999,
+                is_public_profile=False
+            )
+            db.session.add(new_admin)
+            db.session.commit()
+            return f"Admin Created Successfully. Email: {email}, Password: {password}. <a href='/auth'>Login Here</a>"
+    except Exception as e:
+        return f"Error creating admin: {str(e)}"
+
 def init_db_schema():
     from sqlalchemy import text, inspect
     
