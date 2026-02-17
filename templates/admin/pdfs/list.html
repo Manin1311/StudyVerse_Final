@@ -66,10 +66,18 @@
                 </td>
                 <td>{{ pdf.created_at.strftime('%b %d, %Y') }}</td>
                 <td>
-                    <a href="{{ url_for('admin_pdf_detail', pdf_id=pdf.id) }}" class="admin-btn admin-btn-secondary"
-                        style="font-size: 13px; padding: 6px 12px;">
-                        <i class="fa-solid fa-eye"></i> View
-                    </a>
+                    <div style="display: flex; gap: 8px;">
+                        {% if pdf.file_path %}
+                        <a href="{{ url_for('admin_pdf_download', pdf_id=pdf.id) }}" class="admin-btn admin-btn-primary"
+                            style="font-size: 13px; padding: 6px 12px;">
+                            <i class="fa-solid fa-download"></i> Download
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('admin_pdf_detail', pdf_id=pdf.id) }}" class="admin-btn admin-btn-secondary"
+                            style="font-size: 13px; padding: 6px 12px;">
+                            <i class="fa-solid fa-eye"></i> View
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% else %}
