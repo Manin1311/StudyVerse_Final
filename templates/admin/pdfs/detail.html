@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+﻿{% extends "admin/base.html" %}
 
 {% block title %}PDF: {{ pdf.filename }}{% endblock %}
 {% block page_title %}PDF Details{% endblock %}
@@ -160,10 +160,9 @@
 
     function showFullText() {
         const preview = document.getElementById('textPreview');
-        preview.textContent = {{ pdf.extracted_text | tojson }
-    };
-    preview.style.maxHeight = 'none';
-    event.target.style.display = 'none';
+        preview.textContent = {{ pdf.extracted_text | tojson }};
+        preview.style.maxHeight = 'none';
+        event.target.style.display = 'none';
     }
 </script>
 {% endblock %}
