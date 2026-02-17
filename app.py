@@ -399,6 +399,12 @@ class User(UserMixin, db.Model):
     current_streak = db.Column(db.Integer, default=0)  # Current daily activity streak
     longest_streak = db.Column(db.Integer, default=0)  # Best streak record
     last_activity_date = db.Column(db.Date, nullable=True)  # For streak tracking
+    
+    # Ban/Moderation Fields
+    is_banned = db.Column(db.Boolean, default=False)  # Ban status
+    ban_reason = db.Column(db.Text, nullable=True)  # Reason for ban
+    banned_at = db.Column(db.DateTime, nullable=True)  # When user was banned
+    banned_by = db.Column(db.Integer, nullable=True)  # Admin ID who banned the user
 
     @property
     def rank_info(self):
@@ -1719,6 +1725,39 @@ def admin_required(f):
             return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated_function
+
+# ============================================================================
+# BAN CHECK MIDDLEWARE - Automatically logs out banned users
+# ============================================================================
+
+@app.before_request
+def check_ban_status():
+    """
+    Check if current user is banned before processing any request.
+    If banned, immediately log them out and redirect to auth page.
+    This runs on EVERY request, ensuring banned users cannot access anything.
+    """
+    # Skip ban check for static files and auth routes
+    if request.endpoint and (request.endpoint.startswith('static') or request.endpoint == 'auth'):
+        return None
+    
+    # Check if user is authenticated and banned
+    if current_user.is_authenticated:
+        # Reload user from database to get latest ban status
+        user = User.query.get(current_user.id)
+        
+        if user and user.is_banned:
+            # Log them out immediately
+            from flask_login import logout_user
+            logout_user()
+            
+            # Show ban message
+            flash(f'Your account has been banned. Reason: {user.ban_reason or "Violation of terms"}', 'error')
+            
+            # Redirect to auth page
+            return redirect(url_for('auth'))
+    
+    return None
 
 class AdminService:
     """Admin operations and utilities"""
