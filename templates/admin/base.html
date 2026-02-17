@@ -210,6 +210,36 @@
                     <i class="fa-solid fa-file-pdf"></i>
                     <span>PDFs</span>
                 </a>
+                <a href="{{ url_for('admin_messages') }}"
+                    class="admin-nav-item {% if 'admin_message' in request.endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-message"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="{{ url_for('admin_gamification') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_gamification' %}active{% endif %}">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>Gamification</span>
+                </a>
+                <a href="{{ url_for('admin_shop') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_shop' %}active{% endif %}">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Shop</span>
+                </a>
+                <a href="{{ url_for('admin_groups') }}"
+                    class="admin-nav-item {% if 'admin_group' in request.endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-user-group"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="{{ url_for('admin_battles') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_battles' %}active{% endif %}">
+                    <i class="fa-solid fa-swords"></i>
+                    <span>Battles</span>
+                </a>
+                <a href="{{ url_for('admin_analytics') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_analytics' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
                 <a href="{{ url_for('admin_logs') }}"
                     class="admin-nav-item {% if request.endpoint == 'admin_logs' %}active{% endif %}">
                     <i class="fa-solid fa-clock-rotate-left"></i>

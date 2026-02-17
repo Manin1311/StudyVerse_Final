@@ -5219,6 +5219,210 @@ def admin_logs():
 
 
 # ============================================================================
+# ADMIN - MESSAGES MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/messages')
+@login_required
+@admin_required
+def admin_messages():
+    """View and manage all user messages"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = Message.query
+    
+    if search:
+        query = query.filter(Message.content.ilike(f'%{search}%'))
+    
+    messages = query.order_by(Message.timestamp.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/messages/list.html', messages=messages, search=search)
+
+
+@app.route('/admin/messages/<int:message_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_message_delete(message_id):
+    """Delete a message"""
+    message = Message.query.get_or_404(message_id)
+    
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='delete_message',
+        target_type='message',
+        target_id=message_id,
+        details={'content': message.content[:100]}
+    )
+    
+    db.session.delete(message)
+    db.session.commit()
+    
+    flash('Message deleted successfully', 'success')
+    return redirect(url_for('admin_messages'))
+
+
+# ============================================================================
+# ADMIN - GAMIFICATION MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/gamification')
+@login_required
+@admin_required
+def admin_gamification():
+    """Manage gamification settings"""
+    # Get stats
+    total_xp = db.session.query(db.func.sum(User.total_xp)).scalar() or 0
+    avg_level = db.session.query(db.func.avg(User.level)).scalar() or 0
+    max_level = db.session.query(db.func.max(User.level)).scalar() or 0
+    
+    # Top users by XP
+    top_users = User.query.order_by(User.total_xp.desc()).limit(10).all()
+    
+    stats = {
+        'total_xp': int(total_xp),
+        'avg_level': round(avg_level, 1),
+        'max_level': max_level,
+        'top_users': top_users
+    }
+    
+    return render_template('admin/gamification/dashboard.html', stats=stats)
+
+
+# ============================================================================
+# ADMIN - SHOP MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/shop')
+@login_required
+@admin_required
+def admin_shop():
+    """Manage shop items and themes"""
+    themes = Theme.query.all()
+    
+    # Get purchase stats
+    total_purchases = UserTheme.query.count()
+    total_revenue = db.session.query(db.func.sum(Theme.price)).join(UserTheme).scalar() or 0
+    
+    stats = {
+        'total_themes': len(themes),
+        'total_purchases': total_purchases,
+        'total_revenue': int(total_revenue)
+    }
+    
+    return render_template('admin/shop/dashboard.html', themes=themes, stats=stats)
+
+
+# ============================================================================
+# ADMIN - GROUPS MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/groups')
+@login_required
+@admin_required
+def admin_groups():
+    """Manage study groups"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = Group.query
+    
+    if search:
+        query = query.filter(Group.name.ilike(f'%{search}%'))
+    
+    groups = query.order_by(Group.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    # Get stats
+    total_groups = Group.query.count()
+    total_members = GroupMember.query.count()
+    avg_members = round(total_members / total_groups, 1) if total_groups > 0 else 0
+    
+    stats = {
+        'total_groups': total_groups,
+        'total_members': total_members,
+        'avg_members': avg_members
+    }
+    
+    return render_template('admin/groups/list.html', groups=groups, stats=stats, search=search)
+
+
+@app.route('/admin/groups/<int:group_id>')
+@login_required
+@admin_required
+def admin_group_detail(group_id):
+    """View group details"""
+    group = Group.query.get_or_404(group_id)
+    members = GroupMember.query.filter_by(group_id=group_id).all()
+    
+    return render_template('admin/groups/detail.html', group=group, members=members)
+
+
+# ============================================================================
+# ADMIN - BATTLES MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/battles')
+@login_required
+@admin_required
+def admin_battles():
+    """Manage battle bytes"""
+    page = request.args.get('page', 1, type=int)
+    
+    battles = Battle.query.order_by(Battle.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    # Get stats
+    total_battles = Battle.query.count()
+    completed_battles = Battle.query.filter_by(status='completed').count()
+    active_battles = Battle.query.filter_by(status='active').count()
+    
+    stats = {
+        'total_battles': total_battles,
+        'completed_battles': completed_battles,
+        'active_battles': active_battles
+    }
+    
+    return render_template('admin/battles/list.html', battles=battles, stats=stats)
+
+
+# ============================================================================
+# ADMIN - ANALYTICS
+# ============================================================================
+
+@app.route('/admin/analytics')
+@login_required
+@admin_required
+def admin_analytics():
+    """View system analytics"""
+    from datetime import datetime, timedelta
+    
+    # User growth (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    new_users = User.query.filter(User.created_at >= thirty_days_ago).count()
+    
+    # Activity stats
+    total_messages = Message.query.count()
+    total_tasks = Todo.query.count()
+    completed_tasks = Todo.query.filter_by(completed=True).count()
+    
+    # Study sessions
+    total_sessions = StudySession.query.count()
+    total_study_time = db.session.query(db.func.sum(StudySession.duration)).scalar() or 0
+    
+    stats = {
+        'new_users_30d': new_users,
+        'total_messages': total_messages,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'completion_rate': round((completed_tasks / total_tasks * 100), 1) if total_tasks > 0 else 0,
+        'total_sessions': total_sessions,
+        'total_study_hours': round(total_study_time / 60, 1)
+    }
+    
+    return render_template('admin/analytics/dashboard.html', stats=stats)
+
+
+
+# ============================================================================
 # ONE-TIME MIGRATION ROUTE (For Render Deployment)
 # ============================================================================
 
