@@ -1,0 +1,149 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="background: rgba(74, 222, 128, 0.1); color: #4ade80;">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="admin-stat-info">
+            <div class="admin-stat-value">{{ stats.total_users }}</div>
+            <div class="admin-stat-label">Total Users</div>
+        </div>
+    </div>
+
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+            <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div class="admin-stat-info">
+            <div class="admin-stat-value">{{ stats.active_users }}</div>
+            <div class="admin-stat-label">Active (7 days)</div>
+        </div>
+    </div>
+
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+            <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        <div class="admin-stat-info">
+            <div class="admin-stat-value">{{ stats.total_pdfs }}</div>
+            <div class="admin-stat-label">PDFs Uploaded</div>
+        </div>
+    </div>
+
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+            <i class="fa-solid fa-user-group"></i>
+        </div>
+        <div class="admin-stat-info">
+            <div class="admin-stat-value">{{ stats.total_groups }}</div>
+            <div class="admin-stat-label">Study Groups</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px;">
+    <!-- Recent Users -->
+    <div class="admin-table">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">Recent Users</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Joined</th>
+                    <th>Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in recent_users %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ user.get_avatar(32) }}" style="width: 32px; height: 32px; border-radius: 50%;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--text-primary);">{{ user.first_name }} {{
+                                    user.last_name }}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">{{ user.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge" style="background: var(--primary); color: white;">Level {{ user.level
+                            }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent PDFs -->
+    <div class="admin-table">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">Recent PDFs</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Uploaded</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pdf in recent_pdfs %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+                            <span style="font-weight: 500;">{{ pdf.filename[:40] }}{% if pdf.filename|length > 40
+                                %}...{% endif %}</span>
+                        </div>
+                    </td>
+                    <td>{{ pdf.created_at.strftime('%b %d, %Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Admin Actions -->
+<div class="admin-table" style="margin-top: 32px;">
+    <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">Recent Admin Actions</h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in recent_actions %}
+            <tr>
+                <td>
+                    <span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        {{ log.action.replace('_', ' ').title() }}
+                    </span>
+                </td>
+                <td>{{ log.target_type or 'N/A' }} #{{ log.target_id or 'N/A' }}</td>
+                <td>{{ log.timestamp.strftime('%b %d, %Y %I:%M %p') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    No admin actions yet
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

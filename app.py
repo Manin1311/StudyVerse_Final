@@ -519,6 +519,15 @@ class User(UserMixin, db.Model):
     # Privacy & Status Fields
     is_public_profile = db.Column(db.Boolean, default=True)  # Profile visibility
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # Last activity timestamp
+    
+    # Admin Fields
+    is_admin = db.Column(db.Boolean, default=False)  # Admin access flag
+    
+    # Ban/Suspension Fields
+    is_banned = db.Column(db.Boolean, default=False)  # User ban status
+    ban_reason = db.Column(db.Text, nullable=True)  # Reason for ban
+    banned_at = db.Column(db.DateTime, nullable=True)  # When user was banned
+    banned_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Admin who banned
 
 class Friendship(db.Model):
     """
@@ -941,11 +950,18 @@ class GroupChatMessage(db.Model):
     user = db.relationship('User', backref='group_messages')
 
 class SyllabusDocument(db.Model):
+    """PDF syllabus documents uploaded by users"""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(100), nullable=False)
-    extracted_text = db.Column(db.Text, nullable=True) # AI Context
+    file_path = db.Column(db.String(255), nullable=True)  # Path to PDF file in filesystem
+    extracted_text = db.Column(db.Text, nullable=True)  # AI Context
+    file_size = db.Column(db.Integer, nullable=True)  # Size in bytes
+    extraction_status = db.Column(db.String(20), default='pending')  # pending, success, failed
+    is_active = db.Column(db.Boolean, default=True)  # For archiving
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='syllabus_documents')
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -956,6 +972,19 @@ class Event(db.Model):
     time = db.Column(db.String(50), nullable=True)
     is_notified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AdminAction(db.Model):
+    """Audit log for all admin actions"""
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(100), nullable=False)  # 'ban_user', 'delete_message', etc.
+    target_type = db.Column(db.String(50))  # 'user', 'message', 'group', 'pdf'
+    target_id = db.Column(db.Integer)
+    details = db.Column(db.JSON)  # Additional context
+    ip_address = db.Column(db.String(50))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    admin = db.relationship('User', backref='admin_actions')
 
 # ------------------------------
 # Data Structures (DS) Utilities
@@ -1673,6 +1702,100 @@ def landing():
         return redirect(url_for('dashboard'))
     
     return render_template('landing.html')
+
+# ============================================================================
+# ADMIN PANEL - Decorator and Service
+# ============================================================================
+
+def admin_required(f):
+    """Decorator to require admin access for routes"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth'))
+        if not current_user.is_admin:
+            flash('Access denied. Admin privileges required.', 'error')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+class AdminService:
+    """Admin operations and utilities"""
+    
+    @staticmethod
+    def log_action(admin_id, action, target_type=None, target_id=None, details=None):
+        """Log admin action for audit trail"""
+        log = AdminAction(
+            admin_id=admin_id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details,
+            ip_address=request.remote_addr
+        )
+        db.session.add(log)
+        db.session.commit()
+    
+    @staticmethod
+    def get_dashboard_stats():
+        """Get statistics for admin dashboard"""
+        total_users = User.query.count()
+        active_users = User.query.filter(
+            User.last_seen >= datetime.utcnow() - timedelta(days=7)
+        ).count()
+        total_pdfs = SyllabusDocument.query.count()
+        total_groups = Group.query.count()
+        
+        return {
+            'total_users': total_users,
+            'active_users': active_users,
+            'total_pdfs': total_pdfs,
+            'total_groups': total_groups
+        }
+    
+    @staticmethod
+    def ban_user(user_id, reason, admin_id):
+        """Ban a user"""
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError("User not found")
+        
+        user.is_banned = True
+        user.ban_reason = reason
+        user.banned_at = datetime.utcnow()
+        user.banned_by = admin_id
+        
+        db.session.commit()
+        
+        AdminService.log_action(
+            admin_id=admin_id,
+            action='ban_user',
+            target_type='user',
+            target_id=user_id,
+            details={'reason': reason}
+        )
+    
+    @staticmethod
+    def unban_user(user_id, admin_id):
+        """Unban a user"""
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError("User not found")
+        
+        user.is_banned = False
+        user.ban_reason = None
+        user.banned_at = None
+        user.banned_by = None
+        
+        db.session.commit()
+        
+        AdminService.log_action(
+            admin_id=admin_id,
+            action='unban_user',
+            target_type='user',
+            target_id=user_id
+        )
 
 # ============================================================================
 # DASHBOARD (Main App Interface)
@@ -4828,6 +4951,269 @@ def fix_db_schema():
     except Exception as e:
         return f"Database connection error: {str(e)}"
 
+
+# ============================================================================
+# ADMIN PANEL ROUTES
+# ============================================================================
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Admin dashboard with overview statistics"""
+    stats = AdminService.get_dashboard_stats()
+    
+    # Recent activity
+    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    recent_pdfs = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).limit(5).all()
+    recent_actions = AdminAction.query.order_by(AdminAction.timestamp.desc()).limit(10).all()
+    
+    return render_template('admin/dashboard.html',
+                         stats=stats,
+                         recent_users=recent_users,
+                         recent_pdfs=recent_pdfs,
+                         recent_actions=recent_actions)
+
+# ============================================================================
+# ADMIN - USER MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    """List all users with search and filter"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    filter_type = request.args.get('filter', 'all')
+    
+    query = User.query
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                User.email.ilike(f'%{search}%'),
+                User.first_name.ilike(f'%{search}%'),
+                User.last_name.ilike(f'%{search}%')
+            )
+        )
+    
+    if filter_type == 'active':
+        query = query.filter(User.last_seen >= datetime.utcnow() - timedelta(days=7))
+    elif filter_type == 'banned':
+        query = query.filter(User.is_banned == True)
+    
+    users = query.order_by(User.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/users/list.html', users=users, search=search, filter_type=filter_type)
+
+@app.route('/admin/users/<int:user_id>')
+@login_required
+@admin_required
+def admin_user_detail(user_id):
+    """View detailed user information"""
+    user = User.query.get_or_404(user_id)
+    
+    # Get user statistics
+    total_tasks = Todo.query.filter_by(user_id=user.id).count()
+    completed_tasks = Todo.query.filter_by(user_id=user.id, completed=True).count()
+    total_pdfs = SyllabusDocument.query.filter_by(user_id=user.id).count()
+    
+    # Recent XP activity
+    recent_xp = XPHistory.query.filter_by(user_id=user.id).order_by(XPHistory.timestamp.desc()).limit(10).all()
+    
+    return render_template('admin/users/detail.html',
+                         user=user,
+                         total_tasks=total_tasks,
+                         completed_tasks=completed_tasks,
+                         total_pdfs=total_pdfs,
+                         recent_xp=recent_xp)
+
+@app.route('/admin/users/<int:user_id>/ban', methods=['POST'])
+@login_required
+@admin_required
+def admin_ban_user(user_id):
+    """Ban a user"""
+    reason = request.form.get('reason', 'No reason provided')
+    
+    try:
+        AdminService.ban_user(user_id, reason, current_user.id)
+        flash('User banned successfully', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+@app.route('/admin/users/<int:user_id>/unban', methods=['POST'])
+@login_required
+@admin_required
+def admin_unban_user(user_id):
+    """Unban a user"""
+    try:
+        AdminService.unban_user(user_id, current_user.id)
+        flash('User unbanned successfully', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+@app.route('/admin/users/<int:user_id>/adjust-xp', methods=['POST'])
+@login_required
+@admin_required
+def admin_adjust_xp(user_id):
+    """Manually adjust user XP"""
+    amount = request.form.get('amount', type=int)
+    reason = request.form.get('reason', 'Admin adjustment')
+    
+    if not amount:
+        flash('Invalid XP amount', 'error')
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+    
+    user = User.query.get_or_404(user_id)
+    user.total_xp = max(0, user.total_xp + amount)
+    user.level = GamificationService.calculate_level(user.total_xp)
+    
+    # Log XP change
+    log = XPHistory(user_id=user.id, source='admin', amount=amount)
+    db.session.add(log)
+    
+    # Log admin action
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='adjust_xp',
+        target_type='user',
+        target_id=user_id,
+        details={'amount': amount, 'reason': reason}
+    )
+    
+    db.session.commit()
+    
+    flash(f'XP adjusted by {amount:+d}', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+# ============================================================================
+# ADMIN - PDF MANAGEMENT
+# ============================================================================
+
+@app.route('/admin/pdfs')
+@login_required
+@admin_required
+def admin_pdfs():
+    """List all uploaded PDFs"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = SyllabusDocument.query
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                SyllabusDocument.filename.ilike(f'%{search}%'),
+                SyllabusDocument.extracted_text.ilike(f'%{search}%')
+            )
+        )
+    
+    pdfs = query.order_by(SyllabusDocument.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/pdfs/list.html', pdfs=pdfs, search=search)
+
+@app.route('/admin/pdfs/<int:pdf_id>')
+@login_required
+@admin_required
+def admin_pdf_detail(pdf_id):
+    """View PDF details and extracted text"""
+    pdf = SyllabusDocument.query.get_or_404(pdf_id)
+    user = User.query.get(pdf.user_id)
+    
+    # Count related data
+    tasks_count = Todo.query.filter_by(syllabus_id=pdf.id).count()
+    
+    # Log admin access
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='view_pdf',
+        target_type='syllabus_document',
+        target_id=pdf.id
+    )
+    
+    return render_template('admin/pdfs/detail.html',
+                         pdf=pdf,
+                         user=user,
+                         tasks_count=tasks_count)
+
+@app.route('/admin/pdfs/<int:pdf_id>/download')
+@login_required
+@admin_required
+def admin_pdf_download(pdf_id):
+    """Download original PDF file"""
+    pdf = SyllabusDocument.query.get_or_404(pdf_id)
+    
+    # Log download
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='download_pdf',
+        target_type='syllabus_document',
+        target_id=pdf.id
+    )
+    
+    if pdf.file_path and os.path.exists(pdf.file_path):
+        from flask import send_file
+        return send_file(pdf.file_path, as_attachment=True, download_name=pdf.filename)
+    else:
+        flash('PDF file not found', 'error')
+        return redirect(url_for('admin_pdf_detail', pdf_id=pdf_id))
+
+@app.route('/admin/pdfs/<int:pdf_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_pdf_delete(pdf_id):
+    """Delete a PDF"""
+    pdf = SyllabusDocument.query.get_or_404(pdf_id)
+    
+    # Delete file from filesystem
+    try:
+        if pdf.file_path and os.path.exists(pdf.file_path):
+            os.remove(pdf.file_path)
+    except Exception as e:
+        flash(f'Error deleting file: {str(e)}', 'error')
+    
+    # Delete from database
+    db.session.delete(pdf)
+    
+    # Log deletion
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='delete_pdf',
+        target_type='syllabus_document',
+        target_id=pdf.id,
+        details={'filename': pdf.filename, 'user_id': pdf.user_id}
+    )
+    
+    db.session.commit()
+    
+    flash('PDF deleted successfully', 'success')
+    return redirect(url_for('admin_pdfs'))
+
+# ============================================================================
+# ADMIN - AUDIT LOGS
+# ============================================================================
+
+@app.route('/admin/logs')
+@login_required
+@admin_required
+def admin_logs():
+    """View admin action audit logs"""
+    page = request.args.get('page', 1, type=int)
+    action_filter = request.args.get('action', 'all')
+    
+    query = AdminAction.query
+    
+    if action_filter != 'all':
+        query = query.filter(AdminAction.action == action_filter)
+    
+    logs = query.order_by(AdminAction.timestamp.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/logs/list.html', logs=logs, action_filter=action_filter)
 
 
 if __name__ == '__main__':

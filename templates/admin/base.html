@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Panel{% endblock %} - StudyVerse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="admin-panel">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="admin-logo">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Admin Panel</span>
+        </div>
+
+        <nav class="admin-nav">
+            <a href="{{ url_for('admin_dashboard') }}"
+                class="admin-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin_users') }}"
+                class="admin-nav-item {% if 'admin_user' in request.endpoint %}active{% endif %}">
+                <i class="fa-solid fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="{{ url_for('admin_pdfs') }}"
+                class="admin-nav-item {% if 'admin_pdf' in request.endpoint %}active{% endif %}">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>PDFs</span>
+            </a>
+            <a href="{{ url_for('admin_logs') }}"
+                class="admin-nav-item {% if 'admin_logs' in request.endpoint %}active{% endif %}">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Audit Logs</span>
+            </a>
+
+            <div class="admin-nav-divider"></div>
+
+            <a href="{{ url_for('dashboard') }}" class="admin-nav-item">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Back to App</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Admin Main Content -->
+    <main class="admin-main">
+        <header class="admin-header">
+            <div class="admin-header-left">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            </div>
+            <div class="admin-header-right">
+                <div class="admin-user">
+                    <img src="{{ current_user.get_avatar(40) }}" alt="Admin">
+                    <span>{{ current_user.first_name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+
+</html>
