@@ -1802,11 +1802,13 @@ class AdminService:
 # ============================================================================
 
 @app.route('/dashboard')
-
 @login_required
 def dashboard():
+    # Redirect admins to admin panel
+    if current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    
     # Dashboard logic starts here
-
     total_todos = Todo.query.filter_by(user_id=current_user.id).count()
     completed_todos = Todo.query.filter_by(user_id=current_user.id, completed=True).count()
     remaining_todos = max(total_todos - completed_todos, 0)

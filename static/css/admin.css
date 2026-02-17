@@ -2,10 +2,24 @@
    ADMIN PANEL STYLES
    ============================================================================ */
 
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
 .admin-panel {
     display: flex;
     min-height: 100vh;
+    height: 100vh;
     background: var(--bg-primary);
+    overflow: hidden;
 }
 
 /* ============================================================================
@@ -23,6 +37,7 @@
     left: 0;
     top: 0;
     z-index: 100;
+    overflow: hidden;
 }
 
 .admin-logo {
@@ -34,6 +49,7 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 .admin-logo i {
@@ -45,6 +61,26 @@
     flex: 1;
     padding: 16px 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--primary-rgb), 0.3) transparent;
+}
+
+.admin-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-nav::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-rgb), 0.3);
+    border-radius: 3px;
+}
+
+.admin-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--primary-rgb), 0.5);
 }
 
 .admin-nav-item {
@@ -90,6 +126,8 @@
     margin-left: 260px;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .admin-header {
@@ -99,8 +137,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
+    flex-shrink: 0;
     z-index: 50;
 }
 
@@ -131,6 +168,27 @@
 .admin-content {
     flex: 1;
     padding: 32px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--primary-rgb), 0.3) transparent;
+}
+
+.admin-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.admin-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-content::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-rgb), 0.3);
+    border-radius: 4px;
+}
+
+.admin-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--primary-rgb), 0.5);
 }
 
 /* ============================================================================
