@@ -5216,6 +5216,238 @@ def admin_logs():
     return render_template('admin/logs/list.html', logs=logs, action_filter=action_filter)
 
 
+# ============================================================================
+# ONE-TIME MIGRATION ROUTE (For Render Deployment)
+# ============================================================================
+
+@app.route('/setup-admin-panel-once')
+def setup_admin_panel_once():
+    """
+    ONE-TIME SETUP ROUTE for Render deployment
+    
+    This route runs the database migration and creates the admin account.
+    Visit this URL ONCE after deploying to Render, then it will be disabled.
+    
+    IMPORTANT: This route is protected and will only work if no admin exists yet.
+    """
+    try:
+        # Check if admin already exists
+        existing_admin = User.query.filter_by(email='admin@studyversefinal.com').first()
+        
+        if existing_admin and existing_admin.is_admin:
+            return """
+            <html>
+            <head>
+                <title>Admin Panel Already Setup</title>
+                <style>
+                    body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; background: #0f172a; color: #e2e8f0; }
+                    .container { background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+                    h1 { color: #10b981; margin-bottom: 20px; }
+                    .info { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 16px; border-radius: 8px; margin: 20px 0; }
+                    a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+                    a:hover { text-decoration: underline; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>✅ Admin Panel Already Setup!</h1>
+                    <div class="info">
+                        <p><strong>Admin account already exists and is ready to use.</strong></p>
+                        <p>Email: <code>admin@studyversefinal.com</code></p>
+                    </div>
+                    <p>You can now:</p>
+                    <ol>
+                        <li><a href="/">Go to homepage</a></li>
+                        <li>Login with admin credentials</li>
+                        <li><a href="/admin">Access admin panel</a></li>
+                    </ol>
+                    <p style="margin-top: 30px; color: #94a3b8; font-size: 14px;">
+                        This setup route is now disabled since admin already exists.
+                    </p>
+                </div>
+            </body>
+            </html>
+            """
+        
+        # Run migration
+        migration_log = []
+        
+        # Add columns to User table
+        with db.engine.connect() as conn:
+            try:
+                conn.execute(db.text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
+                migration_log.append("✅ Added is_admin column")
+            except Exception as e:
+                migration_log.append(f"⚠️ is_admin: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE"))
+                migration_log.append("✅ Added is_banned column")
+            except Exception as e:
+                migration_log.append(f"⚠️ is_banned: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS ban_reason TEXT"))
+                migration_log.append("✅ Added ban_reason column")
+            except Exception as e:
+                migration_log.append(f"⚠️ ban_reason: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS banned_at TIMESTAMP"))
+                migration_log.append("✅ Added banned_at column")
+            except Exception as e:
+                migration_log.append(f"⚠️ banned_at: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS banned_by INTEGER"))
+                migration_log.append("✅ Added banned_by column")
+            except Exception as e:
+                migration_log.append(f"⚠️ banned_by: {str(e)[:50]}")
+            
+            conn.commit()
+        
+        # Add columns to SyllabusDocument table
+        with db.engine.connect() as conn:
+            try:
+                conn.execute(db.text("ALTER TABLE syllabus_document ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)"))
+                migration_log.append("✅ Added file_path column")
+            except Exception as e:
+                migration_log.append(f"⚠️ file_path: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE syllabus_document ADD COLUMN IF NOT EXISTS file_size INTEGER"))
+                migration_log.append("✅ Added file_size column")
+            except Exception as e:
+                migration_log.append(f"⚠️ file_size: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE syllabus_document ADD COLUMN IF NOT EXISTS extraction_status VARCHAR(20) DEFAULT 'pending'"))
+                migration_log.append("✅ Added extraction_status column")
+            except Exception as e:
+                migration_log.append(f"⚠️ extraction_status: {str(e)[:50]}")
+            
+            try:
+                conn.execute(db.text("ALTER TABLE syllabus_document ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
+                migration_log.append("✅ Added is_active column")
+            except Exception as e:
+                migration_log.append(f"⚠️ is_active: {str(e)[:50]}")
+            
+            conn.commit()
+        
+        # Create AdminAction table
+        try:
+            db.create_all()
+            migration_log.append("✅ Created AdminAction table")
+        except Exception as e:
+            migration_log.append(f"⚠️ AdminAction table: {str(e)[:50]}")
+        
+        # Create admin account
+        from werkzeug.security import generate_password_hash
+        
+        admin_user = User(
+            email='admin@studyversefinal.com',
+            password_hash=generate_password_hash('adminfinal@12345'),
+            first_name='Admin',
+            last_name='User',
+            is_admin=True,
+            total_xp=0,
+            level=1
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        
+        migration_log.append("✅ Created admin account")
+        
+        # Return success page
+        return f"""
+        <html>
+        <head>
+            <title>Admin Panel Setup Complete</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #0f172a; color: #e2e8f0; }}
+                .container {{ background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }}
+                h1 {{ color: #10b981; margin-bottom: 20px; }}
+                .success {{ background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 16px; border-radius: 8px; margin: 20px 0; }}
+                .credentials {{ background: #334155; padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                .log {{ background: #1e293b; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 20px 0; max-height: 300px; overflow-y: auto; }}
+                code {{ background: #334155; padding: 4px 8px; border-radius: 4px; color: #3b82f6; }}
+                a {{ color: #3b82f6; text-decoration: none; font-weight: 600; }}
+                a:hover {{ text-decoration: underline; }}
+                .warning {{ background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; padding: 16px; border-radius: 8px; margin: 20px 0; color: #f59e0b; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🎉 Admin Panel Setup Complete!</h1>
+                
+                <div class="success">
+                    <strong>✅ Database migration successful!</strong><br>
+                    <strong>✅ Admin account created!</strong>
+                </div>
+                
+                <div class="credentials">
+                    <h3 style="margin-top: 0; color: #e2e8f0;">Admin Credentials:</h3>
+                    <p><strong>Email:</strong> <code>admin@studyversefinal.com</code></p>
+                    <p><strong>Password:</strong> <code>adminfinal@12345</code></p>
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ IMPORTANT:</strong> Change your admin password after first login for security!
+                </div>
+                
+                <h3>Next Steps:</h3>
+                <ol>
+                    <li><a href="/">Go to homepage</a></li>
+                    <li>Click "Sign In"</li>
+                    <li>Login with admin credentials above</li>
+                    <li><a href="/admin">Access admin panel</a></li>
+                </ol>
+                
+                <h3>Migration Log:</h3>
+                <div class="log">
+                    {'<br>'.join(migration_log)}
+                </div>
+                
+                <p style="margin-top: 30px; color: #94a3b8; font-size: 14px;">
+                    This setup route will be disabled on next visit since admin account now exists.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        
+        return f"""
+        <html>
+        <head>
+            <title>Setup Error</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #0f172a; color: #e2e8f0; }}
+                .container {{ background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }}
+                h1 {{ color: #ef4444; margin-bottom: 20px; }}
+                .error {{ background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0; }}
+                pre {{ background: #0f172a; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>❌ Setup Error</h1>
+                <div class="error">
+                    <strong>An error occurred during setup:</strong>
+                    <pre>{str(e)}</pre>
+                </div>
+                <h3>Full Error Trace:</h3>
+                <pre>{error_trace}</pre>
+                <p>Please contact support or try running the migration manually using Render Shell.</p>
+            </div>
+        </body>
+        </html>
+        """
+
+
 if __name__ == '__main__':
     # Start Background Scheduler ONLY in development mode
     # In production (gunicorn), this block doesn't run, avoiding eventlet conflicts
