@@ -5,76 +5,241 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admin Panel{% endblock %} - StudyVerse</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --bg-hover: #252525;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --primary: #6366f1;
+            --primary-rgb: 99, 102, 241;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .admin-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 240px;
+            background: #000000;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+        }
+
+        .admin-logo {
+            padding: 0 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-logo i {
+            font-size: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-logo span {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .admin-logo .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-nav {
+            flex: 1;
+            padding: 0 12px;
+            overflow-y: auto;
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .admin-nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .admin-nav-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .admin-nav-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .admin-nav-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        /* Main Content */
+        .admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .admin-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .admin-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .admin-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .admin-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .admin-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
 </head>
 
-<body class="admin-panel">
-    <!-- Admin Sidebar -->
-    <aside class="admin-sidebar">
-        <div class="admin-logo">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span>Admin Panel</span>
-        </div>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Study<span class="highlight">Verse</span></span>
+            </div>
 
-        <nav class="admin-nav">
-            <a href="{{ url_for('admin_dashboard') }}"
-                class="admin-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="{{ url_for('admin_users') }}"
-                class="admin-nav-item {% if 'admin_user' in request.endpoint %}active{% endif %}">
-                <i class="fa-solid fa-users"></i>
-                <span>Users</span>
-            </a>
-            <a href="{{ url_for('admin_pdfs') }}"
-                class="admin-nav-item {% if 'admin_pdf' in request.endpoint %}active{% endif %}">
-                <i class="fa-solid fa-file-pdf"></i>
-                <span>PDFs</span>
-            </a>
-            <a href="{{ url_for('admin_logs') }}"
-                class="admin-nav-item {% if 'admin_logs' in request.endpoint %}active{% endif %}">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <span>Audit Logs</span>
-            </a>
+            <nav class="admin-nav">
+                <a href="{{ url_for('admin_dashboard') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_users') }}"
+                    class="admin-nav-item {% if 'admin_user' in request.endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="{{ url_for('admin_pdfs') }}"
+                    class="admin-nav-item {% if 'admin_pdf' in request.endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>PDFs</span>
+                </a>
+                <a href="{{ url_for('admin_logs') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_logs' %}active{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Audit Logs</span>
+                </a>
 
-            <div class="admin-nav-divider"></div>
+                <div class="admin-nav-divider"></div>
 
-            <a href="{{ url_for('dashboard') }}" class="admin-nav-item">
-                <i class="fa-solid fa-arrow-left"></i>
-                <span>Back to App</span>
-            </a>
-        </nav>
-    </aside>
+                <a href="{{ url_for('dashboard') }}" class="admin-nav-item">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Back to App</span>
+                </a>
+            </nav>
+        </aside>
 
-    <!-- Admin Main Content -->
-    <main class="admin-main">
-        <header class="admin-header">
-            <div class="admin-header-left">
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
                 <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-            </div>
-            <div class="admin-header-right">
-                <div class="admin-user">
-                    <img src="{{ current_user.get_avatar(40) }}" alt="Admin">
-                    <span>{{ current_user.first_name }}</span>
+                <div class="admin-user-info">
+                    <div class="admin-user-avatar">{{ current_user.first_name[0] }}{{ current_user.last_name[0] }}</div>
+                    <span style="font-weight: 600; font-size: 14px;">Admin</span>
                 </div>
+            </header>
+
+            <div class="admin-content">
+                {% block content %}{% endblock %}
             </div>
-        </header>
-
-        <div class="admin-content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
-
-            {% block content %}{% endblock %}
-        </div>
-    </main>
+        </main>
+    </div>
 </body>
 
 </html>
