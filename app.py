@@ -329,8 +329,11 @@ def ist_time_filter(utc_datetime):
 
 # Make to_ist_time available as a global function in all templates
 app.jinja_env.globals.update(to_ist_time=to_ist_time)
+
+
 # ============================================================================
 # DATABASE MODELS (ORM - Object Relational Mapping)
+
 # ============================================================================
 # These classes represent database tables using SQLAlchemy ORM
 # Each class maps to a table, and each attribute maps to a column
@@ -534,6 +537,46 @@ class User(UserMixin, db.Model):
     ban_reason = db.Column(db.Text, nullable=True)  # Reason for ban
     banned_at = db.Column(db.DateTime, nullable=True)  # When user was banned
     banned_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Admin who banned
+
+class SupportTicket(db.Model):
+    """
+    Support Ticket Model - User support requests to admin
+    
+    Purpose: Allow users to contact admin for help, report issues, etc.
+    
+    Status Flow:
+    1. User creates ticket → status='open'
+    2. Admin responds → status='in_progress'
+    3. Issue resolved → status='closed'
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50), default='general')  # general, bug, inappropriate, help
+    status = db.Column(db.String(20), default='open')  # open, in_progress, closed
+    priority = db.Column(db.String(20), default='normal')  # low, normal, high, urgent
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    
+    # Notification tracking
+    user_unread_count = db.Column(db.Integer, default=0)  # Unread messages for user
+    admin_unread_count = db.Column(db.Integer, default=1)  # Unread messages for admin (starts at 1 for new ticket)
+
+class SupportMessage(db.Model):
+    """
+    Support Message Model - Messages within a support ticket
+    
+    Purpose: Track conversation between user and admin
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('support_ticket.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)  # True if sent by admin
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    read_by_user = db.Column(db.Boolean, default=False)  # Has user read this?
+    read_by_admin = db.Column(db.Boolean, default=False)  # Has admin read this?
 
 class Friendship(db.Model):
     """
@@ -1836,6 +1879,115 @@ class AdminService:
             target_id=user_id
         )
 
+class SupportService:
+    """Service for handling support tickets and messages"""
+    
+    @staticmethod
+    def create_ticket(user_id, subject, message, category='general', priority='normal'):
+        """Create a new support ticket"""
+        # Create ticket
+        ticket = SupportTicket(
+            user_id=user_id,
+            subject=subject,
+            category=category,
+            priority=priority,
+            status='open',
+            user_unread_count=0,
+            admin_unread_count=1  # Admin has 1 unread message
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        
+        # Create initial message
+        msg = SupportMessage(
+            ticket_id=ticket.id,
+            sender_id=user_id,
+            message=message,
+            is_admin=False,
+            read_by_user=True,
+            read_by_admin=False
+        )
+        db.session.add(msg)
+        db.session.commit()
+        
+        return ticket
+    
+    @staticmethod
+    def add_message(ticket_id, sender_id, message, is_admin=False):
+        """Add a message to an existing ticket"""
+        ticket = SupportTicket.query.get(ticket_id)
+        if not ticket:
+            return None
+            
+        # Add message
+        msg = SupportMessage(
+            ticket_id=ticket.id,
+            sender_id=sender_id,
+            message=message,
+            is_admin=is_admin,
+            read_by_user=True, # Sender always reads their own message
+            read_by_admin=True # Sender always reads their own message
+        )
+        
+        # Override read status based on recipient
+        if is_admin:
+            # Admin sent it -> Admin read it (already True), User hasn't read it
+            msg.read_by_user = False
+            ticket.status = 'in_progress' # Admin replied
+            ticket.user_unread_count += 1
+            ticket.admin_unread_count = 0 # Admin read everything to reply (usually)
+        else:
+            # User sent it -> User read it (already True), Admin hasn't read it
+            msg.read_by_admin = False
+            ticket.status = 'open' # User replied, waiting for admin
+            ticket.admin_unread_count += 1
+            ticket.user_unread_count = 0 # User read everything to reply (usually)
+            
+        db.session.add(msg)
+        ticket.updated_at = datetime.utcnow()
+        db.session.commit()
+        return msg
+
+    @staticmethod
+    def get_user_tickets(user_id):
+        """Get all tickets for a user"""
+        return SupportTicket.query.filter_by(user_id=user_id).order_by(SupportTicket.updated_at.desc()).all()
+        
+    @staticmethod
+    def get_admin_tickets(status_filter=None):
+        """Get all tickets for admin panel"""
+        query = SupportTicket.query
+        if status_filter and status_filter != 'all':
+            query = query.filter_by(status=status_filter)
+        return query.order_by(SupportTicket.updated_at.desc()).all()
+
+
+# ============================================================================
+# CONTEXT PROCESSORS (Inject data into all templates)
+# ============================================================================
+@app.context_processor
+def inject_support_notifications():
+    unread_support = 0
+    if current_user.is_authenticated:
+        try:
+            if current_user.is_admin:
+                # Total unread tickets for admin
+                # Count tickets where admin has unread messages
+                unread_support = SupportTicket.query.filter(
+                    SupportTicket.status.in_(['open', 'in_progress']),
+                    SupportTicket.admin_unread_count > 0
+                ).count()
+            else:
+                # Total unread tickets for user
+                unread_support = SupportTicket.query.filter(
+                    SupportTicket.user_id == current_user.id,
+                    SupportTicket.user_unread_count > 0
+                ).count()
+        except:
+            pass # Handle case where tables don't exist yet
+            
+    return dict(unread_support_count=unread_support)
+
 # ============================================================================
 # DASHBOARD (Main App Interface)
 # ============================================================================
@@ -2184,6 +2336,83 @@ def chat_send():
     db.session.commit()
 
     return redirect(url_for('chat'))
+
+# ----------------------------------------------------
+# USER SUPPORT CENTER
+# ----------------------------------------------------
+@app.route('/support')
+@login_required
+def support():
+    """User support dashboard"""
+    # Create support/list.html template later
+    tickets = SupportService.get_user_tickets(current_user.id)
+    return render_template('support/list.html', tickets=tickets)
+
+@app.route('/support/create', methods=['POST'])
+@login_required
+def support_create():
+    """Create a new support ticket"""
+    subject = request.form.get('subject')
+    message = request.form.get('message')
+    # Default category to 'general' if not provided
+    category = request.form.get('category', 'general') 
+    priority = request.form.get('priority', 'normal')
+    
+    if not subject or not message:
+        flash('Subject and message are required', 'error')
+        return redirect(url_for('support'))
+        
+    ticket = SupportService.create_ticket(current_user.id, subject, message, category, priority)
+    flash('Ticket created successfully! Support team will respond shortly.', 'success')
+    return redirect(url_for('support_detail', ticket_id=ticket.id))
+
+@app.route('/support/<int:ticket_id>')
+@login_required
+def support_detail(ticket_id):
+    """View support ticket details"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    
+    # Security check: User can only view their own tickets
+    if ticket.user_id != current_user.id and not current_user.is_admin:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('support'))
+        
+    # Mark messages as read if viewed by user
+    if not current_user.is_admin:
+        unread_msgs = SupportMessage.query.filter_by(
+            ticket_id=ticket.id, 
+            read_by_user=False,
+            is_admin=True # Messages from admin
+        ).all()
+        for msg in unread_msgs:
+            msg.read_by_user = True
+        
+        if unread_msgs:
+            ticket.user_unread_count = 0
+            db.session.commit()
+
+    messages = SupportMessage.query.filter_by(ticket_id=ticket.id).order_by(SupportMessage.created_at.asc()).all()
+    return render_template('support/detail.html', ticket=ticket, messages=messages)
+
+@app.route('/support/<int:ticket_id>/reply', methods=['POST'])
+@login_required
+def support_reply(ticket_id):
+    """User replies to a support ticket"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    
+    # Security check: User can only reply to their own tickets
+    if ticket.user_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('support'))
+        
+    message = request.form.get('message')
+    if not message:
+        flash('Message cannot be empty', 'error')
+        return redirect(url_for('support_detail', ticket_id=ticket_id))
+        
+    SupportService.add_message(ticket_id, current_user.id, message, is_admin=False)
+    # flash('Reply sent!', 'success') # Optional, chat interface usually doesn't need flash
+    return redirect(url_for('support_detail', ticket_id=ticket_id))
 
 # ----------------------------------------------------
 # XP SHOP / GAMIFICATION STORE
@@ -3458,11 +3687,12 @@ def progress():
 @app.route('/leaderboard')
 @login_required
 def leaderboard():
-    """Global leaderboard based on level and XP."""
+    """Global leaderboard based on level and XP - Excludes admins."""
     # Get top 50 users ordered by level (desc), then by total_xp (desc)
+    # EXCLUDE ADMINS from leaderboard
     top_users = (
         User.query
-        .filter(User.is_public_profile == True)
+        .filter(User.is_public_profile == True, User.is_admin == False)
         .order_by(User.level.desc(), User.total_xp.desc(), User.id.asc())
         .limit(50)
         .all()
@@ -3482,8 +3712,10 @@ def leaderboard():
     
     # Calculate current user's rank much more efficiently
     # Rank is 1 + number of users who have more level OR same level but more XP
+    # EXCLUDE ADMINS from rank calculation
     my_rank = User.query.filter(
         User.is_public_profile == True,
+        User.is_admin == False,
         db.or_(
             User.level > current_user.level,
             db.and_(
@@ -5074,7 +5306,12 @@ def admin_user_detail(user_id):
 @login_required
 @admin_required
 def admin_ban_user(user_id):
-    """Ban a user"""
+    """Ban a user - Prevents admin from banning himself"""
+    # PREVENT ADMIN FROM BANNING HIMSELF
+    if user_id == current_user.id:
+        flash('You cannot ban yourself!', 'error')
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+    
     reason = request.form.get('reason', 'No reason provided')
     
     try:
@@ -5131,6 +5368,68 @@ def admin_adjust_xp(user_id):
     
     flash(f'XP adjusted by {amount:+d}', 'success')
     return redirect(url_for('admin_user_detail', user_id=user_id))
+
+# ============================================================================
+# ADMIN - SUPPORT TICKETS
+# ============================================================================
+
+@app.route('/admin/support')
+@login_required
+@admin_required
+def admin_support():
+    """List all support tickets for admin"""
+    status = request.args.get('status', 'all')
+    tickets = SupportService.get_admin_tickets(status)
+    return render_template('admin/support/list.html', tickets=tickets, current_status=status)
+
+@app.route('/admin/support/<int:ticket_id>')
+@login_required
+@admin_required
+def admin_support_detail(ticket_id):
+    """View and respond to support ticket"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    user = User.query.get(ticket.user_id)
+    
+    # Mark as read by admin
+    unread_msgs = SupportMessage.query.filter_by(
+        ticket_id=ticket.id, 
+        read_by_admin=False,
+        is_admin=False # Messages from user
+    ).all()
+    for msg in unread_msgs:
+        msg.read_by_admin = True
+    
+    if unread_msgs:
+        ticket.admin_unread_count = 0
+        db.session.commit()
+    
+    messages = SupportMessage.query.filter_by(ticket_id=ticket.id).order_by(SupportMessage.created_at.asc()).all()
+    return render_template('admin/support/detail.html', ticket=ticket, user=user, messages=messages)
+
+@app.route('/admin/support/<int:ticket_id>/reply', methods=['POST'])
+@login_required
+@admin_required
+def admin_support_reply(ticket_id):
+    """Admin replies to a support ticket"""
+    message = request.form.get('message')
+    if not message:
+        flash('Message cannot be empty', 'error')
+        return redirect(url_for('admin_support_detail', ticket_id=ticket_id))
+        
+    SupportService.add_message(ticket_id, current_user.id, message, is_admin=True)
+    return redirect(url_for('admin_support_detail', ticket_id=ticket_id))
+
+@app.route('/admin/support/<int:ticket_id>/close', methods=['POST'])
+@login_required
+@admin_required
+def admin_support_close(ticket_id):
+    """Close a support ticket"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    ticket.status = 'closed'
+    ticket.closed_at = datetime.utcnow()
+    db.session.commit()
+    flash('Ticket closed successfully', 'success')
+    return redirect(url_for('admin_support'))
 
 # ============================================================================
 # ADMIN - PDF MANAGEMENT
@@ -5200,6 +5499,28 @@ def admin_pdf_download(pdf_id):
     if pdf.file_path and os.path.exists(pdf.file_path):
         from flask import send_file
         return send_file(pdf.file_path, as_attachment=True, download_name=pdf.filename)
+    else:
+        flash('PDF file not found', 'error')
+        return redirect(url_for('admin_pdf_detail', pdf_id=pdf_id))
+
+@app.route('/admin/pdfs/<int:pdf_id>/view')
+@login_required
+@admin_required
+def admin_pdf_view(pdf_id):
+    """View PDF in browser (opens in new tab)"""
+    pdf = SyllabusDocument.query.get_or_404(pdf_id)
+    
+    # Log view
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='view_pdf_file',
+        target_type='syllabus_document',
+        target_id=pdf.id
+    )
+    
+    if pdf.file_path and os.path.exists(pdf.file_path):
+        from flask import send_file
+        return send_file(pdf.file_path, as_attachment=False)  # Opens in browser
     else:
         flash('PDF file not found', 'error')
         return redirect(url_for('admin_pdf_detail', pdf_id=pdf_id))

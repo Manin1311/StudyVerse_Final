@@ -52,6 +52,11 @@
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 {% if pdf.file_path %}
+                <a href="{{ url_for('admin_pdf_view', pdf_id=pdf.id) }}" target="_blank"
+                    class="admin-btn admin-btn-success" style="width: 100%; text-align: center;">
+                    <i class="fa-solid fa-eye"></i> View PDF
+                </a>
+
                 <a href="{{ url_for('admin_pdf_download', pdf_id=pdf.id) }}" class="admin-btn admin-btn-primary"
                     style="width: 100%; text-align: center;">
                     <i class="fa-solid fa-download"></i> Download PDF
@@ -160,9 +165,10 @@
 
     function showFullText() {
         const preview = document.getElementById('textPreview');
-        preview.textContent = {{ pdf.extracted_text | tojson }};
-        preview.style.maxHeight = 'none';
-        event.target.style.display = 'none';
+        preview.textContent = {{ pdf.extracted_text | tojson }
+    };
+    preview.style.maxHeight = 'none';
+    event.target.style.display = 'none';
     }
 </script>
 {% endblock %}

@@ -1,0 +1,119 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Support Tickets - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1>Support Tickets</h1>
+    <div class="admin-user-info">
+        <a href="{{ url_for('admin_support', status='open') }}"
+            class="btn {% if current_status == 'open' %}btn-primary{% else %}btn-secondary{% endif %}"
+            style="padding: 6px 16px;">Open</a>
+        <a href="{{ url_for('admin_support', status='in_progress') }}"
+            class="btn {% if current_status == 'in_progress' %}btn-primary{% else %}btn-secondary{% endif %}"
+            style="padding: 6px 16px;">In Progress</a>
+        <a href="{{ url_for('admin_support', status='closed') }}"
+            class="btn {% if current_status == 'closed' %}btn-primary{% else %}btn-secondary{% endif %}"
+            style="padding: 6px 16px;">Closed</a>
+        <a href="{{ url_for('admin_support', status='all') }}"
+            class="btn {% if current_status == 'all' or not current_status %}btn-primary{% else %}btn-secondary{% endif %}"
+            style="padding: 6px 16px;">All</a>
+    </div>
+</div>
+
+<div class="admin-content">
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Last Update</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>#{{ ticket.id }}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="{{ ticket.user.get_avatar(32) }}"
+                                style="width: 32px; height: 32px; border-radius: 50%;">
+                            <div style="font-weight: 500;">{{ ticket.user.first_name }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: white;">{{ ticket.subject }}</div>
+                        {% if ticket.admin_unread_count > 0 %}
+                        <span
+                            style="background: var(--danger); color: white; border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; margin-top: 4px; display: inline-block;">{{
+                            ticket.admin_unread_count }} new</span>
+                        {% endif %}
+                    </td>
+                    <td><span
+                            style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">{{
+                            ticket.category|title }}</span></td>
+                    <td>
+                        <span class="status-badge status-{{ ticket.status }}">
+                            {{ ticket.status|replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.9rem;">{{ ticket.updated_at|ist_time }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_support_detail', ticket_id=ticket.id) }}" class="btn btn-primary"
+                            style="padding: 6px 12px; font-size: 0.8rem;">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                        <i class="fa-solid fa-inbox"
+                            style="font-size: 2rem; margin-bottom: 16px; display: block; opacity: 0.3;"></i>
+                        No tickets found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-open {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+    }
+
+    .status-in_progress {
+        background: rgba(99, 102, 241, 0.2);
+        color: #6366f1;
+    }
+
+    .status-closed {
+        background: rgba(255, 255, 255, 0.1);
+        color: #a0a0a0;
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+</style>
+{% endblock %}

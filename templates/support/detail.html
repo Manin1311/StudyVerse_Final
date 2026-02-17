@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} - StudyVerse{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <a href="{{ url_for('support') }}" class="btn btn-secondary"
+                style="margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.2s;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Support
+            </a>
+            <h1 class="page-title" style="margin-bottom: 12px; font-size: 2rem; font-weight: 700; line-height: 1.2;">{{
+                ticket.subject }}</h1>
+            <div
+                style="display: flex; gap: 16px; font-size: 0.9rem; color: var(--text-secondary); align-items: center;">
+                <span style="font-family: var(--font-mono); opacity: 0.7;">#{{ ticket.id }}</span>
+                <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--border);"></span>
+                <span style="display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-tag"></i> {{
+                    ticket.category|title }}</span>
+                <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--border);"></span>
+                <span
+                    style="color: {% if ticket.priority == 'urgent' %}var(--destructive){% elif ticket.priority == 'high' %}#f59e0b{% else %}var(--text-secondary){% endif %}; font-weight: 500;">
+                    <i class="fa-solid fa-flag"></i> {{ ticket.priority|title }} Priority
+                </span>
+            </div>
+        </div>
+
+        <div>
+            <div
+                style="padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: {% if ticket.status == 'closed' %}rgba(255,255,255,0.05){% elif ticket.status == 'in_progress' %}rgba(99, 102, 241, 0.15){% else %}rgba(16, 185, 129, 0.15){% endif %}; color: {% if ticket.status == 'closed' %}var(--text-secondary){% elif ticket.status == 'in_progress' %}var(--primary){% else %}var(--accent-green){% endif %}; border: 1px solid {% if ticket.status == 'closed' %}var(--border){% elif ticket.status == 'in_progress' %}var(--primary){% else %}var(--accent-green){% endif %};">
+                {{ ticket.status|replace('_', ' ') }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="card"
+        style="padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 600px; max-height: 80vh; background: var(--bg-card); position: relative;">
+
+        <!-- Messages -->
+        <div class="chat-messages"
+            style="flex: 1; padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth;">
+
+            <div style="text-align: center; margin-bottom: 24px;">
+                <span
+                    style="background: rgba(255,255,255,0.05); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; color: var(--text-secondary);">Ticket
+                    created on {{ ticket.created_at|ist_time }}</span>
+            </div>
+
+            {% for message in messages %}
+            <div class="message {% if message.is_admin %}admin{% else %}user{% endif %}"
+                style="max-width: 85%; align-self: {% if message.is_admin %}flex-start{% else %}flex-end{% endif %}; display: flex; flex-direction: column; gap: 6px; animation: messageFadeIn 0.3s ease-out;">
+
+                <div
+                    style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); {% if not message.is_admin %}flex-direction: row-reverse;{% endif %}">
+                    {% if message.is_admin %}
+                    <div
+                        style="width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
+                        <i class="fa-solid fa-headset"></i></div>
+                    <span style="font-weight: 600; color: var(--primary);">Support Agent</span>
+                    {% else %}
+                    <span style="font-weight: 600;">You</span>
+                    {% endif %}
+                    <span style="opacity: 0.6;">{{ message.created_at.strftime('%I:%M %p') }}</span>
+                </div>
+
+                <div style="padding: 16px 20px; border-radius: 16px; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap;
+                     background: {% if message.is_admin %}rgba(255,255,255,0.05){% else %}var(--primary){% endif %}; 
+                     color: {% if message.is_admin %}var(--text-primary){% else %}white{% endif %};
+                     border: 1px solid {% if message.is_admin %}var(--border){% else %}transparent{% endif %};
+                     border-top-{% if message.is_admin %}left{% else %}right{% endif %}-radius: 4px;
+                     box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    {{ message.message }}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if ticket.status == 'closed' %}
+            <div
+                style="margin-top: 32px; padding: 24px; background: rgba(255,255,255,0.03); border-radius: 12px; text-align: center; border: 1px solid var(--border);">
+                <div style="font-size: 1.5rem; margin-bottom: 12px;">🔒</div>
+                <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Ticket Closed</h3>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin: 0;">This support request has been
+                    marked as resolved. If you need further assistance, please open a new ticket.</p>
+            </div>
+            {% endif %}
+
+            <div id="scroll-anchor"></div>
+        </div>
+
+        <!-- Reply Input -->
+        {% if ticket.status != 'closed' %}
+        <div class="chat-input-area"
+            style="padding: 24px; background: var(--bg-card); border-top: 1px solid var(--border); position: relative; z-index: 10;">
+            <form action="{{ url_for('support_reply', ticket_id=ticket.id) }}" method="POST"
+                style="display: flex; gap: 16px; align-items: flex-end;">
+                <textarea name="message" required placeholder="Type your reply here..." rows="1"
+                    oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"
+                    style="flex: 1; padding: 16px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; color: white; resize: none; max-height: 200px; min-height: 56px; line-height: 1.5; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
+                    onfocus="this.style.borderColor='var(--primary)'"
+                    onblur="this.style.borderColor='var(--border)'"></textarea>
+                <button type="submit" class="btn btn-primary"
+                    style="height: 56px; width: 56px; border-radius: 12px; background: var(--primary); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: transform 0.1s, background 0.2s;"
+                    onmouseover="this.style.background='var(--primary-hover)'"
+                    onmouseout="this.style.background='var(--primary)'" onmousedown="this.style.transform='scale(0.95)'"
+                    onmouseup="this.style.transform='scale(1)'">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+            <div
+                style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; text-align: center; opacity: 0.6;">
+                Press Enter for new line. Admins typically respond within 24 hours.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    @keyframes messageFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Scrollbar styling for chat */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Scroll to bottom of chat
+        const chatContainer = document.querySelector('.chat-messages');
+        const anchor = document.getElementById('scroll-anchor');
+
+        // Use scrollIntoView for smooth scroll if content is loaded
+        anchor.scrollIntoView({ behavior: 'auto' });
+
+        // Focus textarea on load
+        const textarea = document.querySelector('textarea[name="message"]');
+        if (textarea) textarea.focus();
+    });
+</script>
+{% endblock %}
