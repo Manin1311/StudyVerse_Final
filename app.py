@@ -5227,15 +5227,91 @@ def admin_logs():
 @admin_required
 def admin_messages():
     """View and manage all user messages"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    msg_type = request.args.get('type', 'all')  # all, personal, group
+    
+    # Personal chat messages
+    personal_query = ChatMessage.query
+    if search:
+        personal_query = personal_query.filter(ChatMessage.content.ilike(f'%{search}%'))
+    
+    # Group chat messages
+    group_query = GroupChatMessage.query
+    if search:
+        group_query = group_query.filter(GroupChatMessage.content.ilike(f'%{search}%'))
+    
+    # Get counts
+    total_personal = ChatMessage.query.count()
+    total_group = GroupChatMessage.query.count()
+    
+    # Paginate based on type
+    if msg_type == 'personal':
+        messages = personal_query.order_by(ChatMessage.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+        message_type = 'personal'
+    elif msg_type == 'group':
+        messages = group_query.order_by(GroupChatMessage.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+        message_type = 'group'
+    else:
+        # Show both - get recent from each
+        personal_msgs = personal_query.order_by(ChatMessage.created_at.desc()).limit(10).all()
+        group_msgs = group_query.order_by(GroupChatMessage.created_at.desc()).limit(10).all()
+        messages = {'personal': personal_msgs, 'group': group_msgs}
+        message_type = 'all'
+    
     stats = {
-        'total_messages': 0,
-        'today_messages': 0,
-        'active_chats': 0
+        'total_personal': total_personal,
+        'total_group': total_group,
+        'total_messages': total_personal + total_group
     }
-    return render_template('admin/simple_page.html', 
-                         page_title='Messages Management',
-                         message='Message management coming soon! This will show all user messages across the platform.',
+    
+    return render_template('admin/messages/list.html', 
+                         messages=messages, 
+                         message_type=message_type,
+                         search=search,
                          stats=stats)
+
+
+@app.route('/admin/messages/personal/<int:message_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_message_delete_personal(message_id):
+    """Delete a personal chat message"""
+    message = ChatMessage.query.get_or_404(message_id)
+    
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='delete_message',
+        target_type='chat_message',
+        target_id=message_id
+    )
+    
+    db.session.delete(message)
+    db.session.commit()
+    
+    flash('Message deleted successfully', 'success')
+    return redirect(url_for('admin_messages'))
+
+
+@app.route('/admin/messages/group/<int:message_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_message_delete_group(message_id):
+    """Delete a group chat message"""
+    message = GroupChatMessage.query.get_or_404(message_id)
+    
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='delete_group_message',
+        target_type='group_chat_message',
+        target_id=message_id
+    )
+    
+    db.session.delete(message)
+    db.session.commit()
+    
+    flash('Group message deleted successfully', 'success')
+    return redirect(url_for('admin_messages'))
 
 
 # ============================================================================
@@ -5247,15 +5323,41 @@ def admin_messages():
 @admin_required
 def admin_gamification():
     """Manage gamification settings"""
+    # Get XP stats
+    total_xp = db.session.query(db.func.sum(User.total_xp)).scalar() or 0
+    avg_xp = db.session.query(db.func.avg(User.total_xp)).scalar() or 0
+    max_level = db.session.query(db.func.max(User.level)).scalar() or 0
+    avg_level = db.session.query(db.func.avg(User.level)).scalar() or 0
+    
+    # Top users by XP
+    top_users = User.query.order_by(User.total_xp.desc()).limit(10).all()
+    
+    # Recent XP transactions
+    recent_xp = XPHistory.query.order_by(XPHistory.timestamp.desc()).limit(20).all()
+    
+    # Badge statistics
+    total_badges = Badge.query.count()
+    total_earned = UserBadge.query.count()
+    
+    # Most earned badges
+    from sqlalchemy import func
+    popular_badges = db.session.query(
+        Badge, func.count(UserBadge.id).label('count')
+    ).join(UserBadge).group_by(Badge.id).order_by(func.count(UserBadge.id).desc()).limit(5).all()
+    
     stats = {
-        'total_users': db.session.query(db.func.count(User.id)).scalar() or 0,
-        'avg_xp': db.session.query(db.func.avg(User.total_xp)).scalar() or 0,
-        'max_level': db.session.query(db.func.max(User.level)).scalar() or 0
+        'total_xp': int(total_xp),
+        'avg_xp': round(avg_xp, 1),
+        'max_level': max_level,
+        'avg_level': round(avg_level, 1),
+        'total_badges': total_badges,
+        'total_earned': total_earned,
+        'top_users': top_users,
+        'recent_xp': recent_xp,
+        'popular_badges': popular_badges
     }
-    return render_template('admin/simple_page.html',
-                         page_title='Gamification Management',
-                         message='Gamification settings coming soon! This will allow you to manage XP, levels, and rewards.',
-                         stats=stats)
+    
+    return render_template('admin/gamification/dashboard.html', stats=stats)
 
 
 # ============================================================================
@@ -5267,15 +5369,33 @@ def admin_gamification():
 @admin_required
 def admin_shop():
     """Manage shop items and themes"""
+    # Get all purchased items
+    purchased_items = UserItem.query.all()
+    
+    # Group by item_id to get counts
+    from sqlalchemy import func
+    item_stats = db.session.query(
+        UserItem.item_id,
+        func.count(UserItem.id).label('purchase_count')
+    ).group_by(UserItem.item_id).order_by(func.count(UserItem.id).desc()).all()
+    
+    # Total purchases
+    total_purchases = UserItem.query.count()
+    unique_items = len(item_stats)
+    active_items = UserItem.query.filter_by(is_active=True).count()
+    
+    # Recent purchases
+    recent_purchases = UserItem.query.order_by(UserItem.purchased_at.desc()).limit(20).all()
+    
     stats = {
-        'total_themes': 0,
-        'total_purchases': 0,
-        'total_revenue': 0
+        'total_purchases': total_purchases,
+        'unique_items': unique_items,
+        'active_items': active_items,
+        'item_stats': item_stats,
+        'recent_purchases': recent_purchases
     }
-    return render_template('admin/simple_page.html',
-                         page_title='Shop Management',
-                         message='Shop management coming soon! This will show all themes and purchase statistics.',
-                         stats=stats)
+    
+    return render_template('admin/shop/dashboard.html', stats=stats)
 
 
 # ============================================================================
@@ -5287,35 +5407,108 @@ def admin_shop():
 @admin_required
 def admin_groups():
     """Manage study groups"""
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    query = Group.query
+    
+    if search:
+        query = query.filter(Group.name.ilike(f'%{search}%'))
+    
+    groups = query.order_by(Group.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    # Get stats
+    total_groups = Group.query.count()
+    total_members = GroupMember.query.count()
+    avg_members = round(total_members / total_groups, 1) if total_groups > 0 else 0
+    
+    # Most active groups (by message count)
+    from sqlalchemy import func
+    active_groups = db.session.query(
+        Group, func.count(GroupChatMessage.id).label('msg_count')
+    ).join(GroupChatMessage).group_by(Group.id).order_by(func.count(GroupChatMessage.id).desc()).limit(5).all()
+    
     stats = {
-        'total_groups': 0,
-        'total_members': 0,
-        'active_groups': 0
+        'total_groups': total_groups,
+        'total_members': total_members,
+        'avg_members': avg_members,
+        'active_groups': active_groups
     }
-    return render_template('admin/simple_page.html',
-                         page_title='Groups Management',
-                         message='Groups management coming soon! This will show all study groups and their members.',
-                         stats=stats)
+    
+    return render_template('admin/groups/list.html', groups=groups, stats=stats, search=search)
+
+
+@app.route('/admin/groups/<int:group_id>')
+@login_required
+@admin_required
+def admin_group_detail(group_id):
+    """View group details"""
+    group = Group.query.get_or_404(group_id)
+    members = GroupMember.query.filter_by(group_id=group_id).all()
+    messages = GroupChatMessage.query.filter_by(group_id=group_id).order_by(GroupChatMessage.created_at.desc()).limit(50).all()
+    
+    return render_template('admin/groups/detail.html', group=group, members=members, messages=messages)
+
+
+@app.route('/admin/groups/<int:group_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_group_delete(group_id):
+    """Delete a group"""
+    group = Group.query.get_or_404(group_id)
+    
+    # Delete all related data
+    GroupMember.query.filter_by(group_id=group_id).delete()
+    GroupChatMessage.query.filter_by(group_id=group_id).delete()
+    
+    AdminService.log_action(
+        admin_id=current_user.id,
+        action='delete_group',
+        target_type='group',
+        target_id=group_id,
+        details={'name': group.name}
+    )
+    
+    db.session.delete(group)
+    db.session.commit()
+    
+    flash('Group deleted successfully', 'success')
+    return redirect(url_for('admin_groups'))
 
 
 # ============================================================================
-# ADMIN - BATTLES MANAGEMENT
+# ADMIN - BATTLES MANAGEMENT (Study Sessions)
 # ============================================================================
 
 @app.route('/admin/battles')
 @login_required
 @admin_required
 def admin_battles():
-    """Manage battle bytes"""
+    """Manage study sessions (battles)"""
+    page = request.args.get('page', 1, type=int)
+    
+    # Use study sessions as "battles"
+    sessions = StudySession.query.order_by(StudySession.completed_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    # Get stats
+    total_sessions = StudySession.query.count()
+    total_focus_time = db.session.query(db.func.sum(StudySession.duration)).filter_by(mode='focus').scalar() or 0
+    total_break_time = db.session.query(db.func.sum(StudySession.duration)).filter(StudySession.mode.in_(['shortBreak', 'longBreak'])).scalar() or 0
+    
+    # Top studiers
+    from sqlalchemy import func
+    top_studiers = db.session.query(
+        User, func.sum(StudySession.duration).label('total_time')
+    ).join(StudySession).group_by(User.id).order_by(func.sum(StudySession.duration).desc()).limit(10).all()
+    
     stats = {
-        'total_battles': 0,
-        'active_battles': 0,
-        'completed_battles': 0
+        'total_sessions': total_sessions,
+        'total_focus_hours': round(total_focus_time / 60, 1),
+        'total_break_hours': round(total_break_time / 60, 1),
+        'top_studiers': top_studiers
     }
-    return render_template('admin/simple_page.html',
-                         page_title='Battles Management',
-                         message='Battles management coming soon! This will show all Battle Byte matches and statistics.',
-                         stats=stats)
+    
+    return render_template('admin/battles/list.html', sessions=sessions, stats=stats)
 
 
 # ============================================================================
@@ -5327,15 +5520,51 @@ def admin_battles():
 @admin_required
 def admin_analytics():
     """View system analytics"""
+    from datetime import timedelta
+    
+    # User growth (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    new_users_30d = User.query.filter(User.created_at >= thirty_days_ago).count()
+    
+    # Activity stats
+    total_messages = ChatMessage.query.count() + GroupChatMessage.query.count()
+    total_tasks = Todo.query.count()
+    completed_tasks = Todo.query.filter_by(completed=True).count()
+    
+    # Study sessions
+    total_sessions = StudySession.query.count()
+    total_study_time = db.session.query(db.func.sum(StudySession.duration)).scalar() or 0
+    
+    # Group activity
+    total_groups = Group.query.count()
+    total_group_members = GroupMember.query.count()
+    
+    # XP activity
+    total_xp_earned = db.session.query(db.func.sum(XPHistory.amount)).filter(XPHistory.amount > 0).scalar() or 0
+    
+    # Recent activity (last 7 days)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    recent_users = User.query.filter(User.created_at >= seven_days_ago).count()
+    recent_sessions = StudySession.query.filter(StudySession.completed_at >= seven_days_ago).count()
+    recent_tasks = Todo.query.filter(Todo.created_at >= seven_days_ago).count()
+    
     stats = {
-        'total_users': db.session.query(db.func.count(User.id)).scalar() or 0,
-        'total_pdfs': db.session.query(db.func.count(SyllabusDocument.id)).scalar() or 0,
-        'total_actions': db.session.query(db.func.count(AdminAction.id)).scalar() or 0
+        'new_users_30d': new_users_30d,
+        'total_messages': total_messages,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'completion_rate': round((completed_tasks / total_tasks * 100), 1) if total_tasks > 0 else 0,
+        'total_sessions': total_sessions,
+        'total_study_hours': round(total_study_time / 60, 1),
+        'total_groups': total_groups,
+        'total_group_members': total_group_members,
+        'total_xp_earned': int(total_xp_earned),
+        'recent_users_7d': recent_users,
+        'recent_sessions_7d': recent_sessions,
+        'recent_tasks_7d': recent_tasks
     }
-    return render_template('admin/simple_page.html',
-                         page_title='System Analytics',
-                         message='Advanced analytics coming soon! This will show detailed system statistics and trends.',
-                         stats=stats)
+    
+    return render_template('admin/analytics/dashboard.html', stats=stats)
 
 
 

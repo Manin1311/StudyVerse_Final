@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Shop Management{% endblock %}
+{% block page_title %}Shop Management{% endblock %}
+
+{% block content %}
+<style>
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 12px;
+        padding: 24px;
+        color: white;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .item-row:last-child {
+        border-bottom: none;
+    }
+
+    .purchase-badge {
+        background: #10b981;
+        color: white;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="stats-row">
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="stat-value">{{ stats.total_purchases }}</div>
+        <div class="stat-label">Total Purchases</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="stat-value">{{ stats.unique_items }}</div>
+        <div class="stat-label">Unique Items</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="stat-value">{{ stats.active_items }}</div>
+        <div class="stat-label">Active Items</div>
+    </div>
+</div>
+
+<div class="section">
+    <h3 style="margin-bottom: 20px; color: var(--text-primary);">📊 Popular Items</h3>
+    {% for item_id, count in stats.item_stats %}
+    <div class="item-row">
+        <div>
+            <div style="font-weight: 600; color: var(--text-primary);">{{ item_id }}</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">Item ID</div>
+        </div>
+        <span class="purchase-badge">{{ count }} purchases</span>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="section">
+    <h3 style="margin-bottom: 20px; color: var(--text-primary);">🛒 Recent Purchases</h3>
+    {% for purchase in stats.recent_purchases %}
+    <div class="item-row">
+        <div>
+            <div style="font-weight: 600; color: var(--text-primary);">{{ purchase.item_id }}</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">
+                User #{{ purchase.user_id }} • {{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+        </div>
+        <span
+            style="padding: 4px 12px; background: {% if purchase.is_active %}#10b981{% else %}#6b7280{% endif %}; color: white; border-radius: 20px; font-size: 12px;">
+            {{ 'Active' if purchase.is_active else 'Inactive' }}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
