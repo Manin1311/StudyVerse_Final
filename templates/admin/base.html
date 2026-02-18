@@ -242,18 +242,13 @@
                 </a>
                 <a href="{{ url_for('admin_battles') }}"
                     class="admin-nav-item {% if request.endpoint == 'admin_battles' %}active{% endif %}">
-                    <i class="fa-solid fa-swords"></i>
+                    <i class="fa-solid fa-gamepad"></i>
                     <span>Battles</span>
                 </a>
                 <a href="{{ url_for('admin_analytics') }}"
                     class="admin-nav-item {% if request.endpoint == 'admin_analytics' %}active{% endif %}">
                     <i class="fa-solid fa-chart-line"></i>
                     <span>Analytics</span>
-                </a>
-                <a href="{{ url_for('admin_logs') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_logs' %}active{% endif %}">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    <span>Audit Logs</span>
                 </a>
 
                 <div class="admin-nav-divider"></div>

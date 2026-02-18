@@ -146,28 +146,5 @@
     </div>
 </div>
 
-<!-- System Health -->
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">💚 System Health</h3>
-    <div class="metric-row">
-        <span class="metric-label">User Engagement</span>
-        <span class="metric-value" style="color: #10b981;">
-            {{ 'High' if stats.recent_sessions_7d > 100 else 'Medium' if stats.recent_sessions_7d > 50 else 'Low' }}
-        </span>
-    </div>
-    <div class="metric-row">
-        <span class="metric-label">Task Completion</span>
-        <span class="metric-value"
-            style="color: {% if stats.completion_rate > 60 %}#10b981{% elif stats.completion_rate > 40 %}#f59e0b{% else %}#ef4444{% endif %};">
-            {{ 'Excellent' if stats.completion_rate > 60 else 'Good' if stats.completion_rate > 40 else 'Needs
-            Improvement' }}
-        </span>
-    </div>
-    <div class="metric-row">
-        <span class="metric-label">Platform Activity</span>
-        <span class="metric-value" style="color: #10b981;">
-            {{ 'Active' if stats.total_messages > 1000 else 'Growing' }}
-        </span>
-    </div>
-</div>
+
 {% endblock %}
