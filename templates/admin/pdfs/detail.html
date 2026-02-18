@@ -108,8 +108,21 @@
 
         <!-- Extracted Text -->
         <div class="admin-table">
-            <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+            <div
+                style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">Extracted Text Content</h3>
+                {% if pdf.file_path %}
+                <div style="display: flex; gap: 8px;">
+                    <a href="{{ url_for('admin_pdf_view', pdf_id=pdf.id) }}" target="_blank"
+                        class="admin-btn admin-btn-secondary" style="font-size: 0.8rem; padding: 4px 12px;">
+                        <i class="fa-solid fa-eye"></i> View PDF
+                    </a>
+                    <a href="{{ url_for('admin_pdf_download', pdf_id=pdf.id) }}" class="admin-btn admin-btn-primary"
+                        style="font-size: 0.8rem; padding: 4px 12px;">
+                        <i class="fa-solid fa-download"></i> Download
+                    </a>
+                </div>
+                {% endif %}
             </div>
             <div style="padding: 20px;">
                 {% if pdf.extracted_text %}
@@ -170,6 +183,7 @@
     function showFullText(btn) {
         const preview = document.getElementById('textPreview');
         preview.textContent = {{ pdf.extracted_text | tojson }
+    };
     };
     preview.style.maxHeight = 'none';
     btn.parentElement.style.display = 'none';
