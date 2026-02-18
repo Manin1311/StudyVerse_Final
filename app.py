@@ -5690,8 +5690,8 @@ def admin_gamification():
     max_level = db.session.query(db.func.max(User.level)).scalar() or 0
     avg_level = db.session.query(db.func.avg(User.level)).scalar() or 0
     
-    # Top users by XP
-    top_users = User.query.order_by(User.total_xp.desc()).limit(10).all()
+    # Top users by XP (excluding admins)
+    top_users = User.query.filter_by(is_admin=False).order_by(User.total_xp.desc()).limit(10).all()
     
     # Recent XP transactions
     recent_xp = XPHistory.query.order_by(XPHistory.timestamp.desc()).limit(20).all()
