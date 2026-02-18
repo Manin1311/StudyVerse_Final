@@ -1,0 +1,178 @@
+{% extends "admin/base.html" %}
+
+{% block title %}PDF: {{ pdf.filename }}{% endblock %}
+{% block page_title %}PDF Details{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- PDF Info Card -->
+    <div class="admin-table">
+        <div style="padding: 24px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <i class="fa-solid fa-file-pdf" style="font-size: 64px; color: #ef4444; margin-bottom: 16px;"></i>
+                <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+                    {{ pdf.filename }}
+                </h2>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Uploaded By</div>
+                {% if user %}
+                <div style="font-weight: 500; color: var(--text-primary);">{{ user.first_name }} {{ user.last_name }}
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary);">{{ user.email }}</div>
+                {% else %}
+                <div style="font-weight: 500; color: var(--text-secondary);">Unknown User (ID: {{ pdf.user_id }})</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Upload Date</div>
+                <div style="font-weight: 500; color: var(--text-primary);">{{ pdf.created_at.strftime('%B %d, %Y at
+                    %I:%M %p') }}</div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">File Size</div>
+                <div style="font-weight: 500; color: var(--text-primary);">
+                    {% if pdf.file_size %}
+                    {{ (pdf.file_size / 1024 / 1024)|round(2) }} MB
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Extraction Status</div>
+                {% if pdf.extraction_status == 'success' %}
+                <span class="badge" style="background: #10b981; color: white;">✓ Success</span>
+                {% elif pdf.extraction_status == 'failed' %}
+                <span class="badge" style="background: #ef4444; color: white;">✗ Failed</span>
+                {% else %}
+                <span class="badge" style="background: #f59e0b; color: white;">⏳ Pending</span>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                {% if pdf.file_path %}
+                <a href="{{ url_for('admin_pdf_view', pdf_id=pdf.id) }}" target="_blank"
+                    class="admin-btn admin-btn-success" style="width: 100%; text-align: center;">
+                    <i class="fa-solid fa-eye"></i> View PDF
+                </a>
+
+                <a href="{{ url_for('admin_pdf_download', pdf_id=pdf.id) }}" class="admin-btn admin-btn-primary"
+                    style="width: 100%; text-align: center;">
+                    <i class="fa-solid fa-download"></i> Download PDF
+                </a>
+                {% endif %}
+
+                <button onclick="document.getElementById('deleteModal').style.display='flex'"
+                    class="admin-btn admin-btn-danger" style="width: 100%;">
+                    <i class="fa-solid fa-trash"></i> Delete PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Content -->
+    <div>
+        <!-- Usage Stats -->
+        <div class="admin-stats" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 24px;">
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="admin-stat-info">
+                    <div class="admin-stat-value">{{ tasks_count }}</div>
+                    <div class="admin-stat-label">Tasks Generated</div>
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="admin-stat-icon" style="background: rgba(74, 222, 128, 0.1); color: #4ade80;">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div class="admin-stat-info">
+                    <div class="admin-stat-value">
+                        {% if pdf.extracted_text %}
+                        {{ (pdf.extracted_text|length / 1000)|round(1) }}k
+                        {% else %}
+                        0
+                        {% endif %}
+                    </div>
+                    <div class="admin-stat-label">Characters</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extracted Text -->
+        <div class="admin-table">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+                <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">Extracted Text Content</h3>
+            </div>
+            <div style="padding: 20px;">
+                {% if pdf.extracted_text %}
+                <div id="textPreview"
+                    style="background: var(--bg-primary); padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; color: var(--text-primary); max-height: 400px; overflow-y: auto; white-space: pre-wrap;">
+                    {{ pdf.extracted_text[:2000] | e }}{% if pdf.extracted_text|length > 2000 %}...{% endif %}</div>
+
+                {% if pdf.extracted_text|length > 2000 %}
+                <div style="margin-top: 12px; text-align: center;">
+                    <button onclick="showFullText(this)" class="admin-btn admin-btn-secondary">
+                        <i class="fa-solid fa-expand"></i> Show Full Text
+                    </button>
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);">
+                    Showing {{ [pdf.extracted_text|length, 2000]|min }} of {{ pdf.extracted_text|length }} characters
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <i class="fa-solid fa-file-circle-xmark"
+                        style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <div>No extracted text available</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-card); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Delete PDF</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            Are you sure you want to delete this PDF? This action cannot be undone and will also delete all related
+            tasks.
+        </p>
+        <form method="POST" action="{{ url_for('admin_pdf_delete', pdf_id=pdf.id) }}">
+            <div style="display: flex; gap: 12px;">
+                <button type="button" onclick="document.getElementById('deleteModal').style.display='none'"
+                    class="admin-btn admin-btn-secondary" style="flex: 1;">Cancel</button>
+                <button type="submit" class="admin-btn admin-btn-danger" style="flex: 1;">Delete PDF</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Close modal when clicking outside
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+
+    function showFullText(btn) {
+        const preview = document.getElementById('textPreview');
+        preview.textContent = {{ pdf.extracted_text | tojson }
+    };
+    preview.style.maxHeight = 'none';
+    btn.parentElement.style.display = 'none';
+    }
+</script>
+{% endblock %}
