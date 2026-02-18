@@ -237,13 +237,7 @@
         <div class="stat-card-label">Active Users</div>
     </div>
 
-    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <div class="stat-card-icon">
-            <i class="fa-solid fa-file-pdf"></i>
-        </div>
-        <div class="stat-card-value">{{ stats.total_pdfs }}</div>
-        <div class="stat-card-label">PDFs Uploaded</div>
-    </div>
+
 
 
 </div>
@@ -278,31 +272,7 @@
         </div>
     </div>
 
-    <!-- Recent PDFs -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Recent PDFs</h3>
-            <a href="{{ url_for('admin_pdfs') }}" class="view-all-link">View All →</a>
-        </div>
-        <div class="card-body">
-            {% for pdf in recent_pdfs %}
-            <div class="pdf-item">
-                <div class="pdf-icon">
-                    <i class="fa-solid fa-file-pdf"></i>
-                </div>
-                <div class="pdf-info">
-                    <div class="pdf-name">{{ pdf.filename[:35] }}{% if pdf.filename|length > 35 %}...{% endif %}</div>
-                    <div class="pdf-uploader">{{ pdf.user.first_name }} {{ pdf.user.last_name }}</div>
-                </div>
-                <div class="pdf-meta">
-                    <div class="pdf-date">{{ pdf.created_at.strftime('%b %d') }}</div>
-                </div>
-            </div>
-            {% else %}
-            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">No PDFs yet</div>
-            {% endfor %}
-        </div>
-    </div>
+
 </div>
 
 

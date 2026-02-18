@@ -205,11 +205,7 @@
                     <i class="fa-solid fa-users"></i>
                     <span>Users</span>
                 </a>
-                <a href="{{ url_for('admin_pdfs') }}"
-                    class="admin-nav-item {% if 'admin_pdf' in request.endpoint %}active{% endif %}">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    <span>PDFs</span>
-                </a>
+
 
                 <a href="{{ url_for('admin_gamification') }}"
                     class="admin-nav-item {% if request.endpoint == 'admin_gamification' %}active{% endif %}">

@@ -5239,11 +5239,9 @@ def admin_dashboard():
     
     # Recent activity
     recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
-    recent_pdfs = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).limit(5).all()
     return render_template('admin/dashboard.html',
                          stats=stats,
-                         recent_users=recent_users,
-                         recent_pdfs=recent_pdfs)
+                         recent_users=recent_users)
 
 # ============================================================================
 # ADMIN - USER MANAGEMENT
@@ -5431,129 +5429,7 @@ def admin_support_close(ticket_id):
     return redirect(url_for('admin_support'))
 
 # ============================================================================
-# ADMIN - PDF MANAGEMENT
-# ============================================================================
 
-@app.route('/admin/pdfs')
-@login_required
-@admin_required
-def admin_pdfs():
-    """List all uploaded PDFs"""
-    page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
-    
-    query = SyllabusDocument.query
-    
-    if search:
-        query = query.filter(
-            db.or_(
-                SyllabusDocument.filename.ilike(f'%{search}%'),
-                SyllabusDocument.extracted_text.ilike(f'%{search}%')
-            )
-        )
-    
-    pdfs = query.order_by(SyllabusDocument.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
-    
-    return render_template('admin/pdfs/list.html', pdfs=pdfs, search=search)
-
-@app.route('/admin/pdfs/<int:pdf_id>')
-@login_required
-@admin_required
-def admin_pdf_detail(pdf_id):
-    """View PDF details and extracted text"""
-    pdf = SyllabusDocument.query.get_or_404(pdf_id)
-    user = User.query.get(pdf.user_id)
-    
-    # Count related data
-    tasks_count = Todo.query.filter_by(syllabus_id=pdf.id).count()
-    
-    # Log admin access
-    AdminService.log_action(
-        admin_id=current_user.id,
-        action='view_pdf',
-        target_type='syllabus_document',
-        target_id=pdf.id
-    )
-    
-    return render_template('admin/pdfs/detail.html',
-                         pdf=pdf,
-                         user=user,
-                         tasks_count=tasks_count)
-
-@app.route('/admin/pdfs/<int:pdf_id>/download')
-@login_required
-@admin_required
-def admin_pdf_download(pdf_id):
-    """Download original PDF file"""
-    pdf = SyllabusDocument.query.get_or_404(pdf_id)
-    
-    # Log download
-    AdminService.log_action(
-        admin_id=current_user.id,
-        action='download_pdf',
-        target_type='syllabus_document',
-        target_id=pdf.id
-    )
-    
-    if pdf.file_path and os.path.exists(pdf.file_path):
-        from flask import send_file
-        return send_file(pdf.file_path, as_attachment=True, download_name=pdf.filename)
-    else:
-        flash('PDF file not found', 'error')
-        return redirect(url_for('admin_pdf_detail', pdf_id=pdf_id))
-
-@app.route('/admin/pdfs/<int:pdf_id>/view')
-@login_required
-@admin_required
-def admin_pdf_view(pdf_id):
-    """View PDF in browser (opens in new tab)"""
-    pdf = SyllabusDocument.query.get_or_404(pdf_id)
-    
-    # Log view
-    AdminService.log_action(
-        admin_id=current_user.id,
-        action='view_pdf_file',
-        target_type='syllabus_document',
-        target_id=pdf.id
-    )
-    
-    if pdf.file_path and os.path.exists(pdf.file_path):
-        from flask import send_file
-        return send_file(pdf.file_path, as_attachment=False)  # Opens in browser
-    else:
-        flash('PDF file not found', 'error')
-        return redirect(url_for('admin_pdf_detail', pdf_id=pdf_id))
-
-@app.route('/admin/pdfs/<int:pdf_id>/delete', methods=['POST'])
-@login_required
-@admin_required
-def admin_pdf_delete(pdf_id):
-    """Delete a PDF"""
-    pdf = SyllabusDocument.query.get_or_404(pdf_id)
-    
-    # Delete file from filesystem
-    try:
-        if pdf.file_path and os.path.exists(pdf.file_path):
-            os.remove(pdf.file_path)
-    except Exception as e:
-        flash(f'Error deleting file: {str(e)}', 'error')
-    
-    # Delete from database
-    db.session.delete(pdf)
-    
-    # Log deletion
-    AdminService.log_action(
-        admin_id=current_user.id,
-        action='delete_pdf',
-        target_type='syllabus_document',
-        target_id=pdf.id,
-        details={'filename': pdf.filename, 'user_id': pdf.user_id}
-    )
-    
-    db.session.commit()
-    
-    flash('PDF deleted successfully', 'success')
-    return redirect(url_for('admin_pdfs'))
 
 # ============================================================================
 # ADMIN - AUDIT LOGS
