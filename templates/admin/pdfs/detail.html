@@ -17,9 +17,13 @@
 
             <div style="margin-bottom: 16px;">
                 <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Uploaded By</div>
+                {% if user %}
                 <div style="font-weight: 500; color: var(--text-primary);">{{ user.first_name }} {{ user.last_name }}
                 </div>
                 <div style="font-size: 13px; color: var(--text-secondary);">{{ user.email }}</div>
+                {% else %}
+                <div style="font-weight: 500; color: var(--text-secondary);">Unknown User (ID: {{ pdf.user_id }})</div>
+                {% endif %}
             </div>
 
             <div style="margin-bottom: 16px;">
@@ -115,7 +119,7 @@
 
                 {% if pdf.extracted_text|length > 2000 %}
                 <div style="margin-top: 12px; text-align: center;">
-                    <button onclick="showFullText()" class="admin-btn admin-btn-secondary">
+                    <button onclick="showFullText(this)" class="admin-btn admin-btn-secondary">
                         <i class="fa-solid fa-expand"></i> Show Full Text
                     </button>
                 </div>
@@ -163,12 +167,12 @@
         }
     });
 
-    function showFullText() {
+    function showFullText(btn) {
         const preview = document.getElementById('textPreview');
         preview.textContent = {{ pdf.extracted_text | tojson }
     };
     preview.style.maxHeight = 'none';
-    event.target.style.display = 'none';
+    btn.parentElement.style.display = 'none';
     }
 </script>
 {% endblock %}
