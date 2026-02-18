@@ -551,6 +551,7 @@ class SupportTicket(db.Model):
     """
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('support_tickets', lazy=True))
     subject = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(50), default='general')  # general, bug, inappropriate, help
     status = db.Column(db.String(20), default='open')  # open, in_progress, closed
