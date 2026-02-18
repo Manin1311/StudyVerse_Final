@@ -47,7 +47,7 @@
                 </div>
                 <div
                     style="font-size: 0.7rem; color: var(--text-secondary); {% if m.role == 'user' %}text-align: right;{% endif %} margin: 0 4px;">
-                    <span data-timestamp="{{ m.created_at.isoformat() if m.created_at else '' }}">{{
+                    <span data-timestamp="{{ (m.created_at.isoformat() + 'Z') if m.created_at else '' }}">{{
                         to_ist_time(m.created_at) if m.created_at else '' }}</span>
                 </div>
             </div>

@@ -5,28 +5,32 @@
 {% block content %}
 <div class="admin-header">
     <h1>Support Tickets</h1>
-    <div class="admin-user-info">
+    <div class="admin-filters">
         <a href="{{ url_for('admin_support', status='open') }}"
-            class="btn {% if current_status == 'open' %}btn-primary{% else %}btn-secondary{% endif %}"
-            style="padding: 6px 16px;">Open</a>
+            class="admin-filter-btn {% if current_status == 'open' %}active{% endif %}">
+            Open
+        </a>
         <a href="{{ url_for('admin_support', status='in_progress') }}"
-            class="btn {% if current_status == 'in_progress' %}btn-primary{% else %}btn-secondary{% endif %}"
-            style="padding: 6px 16px;">In Progress</a>
+            class="admin-filter-btn {% if current_status == 'in_progress' %}active{% endif %}">
+            In Progress
+        </a>
         <a href="{{ url_for('admin_support', status='closed') }}"
-            class="btn {% if current_status == 'closed' %}btn-primary{% else %}btn-secondary{% endif %}"
-            style="padding: 6px 16px;">Closed</a>
+            class="admin-filter-btn {% if current_status == 'closed' %}active{% endif %}">
+            Closed
+        </a>
         <a href="{{ url_for('admin_support', status='all') }}"
-            class="btn {% if current_status == 'all' or not current_status %}btn-primary{% else %}btn-secondary{% endif %}"
-            style="padding: 6px 16px;">All</a>
+            class="admin-filter-btn {% if current_status == 'all' or not current_status %}active{% endif %}">
+            All
+        </a>
     </div>
 </div>
 
 <div class="admin-content">
-    <div class="card">
+    <div class="card" style="overflow-x: auto;">
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th style="width: 60px;">ID</th>
                     <th>User</th>
                     <th>Subject</th>
                     <th>Category</th>
@@ -38,42 +42,52 @@
             <tbody>
                 {% for ticket in tickets %}
                 <tr>
-                    <td>#{{ ticket.id }}</td>
+                    <td><span style="opacity: 0.6;">#{{ ticket.id }}</span></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <img src="{{ ticket.user.get_avatar(32) }}"
-                                style="width: 32px; height: 32px; border-radius: 50%;">
+                                style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
                             <div style="font-weight: 500;">{{ ticket.user.first_name }}</div>
                         </div>
                     </td>
                     <td>
-                        <div style="font-weight: 600; color: white;">{{ ticket.subject }}</div>
+                        <div
+                            style="font-weight: 500; color: white; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ ticket.subject }}</div>
                         {% if ticket.admin_unread_count > 0 %}
                         <span
-                            style="background: var(--danger); color: white; border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; margin-top: 4px; display: inline-block;">{{
-                            ticket.admin_unread_count }} new</span>
+                            style="background: var(--danger); color: white; border-radius: 10px; padding: 2px 8px; font-size: 0.65rem; margin-top: 4px; display: inline-block;">
+                            {{ ticket.admin_unread_count }} new
+                        </span>
                         {% endif %}
                     </td>
-                    <td><span
-                            style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">{{
-                            ticket.category|title }}</span></td>
+                    <td>
+                        <span
+                            style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.1);">
+                            {{ ticket.category|title }}
+                        </span>
+                    </td>
                     <td>
                         <span class="status-badge status-{{ ticket.status }}">
                             {{ ticket.status|replace('_', ' ')|title }}
                         </span>
                     </td>
-                    <td style="color: var(--text-secondary); font-size: 0.9rem;">{{ ticket.updated_at|ist_time }}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap;">
+                        {{ ticket.updated_at|ist_time }}
+                    </td>
                     <td>
                         <a href="{{ url_for('admin_support_detail', ticket_id=ticket.id) }}" class="btn btn-primary"
-                            style="padding: 6px 12px; font-size: 0.8rem;">View</a>
+                            style="padding: 6px 14px; font-size: 0.85rem; border-radius: 6px;">
+                            View
+                        </a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                    <td colspan="7" style="text-align: center; padding: 60px; color: var(--text-secondary);">
                         <i class="fa-solid fa-inbox"
-                            style="font-size: 2rem; margin-bottom: 16px; display: block; opacity: 0.3;"></i>
-                        No tickets found.
+                            style="font-size: 2.5rem; margin-bottom: 20px; display: block; opacity: 0.2;"></i>
+                        <p>No tickets found matching this filter.</p>
                     </td>
                 </tr>
                 {% endfor %}
@@ -83,37 +97,97 @@
 </div>
 
 <style>
+    /* Improved Filter Buttons */
+    .admin-filters {
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .admin-filter-btn {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .admin-filter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .admin-filter-btn.active {
+        background: var(--primary);
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Improved Table Styling */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+    }
+
+    .data-table th {
+        text-align: left;
+        padding: 16px 20px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
+    }
+
+    .data-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Status Badges */
     .status-badge {
-        padding: 4px 10px;
+        padding: 5px 12px;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
     }
 
     .status-open {
-        background: rgba(16, 185, 129, 0.2);
+        background: rgba(16, 185, 129, 0.15);
         color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
     .status-in_progress {
-        background: rgba(99, 102, 241, 0.2);
+        background: rgba(99, 102, 241, 0.15);
         color: #6366f1;
+        border: 1px solid rgba(99, 102, 241, 0.3);
     }
 
     .status-closed {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
         color: #a0a0a0;
-    }
-
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
         border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
     }
 </style>
 {% endblock %}

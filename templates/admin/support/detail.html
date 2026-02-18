@@ -47,7 +47,7 @@
                 <div
                     style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 2px; text-align: {% if message.is_admin %}right{% else %}left{% endif %};">
                     {% if message.is_admin %}You{% else %}{{ user.first_name }}{% endif %} • {{
-                    message.created_at.strftime('%I:%M %p') }}
+                    message.created_at|ist_time }}
                 </div>
                 <div style="padding: 12px 16px; border-radius: 12px; line-height: 1.5; 
                      background: {% if message.is_admin %}#4f46e5{% else %}#262626{% endif %}; 

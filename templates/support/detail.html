@@ -59,12 +59,13 @@
                     {% if message.is_admin %}
                     <div
                         style="width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
-                        <i class="fa-solid fa-headset"></i></div>
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
                     <span style="font-weight: 600; color: var(--primary);">Support Agent</span>
                     {% else %}
                     <span style="font-weight: 600;">You</span>
                     {% endif %}
-                    <span style="opacity: 0.6;">{{ message.created_at.strftime('%I:%M %p') }}</span>
+                    <span style="opacity: 0.6;">{{ message.created_at|ist_time }}</span>
                 </div>
 
                 <div style="padding: 16px 20px; border-radius: 16px; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap;
