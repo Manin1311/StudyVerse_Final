@@ -5261,7 +5261,8 @@ def admin_users():
     search = request.args.get('search', '')
     filter_type = request.args.get('filter', 'all')
     
-    query = User.query
+    # Filter base query - exclude admins
+    query = User.query.filter(User.is_admin == False)
     
     if search:
         query = query.filter(
