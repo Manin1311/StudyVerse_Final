@@ -171,6 +171,7 @@
         const preview = document.getElementById('textPreview');
         preview.textContent = {{ pdf.extracted_text | tojson }
     };
+    };
     preview.style.maxHeight = 'none';
     btn.parentElement.style.display = 'none';
     }
