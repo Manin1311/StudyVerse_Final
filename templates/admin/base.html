@@ -221,11 +221,7 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>Shop</span>
                 </a>
-                <a href="{{ url_for('admin_groups') }}"
-                    class="admin-nav-item {% if 'admin_group' in request.endpoint %}active{% endif %}">
-                    <i class="fa-solid fa-user-group"></i>
-                    <span>Groups</span>
-                </a>
+
                 <a href="{{ url_for('admin_support') }}"
                     class="admin-nav-item {% if 'admin_support' in request.endpoint %}active{% endif %}">
                     <i class="fa-solid fa-headset"></i>

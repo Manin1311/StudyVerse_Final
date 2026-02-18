@@ -5240,13 +5240,10 @@ def admin_dashboard():
     # Recent activity
     recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
     recent_pdfs = SyllabusDocument.query.order_by(SyllabusDocument.created_at.desc()).limit(5).all()
-    recent_actions = AdminAction.query.order_by(AdminAction.timestamp.desc()).limit(10).all()
-    
     return render_template('admin/dashboard.html',
                          stats=stats,
                          recent_users=recent_users,
-                         recent_pdfs=recent_pdfs,
-                         recent_actions=recent_actions)
+                         recent_pdfs=recent_pdfs)
 
 # ============================================================================
 # ADMIN - USER MANAGEMENT
@@ -5664,82 +5661,7 @@ def admin_shop():
     return render_template('admin/shop/dashboard.html', stats=stats)
 
 
-# ============================================================================
-# ADMIN - GROUPS MANAGEMENT
-# ============================================================================
 
-@app.route('/admin/groups')
-@login_required
-@admin_required
-def admin_groups():
-    """Manage study groups"""
-    page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
-    
-    query = Group.query
-    
-    if search:
-        query = query.filter(Group.name.ilike(f'%{search}%'))
-    
-    groups = query.order_by(Group.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
-    
-    # Get stats
-    total_groups = Group.query.count()
-    total_members = GroupMember.query.count()
-    avg_members = round(total_members / total_groups, 1) if total_groups > 0 else 0
-    
-    # Most active groups (by message count)
-    from sqlalchemy import func
-    active_groups = db.session.query(
-        Group, func.count(GroupChatMessage.id).label('msg_count')
-    ).join(GroupChatMessage).group_by(Group.id).order_by(func.count(GroupChatMessage.id).desc()).limit(5).all()
-    
-    stats = {
-        'total_groups': total_groups,
-        'total_members': total_members,
-        'avg_members': avg_members,
-        'active_groups': active_groups
-    }
-    
-    return render_template('admin/groups/list.html', groups=groups, stats=stats, search=search)
-
-
-@app.route('/admin/groups/<int:group_id>')
-@login_required
-@admin_required
-def admin_group_detail(group_id):
-    """View group details"""
-    group = Group.query.get_or_404(group_id)
-    members = GroupMember.query.filter_by(group_id=group_id).all()
-    messages = GroupChatMessage.query.filter_by(group_id=group_id).order_by(GroupChatMessage.created_at.desc()).limit(50).all()
-    
-    return render_template('admin/groups/detail.html', group=group, members=members, messages=messages)
-
-
-@app.route('/admin/groups/<int:group_id>/delete', methods=['POST'])
-@login_required
-@admin_required
-def admin_group_delete(group_id):
-    """Delete a group"""
-    group = Group.query.get_or_404(group_id)
-    
-    # Delete all related data
-    GroupMember.query.filter_by(group_id=group_id).delete()
-    GroupChatMessage.query.filter_by(group_id=group_id).delete()
-    
-    AdminService.log_action(
-        admin_id=current_user.id,
-        action='delete_group',
-        target_type='group',
-        target_id=group_id,
-        details={'name': group.name}
-    )
-    
-    db.session.delete(group)
-    db.session.commit()
-    
-    flash('Group deleted successfully', 'success')
-    return redirect(url_for('admin_groups'))
 
 
 # ============================================================================

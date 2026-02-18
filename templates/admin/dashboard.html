@@ -245,13 +245,7 @@
         <div class="stat-card-label">PDFs Uploaded</div>
     </div>
 
-    <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-        <div class="stat-card-icon">
-            <i class="fa-solid fa-user-group"></i>
-        </div>
-        <div class="stat-card-value">{{ stats.total_groups }}</div>
-        <div class="stat-card-label">Study Groups</div>
-    </div>
+
 </div>
 
 <!-- Content Grid -->
@@ -311,46 +305,5 @@
     </div>
 </div>
 
-<!-- Recent Admin Actions -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Recent Admin Actions</h3>
-        <a href="{{ url_for('admin_logs') }}" class="view-all-link">View All →</a>
-    </div>
-    <div class="card-body" style="padding: 0;">
-        <table class="actions-table">
-            <thead>
-                <tr>
-                    <th>ACTION</th>
-                    <th>TARGET</th>
-                    <th>TIME</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for action in recent_actions %}
-                <tr>
-                    <td>
-                        <span class="action-badge">{{ action.action.replace('_', ' ').upper() }}</span>
-                    </td>
-                    <td>
-                        {% if action.target_type and action.target_id %}
-                        {{ action.target_type }}_{{ action.target_type[:3] }}{{ action.target_id }}
-                        {% else %}
-                        -
-                        {% endif %}
-                    </td>
-                    <td style="color: var(--text-secondary); font-size: 13px;">
-                        {{ action.timestamp.strftime('%b %d, %I:%M %p') }}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-secondary);">No actions
-                        yet</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+
 {% endblock %}
