@@ -105,18 +105,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Error polling messages:', err);
         }
-    }, 2000); // Poll every 2 seconds
+    }, 8000); // Poll every 8 seconds — reduces Render server load
 
     // ----------------------------------------------------
     // Socket.IO Logic (keeping as backup)
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
-        // Initialize socket with explicit path and polling-first transport for stability on Render
+        // Single shared socket — exposed globally so whiteboard.js can reuse it
         const socket = io('/', {
-            transports: ['polling', 'websocket'],
+            transports: ['websocket', 'polling'], // prefer websocket to reduce polling overhead
             upgrade: true,
             rememberUpgrade: true
         });
+        window._groupSocket = socket; // Share with whiteboard.js
 
         socket.on('connect', () => {
             console.log('Connected to SocketIO server');

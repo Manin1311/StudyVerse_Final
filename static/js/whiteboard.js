@@ -1,6 +1,7 @@
 /**
  * Real-time Collaborative Whiteboard Logic
- * Syncs drawing strokes to all group members via Socket.IO
+ * IMPORTANT: Reuses the shared socket from group_chat.js (window._groupSocket)
+ * to avoid creating a second Socket.IO connection.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('whiteboard');
@@ -10,12 +11,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const group_id = typeof GROUP_ID !== 'undefined' ? GROUP_ID : null;
     if (!group_id) return;
 
-    // Re-use the socket already created by group_chat.js if available,
-    // otherwise create a new one. This avoids double connections.
-    const socket = window._groupSocket || io('/', { transports: ['websocket', 'polling'] });
+    // ---------------------------------------------------------------
+    // CRITICAL: Reuse the shared socket — do NOT create a new io()
+    // The socket is created and exposed by group_chat.js
+    // We wait briefly for it to be available
+    // ---------------------------------------------------------------
+    let socket = null;
 
-    // Join the group room (matching format used by group chat)
-    socket.emit('join', { group_id: group_id });
+    function initWithSocket(s) {
+        socket = s;
+        // Join the room if not already joined
+        if (socket.connected) {
+            socket.emit('join', { group_id: group_id });
+        }
+
+        // Listen for remote draws
+        socket.on('wb_draw', (data) => {
+            const x0 = data.x0 * canvas.width;
+            const y0 = data.y0 * canvas.height;
+            const x1 = data.x1 * canvas.width;
+            const y1 = data.y1 * canvas.height;
+            drawSegment(x0, y0, x1, y1, data.color, data.size);
+        });
+
+        socket.on('wb_clear', () => {
+            clearCanvas();
+        });
+    }
+
+    // Wait for group_chat.js to expose the shared socket
+    function waitForSocket(attempts) {
+        if (window._groupSocket) {
+            initWithSocket(window._groupSocket);
+        } else if (attempts > 0) {
+            setTimeout(() => waitForSocket(attempts - 1), 200);
+        }
+        // If socket never arrives, whiteboard works locally only
+    }
+    waitForSocket(20); // Wait up to 4 seconds
 
     // ---------------------------------------------------------------
     // State
@@ -44,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             clearCanvas();
-            socket.emit('wb_clear', { room: group_id });
+            if (socket) socket.emit('wb_clear', { room: group_id });
         });
     }
     if (saveBtn) {
@@ -57,29 +90,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------------
-    // Resize canvas to fill its container (called once + on tab switch)
+    // Canvas resize — preserves existing content
     // ---------------------------------------------------------------
     function resizeCanvas() {
         const parent = canvas.parentElement;
-        // Preserve drawn content by copying to a temp image
+        const w = parent.clientWidth || 800;
+        const h = parent.clientHeight || 500;
+        if (w === canvas.width && h === canvas.height) return; // No change
+
         const img = new Image();
         img.src = canvas.toDataURL();
-        canvas.width = parent.clientWidth || 800;
-        canvas.height = parent.clientHeight || 500;
+        canvas.width = w;
+        canvas.height = h;
         img.onload = () => ctx.drawImage(img, 0, 0);
     }
 
-    // Delay initial resize so the tab content is visible and has dimensions
     setTimeout(resizeCanvas, 100);
     window.addEventListener('resize', resizeCanvas);
 
-    // Called by switchTab() in the template when whiteboard becomes visible
     window.triggerWhiteboardResize = function () {
         setTimeout(resizeCanvas, 60);
     };
 
     // ---------------------------------------------------------------
-    // Drawing helpers
+    // Draw helpers
     // ---------------------------------------------------------------
     function drawSegment(x0, y0, x1, y1, color, size) {
         ctx.beginPath();
@@ -94,9 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function emitDraw(x0, y0, x1, y1) {
+        if (!socket) return;
         socket.emit('wb_draw', {
             room: group_id,
-            // Normalise to 0-1 so it works on canvases of different sizes
             x0: x0 / canvas.width,
             y0: y0 / canvas.height,
             x1: x1 / canvas.width,
@@ -135,9 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         emitDraw(last.x, last.y, e.offsetX, e.offsetY);
     });
 
-    canvas.addEventListener('mouseleave', () => {
-        drawing = false;
-    });
+    canvas.addEventListener('mouseleave', () => { drawing = false; });
 
     // ---------------------------------------------------------------
     // Touch events
@@ -154,8 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         drawing = true;
         const pos = getTouchPos(e.touches[0]);
-        last.x = pos.x;
-        last.y = pos.y;
+        last.x = pos.x; last.y = pos.y;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
@@ -164,26 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const pos = getTouchPos(e.touches[0]);
         drawSegment(last.x, last.y, pos.x, pos.y, penColor, penSize);
         emitDraw(last.x, last.y, pos.x, pos.y);
-        last.x = pos.x;
-        last.y = pos.y;
+        last.x = pos.x; last.y = pos.y;
     }, { passive: false });
 
-    canvas.addEventListener('touchend', () => {
-        drawing = false;
-    });
-
-    // ---------------------------------------------------------------
-    // Socket.IO listeners — receive remote drawing events
-    // ---------------------------------------------------------------
-    socket.on('wb_draw', (data) => {
-        const x0 = data.x0 * canvas.width;
-        const y0 = data.y0 * canvas.height;
-        const x1 = data.x1 * canvas.width;
-        const y1 = data.y1 * canvas.height;
-        drawSegment(x0, y0, x1, y1, data.color, data.size);
-    });
-
-    socket.on('wb_clear', () => {
-        clearCanvas();
-    });
+    canvas.addEventListener('touchend', () => { drawing = false; });
 });

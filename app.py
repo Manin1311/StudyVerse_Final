@@ -139,20 +139,26 @@ def load_user(user_id):
 def check_ban_status():
     if request.endpoint and (request.endpoint.startswith('static') or request.endpoint.startswith('auth.')):
         return None
-    
+
     if current_user.is_authenticated:
         user = User.query.get(current_user.id)
         if user and user.is_banned:
             logout_user()
             flash(f'Your account has been banned. Reason: {user.ban_reason or "Violation of terms"}', 'error')
             return redirect(url_for('auth.auth'))
-        # Update last_seen for online status tracking
-        if user:
-            user.last_seen = datetime.utcnow()
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
+
+        # Throttle last_seen: update DB at most once per 60 seconds
+        # Uses Flask session to track when we last wrote, avoiding a DB hit on every request
+        now = datetime.utcnow()
+        last_update = session.get('last_seen_updated')
+        if not last_update or (now - datetime.fromisoformat(last_update)).total_seconds() > 60:
+            if user:
+                user.last_seen = now
+                try:
+                    db.session.commit()
+                    session['last_seen_updated'] = now.isoformat()
+                except Exception:
+                    db.session.rollback()
     return None
 
 @app.context_processor
