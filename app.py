@@ -104,6 +104,8 @@ from routes.shop import shop_bp
 from routes.support import support_bp
 from routes.syllabus import syllabus_bp
 from routes.battle import battle_bp
+from routes.quiz import quiz_bp
+from routes.friends import friends_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
@@ -116,6 +118,8 @@ app.register_blueprint(shop_bp)
 app.register_blueprint(support_bp)
 app.register_blueprint(syllabus_bp)
 app.register_blueprint(battle_bp)
+app.register_blueprint(quiz_bp)
+app.register_blueprint(friends_bp)
 
 # ============================================================================
 # GLOBAL HANDLERS
