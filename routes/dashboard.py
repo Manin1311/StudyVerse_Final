@@ -119,9 +119,51 @@ def dashboard_view():
     if online_users < 1:
         online_users = 1
     
-    # Daily Quests (simple example quests based on user activity)
+    # -------------------------
+    # TODAY'S STUDY MINUTES
+    # -------------------------
+    today_study_mins = (
+        db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
+        .filter(StudySession.user_id == current_user.id)
+        .filter(db.func.date(StudySession.completed_at) == datetime.utcnow().date())
+        .scalar()
+    ) or 0
+
+    # -------------------------
+    # IMPORTANT CARD DATA
+    # -------------------------
+    # Next upcoming event (soonest future event)
+    today_str = today_date.strftime('%Y-%m-%d')
+    important_event = (
+        Event.query
+        .filter_by(user_id=current_user.id)
+        .filter(Event.date >= today_str)
+        .order_by(Event.date.asc(), Event.time.asc())
+        .first()
+    )
+
+    # Important todo: first try high priority due soon, else just first incomplete
+    important_todo = (
+        Todo.query
+        .filter_by(user_id=current_user.id, completed=False, priority='High')
+        .order_by(Todo.due_date.asc())
+        .first()
+    )
+    important_todo_label = 'High Priority Task'
+
+    if not important_todo:
+        important_todo = (
+            Todo.query
+            .filter_by(user_id=current_user.id, completed=False)
+            .order_by(Todo.due_date.asc())
+            .first()
+        )
+        important_todo_label = 'Due Soon'
+
+    # -------------------------
+    # DAILY QUESTS
+    # -------------------------
     quests = []
-    # Quest 1: Complete 3 tasks today
     today_completed = Todo.query.filter_by(user_id=current_user.id, completed=True).filter(
         db.func.date(Todo.created_at) == datetime.utcnow().date()
     ).count()
@@ -134,13 +176,6 @@ def dashboard_view():
         'completed': today_completed >= 3
     })
     
-    # Quest 2: Study for 30 minutes
-    today_study_mins = (
-        db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
-        .filter(StudySession.user_id == current_user.id)
-        .filter(db.func.date(StudySession.completed_at) == datetime.utcnow().date())
-        .scalar()
-    ) or 0
     quests.append({
         'description': 'Study for 30 mins',
         'icon': 'fa-clock',
@@ -151,35 +186,63 @@ def dashboard_view():
         'unit': 'min'
     })
     
-    # Quest 3: Maintain streak
     quests.append({
         'description': 'Daily Login Streak',
         'icon': 'fa-fire',
         'xp_reward': 20,
         'progress': current_user.current_streak,
-        'target': current_user.current_streak + 1, # Always +1 target for next day
-        'completed': True # Login is done
+        'target': current_user.current_streak + 1,
+        'completed': True
     })
 
-    # Weekly Stats (Last 7 days)
-    weekly_stats = {
-        'labels': [],
-        'data': []
-    }
+    # -------------------------
+    # WEEKLY STATS (with chart data for template)
+    # -------------------------
+    chart_data = []
+    total_focus_mins = 0
+    total_tasks_done = 0
+
+    # Find max values for percentage scaling
+    max_focus = 1
+    max_tasks = 1
+    raw_days = []
     for i in range(6, -1, -1):
         day = today_utc - timedelta(days=i)
-        day_str = day.strftime('%a') # Mon, Tue...
-        weekly_stats['labels'].append(day_str)
-        
-        # Count tasks completed on this day
-        cnt = Todo.query.filter_by(user_id=current_user.id, completed=True).filter(
+        day_label = day.strftime('%a')
+        focus_mins = (
+            db.session.query(db.func.coalesce(db.func.sum(StudySession.duration), 0))
+            .filter(StudySession.user_id == current_user.id)
+            .filter(db.func.date(StudySession.completed_at) == day.date())
+            .scalar()
+        ) or 0
+        task_count = Todo.query.filter_by(user_id=current_user.id, completed=True).filter(
             db.func.date(Todo.completed_at) == day.date()
         ).count()
-        weekly_stats['data'].append(cnt)
+        raw_days.append({'day': day_label, 'focus_mins': focus_mins, 'task_count': task_count})
+        total_focus_mins += focus_mins
+        total_tasks_done += task_count
+        if focus_mins > max_focus:
+            max_focus = focus_mins
+        if task_count > max_tasks:
+            max_tasks = task_count
 
-    # Habit Tracking (Mock data or real if habit table used)
-    # We'll fetch habits if they exist
-    habits = [] # Add habit logic if needed
+    for d in raw_days:
+        chart_data.append({
+            'day': d['day'],
+            'focus_mins': d['focus_mins'],
+            'task_count': d['task_count'],
+            'focus_pct': int(d['focus_mins'] / max_focus * 100) if max_focus > 0 else 0,
+            'task_pct': int(d['task_count'] / max_tasks * 100) if max_tasks > 0 else 0,
+        })
+
+    weekly_stats = {
+        'chart': chart_data,
+        'total_focus': total_focus_mins,
+        'total_tasks': total_tasks_done,
+    }
+
+    # Habit Tracking
+    habits = []
     
     # Important items (Due soon)
     important_items = (
@@ -205,11 +268,14 @@ def dashboard_view():
         upcoming_todos=upcoming_todos,
         online_users=online_users,
         quests=quests,
-        # Serialize for Chart.js
-        weekly_labels=weekly_stats['labels'],
-        weekly_data=weekly_stats['data'],
+        weekly_stats=weekly_stats,
         habits=habits,
         important_items=important_items,
         completed_parent_tasks=completed_parent_tasks,
-        completed_events_week=completed_events_week
+        completed_events_week=completed_events_week,
+        # Variables required by template
+        today_study_mins=today_study_mins,
+        important_event=important_event,
+        important_todo=important_todo,
+        important_todo_label=important_todo_label,
     )
