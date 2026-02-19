@@ -146,6 +146,13 @@ def check_ban_status():
             logout_user()
             flash(f'Your account has been banned. Reason: {user.ban_reason or "Violation of terms"}', 'error')
             return redirect(url_for('auth.auth'))
+        # Update last_seen for online status tracking
+        if user:
+            user.last_seen = datetime.utcnow()
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
     return None
 
 @app.context_processor
@@ -268,6 +275,41 @@ def handle_message(data):
             'created_at': ai_ist_time,
             'role': 'assistant'
         }, room=str(group_id), include_self=True)
+
+# ============================================================================
+# WHITEBOARD SOCKET.IO EVENTS
+# ============================================================================
+
+@socketio.on('wb_draw')
+def on_wb_draw(data):
+    """Broadcast whiteboard stroke to all group members except sender."""
+    room = str(data.get('room', ''))
+    if not room:
+        return
+    # Verify sender is a group member
+    membership = GroupMember.query.filter_by(group_id=room, user_id=current_user.id).first() if current_user.is_authenticated else None
+    if not membership:
+        return
+    # Broadcast the draw event to everyone else in the room
+    emit('wb_draw', {
+        'x0': data.get('x0'),
+        'y0': data.get('y0'),
+        'x1': data.get('x1'),
+        'y1': data.get('y1'),
+        'color': data.get('color', '#000000'),
+        'size': data.get('size', 2)
+    }, room=room, include_self=False)
+
+@socketio.on('wb_clear')
+def on_wb_clear(data):
+    """Broadcast whiteboard clear to all group members."""
+    room = str(data.get('room', ''))
+    if not room:
+        return
+    membership = GroupMember.query.filter_by(group_id=room, user_id=current_user.id).first() if current_user.is_authenticated else None
+    if not membership:
+        return
+    emit('wb_clear', {}, room=room, include_self=False)
 
 # BATTLE SOCKETS
 # In-memory battle state

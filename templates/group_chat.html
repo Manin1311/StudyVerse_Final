@@ -76,7 +76,7 @@
                     style="font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
                     <i class="fa-solid fa-circle"
                         style="color: var(--accent-green); font-size: 6px; vertical-align: middle; margin-right: 4px;"></i>
-                    {{ group_members|selectattr('is_online_status')|list|length }} Online
+                    {{ online_count }} Online
                 </div>
             </div>
 
