@@ -6,19 +6,19 @@
 <div class="admin-header">
     <h1>Support Tickets</h1>
     <div class="admin-filters">
-        <a href="{{ url_for('admin.support', status='open') }}"
+        <a href="{{ url_for('admin_support', status='open') }}"
             class="admin-filter-btn {% if current_status == 'open' %}active{% endif %}">
             Open
         </a>
-        <a href="{{ url_for('admin.support', status='in_progress') }}"
+        <a href="{{ url_for('admin_support', status='in_progress') }}"
             class="admin-filter-btn {% if current_status == 'in_progress' %}active{% endif %}">
             In Progress
         </a>
-        <a href="{{ url_for('admin.support', status='closed') }}"
+        <a href="{{ url_for('admin_support', status='closed') }}"
             class="admin-filter-btn {% if current_status == 'closed' %}active{% endif %}">
             Closed
         </a>
-        <a href="{{ url_for('admin.support', status='all') }}"
+        <a href="{{ url_for('admin_support', status='all') }}"
             class="admin-filter-btn {% if current_status == 'all' or not current_status %}active{% endif %}">
             All
         </a>
@@ -76,7 +76,7 @@
                         {{ ticket.updated_at|ist_time }}
                     </td>
                     <td>
-                        <a href="{{ url_for('admin.support_detail', ticket_id=ticket.id) }}" class="btn btn-primary"
+                        <a href="{{ url_for('admin_support_detail', ticket_id=ticket.id) }}" class="btn btn-primary"
                             style="padding: 6px 14px; font-size: 0.85rem; border-radius: 6px;">
                             View
                         </a>

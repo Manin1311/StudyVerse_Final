@@ -136,11 +136,11 @@
 {% if sessions.pages > 1 %}
 <div class="admin-pagination" style="margin-top: 30px;">
     {% if sessions.has_prev %}
-    <a href="{{ url_for('admin.battles', page=sessions.prev_num) }}" class="admin-btn-secondary">Previous</a>
+    <a href="{{ url_for('admin_battles', page=sessions.prev_num) }}" class="admin-btn-secondary">Previous</a>
     {% endif %}
     <span>Page {{ sessions.page }} of {{ sessions.pages }}</span>
     {% if sessions.has_next %}
-    <a href="{{ url_for('admin.battles', page=sessions.next_num) }}" class="admin-btn-secondary">Next</a>
+    <a href="{{ url_for('admin_battles', page=sessions.next_num) }}" class="admin-btn-secondary">Next</a>
     {% endif %}
 </div>
 {% endif %}

@@ -105,19 +105,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Error polling messages:', err);
         }
-    }, 8000); // Poll every 8 seconds — reduces Render server load
+    }, 2000); // Poll every 2 seconds
 
     // ----------------------------------------------------
     // Socket.IO Logic (keeping as backup)
     // ----------------------------------------------------
     if (typeof io !== 'undefined' && GROUP_ID) {
-        // Single shared socket — exposed globally so whiteboard.js can reuse it
+        // Initialize socket with explicit path and polling-first transport for stability on Render
         const socket = io('/', {
-            transports: ['websocket', 'polling'], // prefer websocket to reduce polling overhead
+            transports: ['polling', 'websocket'],
             upgrade: true,
             rememberUpgrade: true
         });
-        window._groupSocket = socket; // Share with whiteboard.js
 
         socket.on('connect', () => {
             console.log('Connected to SocketIO server');
@@ -282,9 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            // Use provided avatar OR generate one with single initial (FIX)
-            const initial = (data.username || 'U').charAt(0).toUpperCase();
-            const avatarUrl = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=random`;
+            const avatarUrl = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username || 'User')}&background=random`;
             avatarHtml = `<img src="${avatarUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">`;
         }
 

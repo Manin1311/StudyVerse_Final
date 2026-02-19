@@ -612,12 +612,6 @@
             }
         });
     </script>
-    <script>
-        // Global User Data for JS
-        const CURRENT_USER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
-        const CURRENT_USER_NAME = "{{ current_user.first_name if current_user.is_authenticated else 'Guest' }}";
-        const CURRENT_USER_AVATAR = "{{ current_user.get_avatar(64) if current_user.is_authenticated else '' }}";
-    </script>
     <!-- Confetti JS -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>

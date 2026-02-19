@@ -75,8 +75,7 @@
                 <img src="{{ friend.avatar }}" class="friend-avatar">
                 <div class="friend-info">
                     <div class="friend-name">
-                        <a href="{{ url_for('user.profile', user_id=friend.id) }}" class="profile-link">{{ friend.name
-                            }}</a>
+                        <a href="{{ url_for('profile', user_id=friend.id) }}" class="profile-link">{{ friend.name }}</a>
                     </div>
                     {% if friend.is_public %}
                     <div class="friend-rank">{{ friend.rank.name }}</div>

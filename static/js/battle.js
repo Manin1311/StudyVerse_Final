@@ -595,12 +595,4 @@ document.addEventListener('DOMContentLoaded', () => {
         if (seconds < 60) display.timer.style.color = '#ef4444'; // Red
         else display.timer.style.color = 'inherit';
     }
-
-    // --- Leave Battle Function ---
-    window.leaveBattle = function () {
-        if (confirm("Are you sure you want to leave the battle? This will forfeit the match.")) {
-            sessionStorage.removeItem('battle_room_code');
-            window.location.href = '/dashboard';
-        }
-    };
 });
