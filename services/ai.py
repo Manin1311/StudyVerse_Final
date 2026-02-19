@@ -2,61 +2,73 @@
 import os
 import requests
 import json
-import base64
 
 # Load AI API credentials from environment
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 
-def call_ai_api(messages):
+def call_ai_api(messages, max_tokens=2048):
     """
-    Call Google Gemini API (or other configured AI).
+    Call Google Gemini API.
     messages: list of dicts [{'role': 'user', 'content': '...'}]
-    Returns: str (response content)
+    Returns: str (response content) — raises on failure
     """
     if not AI_API_KEY:
-         raise ValueError("AI_API_KEY not configured. Please set it in .env")
+        raise ValueError("AI_API_KEY not configured. Please set it in .env or Render environment.")
 
-    # Extract the last user prompt
+    # Build conversation text
     conversation_history = ""
     for msg in messages:
         role = "User" if msg['role'] == 'user' else "Model"
         conversation_history += f"{role}: {msg['content']}\n"
-    
-    # Use the flash model for speed
-    model_id = os.environ.get("AI_MODEL", "models/gemini-2.5-flash")
-    
-    # Fix for full URL in env var
-    if "/" in model_id and not model_id.startswith("models/"):
-         # Assume it's a model name like 'gemini-1.5-flash'
-         pass 
+
+    # Model selection: prefer env override, default to gemini-1.5-flash (stable)
+    model_id = os.environ.get("AI_MODEL", "gemini-1.5-flash")
+
+    # Normalise model_id: accept both 'gemini-1.5-flash' and 'models/gemini-1.5-flash'
+    if not model_id.startswith("models/"):
+        model_id = f"models/{model_id}"
 
     endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model_id}:generateContent?key={AI_API_KEY}"
-    
+
     payload = {
         "contents": [{
             "parts": [{"text": conversation_history}]
         }],
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 800,
+            "maxOutputTokens": max_tokens,
         }
     }
-    
-    try:
-        response = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=30)
-        
-        if response.status_code != 200:
-            return f"Error: API returned {response.status_code} - {response.text}"
-            
-        data = response.json()
-        
-        # Parse Gemini response structure
-        if 'candidates' in data and data['candidates']:
-            content = data['candidates'][0]['content']['parts'][0]['text']
-            return content
-        
-        return "Error: No content returned from AI."
-        
-    except Exception as e:
-        print(f"AI API Call Failed: {e}")
-        raise e
+
+    response = requests.post(
+        endpoint,
+        json=payload,
+        headers={'Content-Type': 'application/json'},
+        timeout=45
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Gemini API error {response.status_code}: {response.text[:300]}")
+
+    data = response.json()
+
+    # Handle blocked / empty candidates
+    candidates = data.get('candidates', [])
+    if not candidates:
+        # Check for promptFeedback block reason
+        feedback = data.get('promptFeedback', {})
+        reason = feedback.get('blockReason', 'unknown')
+        raise RuntimeError(f"Gemini returned no candidates (blockReason: {reason})")
+
+    candidate = candidates[0]
+
+    # Safety checks for finish reason
+    finish_reason = candidate.get('finishReason', 'STOP')
+    if finish_reason not in ('STOP', 'MAX_TOKENS', None):
+        raise RuntimeError(f"Gemini finished with reason: {finish_reason}")
+
+    parts = candidate.get('content', {}).get('parts', [])
+    if not parts:
+        raise RuntimeError("Gemini candidate had no parts/text.")
+
+    return parts[0].get('text', '').strip()
