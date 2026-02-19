@@ -8,7 +8,7 @@
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-            <a href="{{ url_for('support') }}" class="btn btn-secondary"
+            <a href="{{ url_for('support.index') }}" class="btn btn-secondary"
                 style="margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.2s;">
                 <i class="fa-solid fa-arrow-left"></i> Back to Support
             </a>
@@ -96,7 +96,7 @@
         {% if ticket.status != 'closed' %}
         <div class="chat-input-area"
             style="padding: 24px; background: var(--bg-card); border-top: 1px solid var(--border); position: relative; z-index: 10;">
-            <form action="{{ url_for('support_reply', ticket_id=ticket.id) }}" method="POST"
+            <form action="{{ url_for('support.reply', ticket_id=ticket.id) }}" method="POST"
                 style="display: flex; gap: 16px; align-items: flex-end;">
                 <textarea name="message" required placeholder="Type your reply here..." rows="1"
                     oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"

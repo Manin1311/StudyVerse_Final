@@ -20,7 +20,7 @@
     {% if tickets %}
     <div style="display: flex; flex-direction: column; gap: 16px;">
         {% for ticket in tickets %}
-        <a href="{{ url_for('support_detail', ticket_id=ticket.id) }}" class="card"
+        <a href="{{ url_for('support.detail', ticket_id=ticket.id) }}" class="card"
             style="text-decoration: none; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; border: 1px solid var(--border); padding: 20px;"
             onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--primary)';"
             onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border)';">
@@ -99,7 +99,7 @@
                     class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <form action="{{ url_for('support_create') }}" method="POST">
+        <form action="{{ url_for('support.create') }}" method="POST">
             <div style="margin-bottom: 20px;">
                 <label
                     style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">Subject</label>

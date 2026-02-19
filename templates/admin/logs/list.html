@@ -115,7 +115,7 @@
 {% if logs.pages > 1 %}
 <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px;">
     {% if logs.has_prev %}
-    <a href="{{ url_for('admin_logs', page=logs.prev_num, action=action_filter) }}"
+    <a href="{{ url_for('admin.logs', page=logs.prev_num, action=action_filter) }}"
         class="admin-btn admin-btn-secondary">
         <i class="fa-solid fa-chevron-left"></i> Previous
     </a>
@@ -124,7 +124,7 @@
     <span style="color: var(--text-secondary);">Page {{ logs.page }} of {{ logs.pages }}</span>
 
     {% if logs.has_next %}
-    <a href="{{ url_for('admin_logs', page=logs.next_num, action=action_filter) }}"
+    <a href="{{ url_for('admin.logs', page=logs.next_num, action=action_filter) }}"
         class="admin-btn admin-btn-secondary">
         Next <i class="fa-solid fa-chevron-right"></i>
     </a>

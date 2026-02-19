@@ -14,7 +14,7 @@
         <div style="display: flex; gap: 12px;">
             <!-- Flashcards feature disabled -->
             <!-- Flashcards feature disabled -->
-            <form id="syllabusUploadForm" method="POST" action="{{ url_for('syllabus_upload') }}"
+            <form id="syllabusUploadForm" method="POST" action="{{ url_for('syllabus.upload') }}"
                 enctype="multipart/form-data" style="margin: 0; display:flex; gap:12px; align-items:center;">
 
 
@@ -162,8 +162,8 @@
 
                     <div class="subtopic-list">
                         {% for t in ch.todos %}
-                        <form method="POST" action="{{ url_for('todos_toggle', todo_id=t.id) }}" style="margin: 0;">
-                            <input type="hidden" name="next" value="{{ url_for('syllabus') }}">
+                        <form method="POST" action="{{ url_for('todos.toggle', todo_id=t.id) }}" style="margin: 0;">
+                            <input type="hidden" name="next" value="{{ url_for('syllabus.index') }}">
                             <label class="subtopic-item {% if t.completed %}completed{% endif %}"
                                 onclick="/* this.previousElementSibling.submit() handled by input change */">
                                 <input type="checkbox" {% if t.completed %}checked{% endif %}
@@ -224,7 +224,7 @@
                 </style>
                 <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
                     {% for arc in archived_docs %}
-                    <a href="{{ url_for('syllabus', view_id=arc.id) }}" style="text-decoration: none;">
+                    <a href="{{ url_for('syllabus.index', view_id=arc.id) }}" style="text-decoration: none;">
                         <button type="button"
                             style="width: 100%; text-align: left; background: none; border: none; padding: 0; cursor: pointer;">
                             <div class="prev-course-card"

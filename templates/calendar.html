@@ -6,7 +6,7 @@
 <div style="padding: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <h2 style="color: var(--text-primary); font-family: var(--font-heading);">My Calendar</h2>
-        <a href="{{ url_for('profile', user_id=current_user.id) }}" class="btn"
+        <a href="{{ url_for('user.profile', user_id=current_user.id) }}" class="btn"
             style="background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 16px; border-radius: 8px; text-decoration: none;">
             <i class="fa-solid fa-arrow-left"></i> Back to Profile
         </a>
@@ -57,7 +57,7 @@
 
         <h3 id="quick-add-title" style="font-size: 1.2rem; color: white; margin-bottom: 16px;">Add Task</h3>
 
-        <form action="{{ url_for('todos_add') }}" method="POST"
+        <form action="{{ url_for('todos.add') }}" method="POST"
             style="display: flex; flex-direction: column; gap: 16px;">
             <input type="hidden" name="due_date" id="quick-due-date">
             <input type="hidden" name="next" value="{{ request.url }}"> <!-- Redirect back here -->
@@ -143,12 +143,12 @@
     const calendarData = [
         {% for event in calendar_events %}
     {
-        id: {{ event.id }},
-        title: {{ event.title | tojson }},
-        date: {{ event.due_date | tojson }},
-        category: {{ event.category | tojson }},
-        completed: {{ 'true' if event.completed else 'false' }},
-        priority: {{ event.priority | tojson }}
+        id: { { event.id } },
+        title: { { event.title | tojson } },
+        date: { { event.due_date | tojson } },
+        category: { { event.category | tojson } },
+        completed: { { 'true' if event.completed else 'false' } },
+        priority: { { event.priority | tojson } }
     } {% if not loop.last %}, {% endif %}
     {% endfor %}
     ];

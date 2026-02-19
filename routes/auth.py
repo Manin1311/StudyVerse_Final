@@ -15,7 +15,7 @@ auth_bp = Blueprint('auth', __name__)
 def auth():
     # Check if user is authenticated
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard_view'))
     return render_template('auth.html')
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -58,7 +58,7 @@ def signup():
     login_user(user, remember=True)
     session.permanent = True
     
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard.dashboard_view'))
 
 @auth_bp.route('/signin', methods=['POST'])
 def signin():
@@ -83,7 +83,7 @@ def signin():
     login_user(user, remember=True)  # Enable remember me for persistent sessions
     session.permanent = True
 
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard.dashboard_view'))
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 @login_required
@@ -159,7 +159,7 @@ def google_callback():
         login_user(user, remember=True)
         session.permanent = True
         
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.dashboard_view'))
     
     except Exception as e:
         flash(f"Google authentication failed: {str(e)}", "error")

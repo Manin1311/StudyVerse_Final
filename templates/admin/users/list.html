@@ -62,7 +62,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="admin-btn admin-btn-secondary"
+                    <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="admin-btn admin-btn-secondary"
                         style="font-size: 13px; padding: 6px 12px;">
                         <i class="fa-solid fa-eye"></i> View
                     </a>
@@ -83,7 +83,7 @@
 {% if users.pages > 1 %}
 <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px;">
     {% if users.has_prev %}
-    <a href="{{ url_for('admin_users', page=users.prev_num, search=search, filter=filter_type) }}"
+    <a href="{{ url_for('admin.users', page=users.prev_num, search=search, filter=filter_type) }}"
         class="admin-btn admin-btn-secondary">
         <i class="fa-solid fa-chevron-left"></i> Previous
     </a>
@@ -92,7 +92,7 @@
     <span style="color: var(--text-secondary);">Page {{ users.page }} of {{ users.pages }}</span>
 
     {% if users.has_next %}
-    <a href="{{ url_for('admin_users', page=users.next_num, search=search, filter=filter_type) }}"
+    <a href="{{ url_for('admin.users', page=users.next_num, search=search, filter=filter_type) }}"
         class="admin-btn admin-btn-secondary">
         Next <i class="fa-solid fa-chevron-right"></i>
     </a>

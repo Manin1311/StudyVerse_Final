@@ -5,7 +5,7 @@
 {% block content %}
 <div class="admin-header" style="justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 16px;">
-        <a href="{{ url_for('admin_support') }}" class="btn btn-secondary"
+        <a href="{{ url_for('admin.support') }}" class="btn btn-secondary"
             style="background: rgba(255,255,255,0.1); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;"><i
                 class="fa-solid fa-arrow-left"></i></a>
         <div>
@@ -18,7 +18,7 @@
         <span class="status-badge status-{{ ticket.status }}">{{ ticket.status|replace('_', ' ') }}</span>
 
         {% if ticket.status != 'closed' %}
-        <form action="{{ url_for('admin_support_close', ticket_id=ticket.id) }}" method="POST"
+        <form action="{{ url_for('admin.support_close', ticket_id=ticket.id) }}" method="POST"
             onsubmit="return confirm('Are you sure you want to close this ticket?');" style="margin: 0;">
             <button type="submit" class="btn btn-danger"
                 style="background: #ef4444; border: none; padding: 8px 16px; border-radius: 6px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
@@ -69,7 +69,7 @@
 
         {% if ticket.status != 'closed' %}
         <div class="chat-input" style="padding: 16px; border-top: 1px solid #333; background: #1a1a1a;">
-            <form action="{{ url_for('admin_support_reply', ticket_id=ticket.id) }}" method="POST"
+            <form action="{{ url_for('admin.support_reply', ticket_id=ticket.id) }}" method="POST"
                 style="display: flex; gap: 12px;">
                 <textarea name="message" required class="form-control" rows="1" placeholder="Type a reply..."
                     oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
@@ -106,7 +106,7 @@
                 </div>
             </div>
 
-            <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-secondary"
+            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-secondary"
                 style="width: 100%; margin-top: 20px; padding: 10px; border-radius: 8px; text-decoration: none; display: block; background: rgba(255,255,255,0.05); color: white; text-align: center;">View
                 Full Profile</a>
         </div>

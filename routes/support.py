@@ -13,7 +13,7 @@ support_bp = Blueprint('support', __name__)
 @login_required
 def index():
     tickets = SupportTicket.query.filter_by(user_id=current_user.id).order_by(SupportTicket.updated_at.desc()).all()
-    return render_template('support.html', tickets=tickets)
+    return render_template('support/list.html', tickets=tickets)
 
 @support_bp.route('/support/create', methods=['POST'])
 @login_required
@@ -55,7 +55,7 @@ def detail(ticket_id):
         db.session.commit()
         
     messages = SupportMessage.query.filter_by(ticket_id=ticket.id).order_by(SupportMessage.created_at.asc()).all()
-    return render_template('support_ticket.html', ticket=ticket, messages=messages)
+    return render_template('support/detail.html', ticket=ticket, messages=messages)
 
 @support_bp.route('/support/<int:ticket_id>/reply', methods=['POST'])
 @login_required
