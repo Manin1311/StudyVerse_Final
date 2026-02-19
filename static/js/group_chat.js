@@ -282,7 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            const avatarUrl = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username || 'User')}&background=random`;
+            // Use provided avatar OR generate one with single initial (FIX)
+            const initial = (data.username || 'U').charAt(0).toUpperCase();
+            const avatarUrl = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=random`;
             avatarHtml = `<img src="${avatarUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">`;
         }
 

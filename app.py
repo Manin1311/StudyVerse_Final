@@ -410,8 +410,9 @@ def on_battle_join_request(data):
     }
     
     host_sid = room['players'][room['host']]['sid']
-    socketio.emit('battle_player_requesting', {
-        'name': current_user.first_name or 'Opponent'
+    socketio.emit('battle_join_request_notify', {
+        'player_name': current_user.first_name or 'Opponent',
+        'player_id': current_user.id
     }, room=host_sid)
 
 @socketio.on('battle_handle_join')
@@ -434,14 +435,7 @@ def on_battle_handle_join(data):
             'joined_at': datetime.utcnow()
         }
         
-        # Join the pending player to the room
-        # We can't join_room for another SID easily here without them sending an event, 
-        # but we updated their SID in our state.
-        # Ideally the 'pending' player should emit 'join_room_confirmed'?
-        # A simpler way: The host tells us "Accept", we broadcast "Accepted". 
-        # The pending player (who is listening) then emits "battle_finalize_join".
-        
-        socketio.emit('battle_join_accepted', {'room_code': room_code}, room=pending['sid'])
+        socketio.emit('join_accepted', {'room_code': room_code}, room=pending['sid'])
         room['pending_join'] = None
         
         # Notify host
@@ -451,11 +445,12 @@ def on_battle_handle_join(data):
         socketio.emit('battle_error', {'message': 'Host rejected request.'}, room=pending['sid'])
         room['pending_join'] = None
 
-@socketio.on('battle_finalize_join')
-def on_battle_finalize_join(data):
+@socketio.on('battle_confirm_join')
+def on_battle_confirm_join(data):
     room_code = data.get('room_code')
     if room_code in battles and current_user.id in battles[room_code]['players']:
         join_room(room_code)
+        emit('battle_entered', {'room_code': room_code, 'state': battles[room_code]['state']})
 
 @socketio.on('battle_config')
 def on_battle_config(data):
