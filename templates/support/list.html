@@ -170,6 +170,12 @@
         opacity: 1;
     }
 
+    /* Light mode specific override */
+    [data-theme="light"] #newTicketModal input::placeholder,
+    [data-theme="light"] #newTicketModal textarea::placeholder {
+        color: var(--text-secondary) !important;
+    }
+
     @keyframes modalSlideIn {
         from {
             opacity: 0;

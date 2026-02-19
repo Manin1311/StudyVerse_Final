@@ -52,7 +52,7 @@
 
             {% for message in messages %}
             <div class="message {% if message.is_admin %}admin{% else %}user{% endif %}"
-                style="max-width: 85%; align-self: {% if message.is_admin %}flex-start{% else %}flex-end{% endif %}; display: flex; flex-direction: column; gap: 6px; animation: messageFadeIn 0.3s ease-out;">
+                style="max-width: 85%; align-self: {% if message.is_admin %}flex-start{% else %}flex-end{% endif %}; align-items: {% if message.is_admin %}flex-start{% else %}flex-end{% endif %}; display: flex; flex-direction: column; gap: 6px; animation: messageFadeIn 0.3s ease-out;">
 
                 <div
                     style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); {% if not message.is_admin %}flex-direction: row-reverse;{% endif %}">

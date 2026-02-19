@@ -43,7 +43,7 @@
 
             {% for message in messages %}
             <div class="message"
-                style="max-width: 85%; align-self: {% if message.is_admin %}flex-end{% else %}flex-start{% endif %}; display: flex; flex-direction: column; gap: 4px; animation: fadeIn 0.3s ease;">
+                style="max-width: 85%; align-self: {% if message.is_admin %}flex-end{% else %}flex-start{% endif %}; align-items: {% if message.is_admin %}flex-end{% else %}flex-start{% endif %}; display: flex; flex-direction: column; gap: 4px; animation: fadeIn 0.3s ease;">
                 <div
                     style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 2px; text-align: {% if message.is_admin %}right{% else %}left{% endif %};">
                     {% if message.is_admin %}You{% else %}{{ user.first_name }}{% endif %} • {{

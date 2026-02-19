@@ -74,6 +74,19 @@
     opacity: 1;
 }
 
+/* Force white text in Zen Mode even when light theme is active */
+[data-theme="light"] .zen-quote,
+[data-theme="light"] .zen-author,
+[data-theme="light"] .zen-clock,
+[data-theme="light"] .btn-zen-exit,
+[data-theme="light"] .btn-zen-icon {
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-zen-exit {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
 .zen-author {
     margin-top: 16px;
     font-size: 1rem;

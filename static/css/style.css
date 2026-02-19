@@ -798,6 +798,32 @@ html[data-theme="light"] body.theme_cyberpunk {
     --text-secondary: #b794f6 !important;
 }
 
+/* ========================================
+   GLOBAL TRANSITIONS & RANK FIXES
+   ======================================== */
+body,
+.card,
+.input,
+.btn,
+.sidebar,
+.nav-item,
+h1,
+h2,
+h3,
+h4,
+p,
+span,
+div {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Fix Platinum/Rank visibility in Light Mode */
+/* Forces the rank badge to use a brightness filter to make light colors (Silver/Platinum) readable on white */
+[data-theme="light"] .rank-info-badge {
+    filter: brightness(0.6) saturate(1.2);
+    text-shadow: none !important;
+}
+
 /* Aurora theme overrides for light mode */
 
 /* ========================================
