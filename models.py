@@ -109,10 +109,8 @@ class User(UserMixin, db.Model):
             return self.profile_image
         
         f_name = (self.first_name or '').strip()
-        l_name = (self.last_name or '').strip()
-        f = f_name[0] if f_name else ''
-        l = l_name[0] if l_name else ''
-        initials = f"{f}{l}".upper() or "U"
+        # Use single initial from first name as requested
+        initials = f_name[0].upper() if f_name else "U"
         
         return f"https://ui-avatars.com/api/?name={initials}&background=0ea5e9&color=fff&size={size}"
     

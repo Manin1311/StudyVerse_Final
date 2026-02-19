@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from extensions import db
-from models import User, UserBadge, Todo, StudySession, TopicProficiency, UserItem
+from models import User, UserBadge, Todo, StudySession, TopicProficiency, UserItem, Friendship
 from services.gamification import GamificationService
 from services.shop import ShopService
 from datetime import datetime, timedelta

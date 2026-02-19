@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, redirect, url_for, session, current_app
+from flask import Blueprint, render_template, redirect, url_for, session, current_app, request, jsonify
 from flask_login import login_required, current_user
 from extensions import db
 from models import Todo, StudySession, TopicProficiency, Event, User, SupportTicket, Event
@@ -279,3 +279,97 @@ def dashboard_view():
         important_todo=important_todo,
         important_todo_label=important_todo_label,
     )
+
+# ============================================================================
+# API ENDPOINTS FOR TEMPORAL GRID (CALENDAR)
+# ============================================================================
+
+@dashboard_bp.route('/api/events', methods=['GET'])
+@login_required
+def get_events():
+    date_str = request.args.get('date')
+    if not date_str:
+        return jsonify({'status': 'error', 'message': 'Date required'}), 400
+    
+    events = Event.query.filter_by(user_id=current_user.id, date=date_str).order_by(Event.time).all()
+    
+    event_list = []
+    for e in events:
+        event_list.append({
+            'id': e.id,
+            'title': e.title,
+            'description': e.description,
+            'date': e.date,
+            'time': e.time,
+            'is_notified': e.is_notified
+        })
+        
+    return jsonify({'status': 'success', 'events': event_list})
+
+@dashboard_bp.route('/api/events', methods=['POST'])
+@login_required
+def create_event():
+    data = request.get_json()
+    if not data or not data.get('title'):
+        return jsonify({'status': 'error', 'message': 'Missing data'}), 400
+        
+    new_event = Event(
+        user_id=current_user.id,
+        title=data.get('title'),
+        description=data.get('description'),
+        date=data.get('date'),
+        time=data.get('time')
+    )
+    db.session.add(new_event)
+    db.session.commit()
+    
+    return jsonify({'status': 'success', 'event': {
+        'id': new_event.id,
+        'title': new_event.title
+    }})
+
+@dashboard_bp.route('/api/events/<int:event_id>', methods=['PUT'])
+@login_required
+def update_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    data = request.get_json()
+    if 'title' in data: event.title = data['title']
+    if 'description' in data: event.description = data['description']
+    if 'date' in data: event.date = data['date']
+    if 'time' in data: event.time = data['time']
+    
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+@dashboard_bp.route('/api/events/<int:event_id>', methods=['DELETE'])
+@login_required
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+    db.session.delete(event)
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+@dashboard_bp.route('/api/events/check-warnings', methods=['GET'])
+@login_required
+def check_event_warnings():
+    return jsonify({'has_warning': False})
+
+@dashboard_bp.route('/api/events/<int:event_id>/dismiss', methods=['POST'])
+@login_required
+def dismiss_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.user_id == current_user.id:
+        event.is_notified = True
+        db.session.commit()
+    return jsonify({'status': 'success'})
+
+@dashboard_bp.route('/api/ai/plan', methods=['GET'])
+@login_required
+def generate_ai_plan():
+    return jsonify({'status': 'success', 'plan': 'AI Planning is currently in beta.'})
