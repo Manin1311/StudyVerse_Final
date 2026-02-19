@@ -21,10 +21,10 @@ def call_ai_api(messages, max_tokens=2048):
         role = "User" if msg['role'] == 'user' else "Model"
         conversation_history += f"{role}: {msg['content']}\n"
 
-    # Model selection: prefer env override, default to gemini-1.5-flash (stable)
-    model_id = os.environ.get("AI_MODEL", "gemini-1.5-flash")
+    # Model selection: prefer env override, default to gemini-2.5-flash
+    model_id = os.environ.get("AI_MODEL", "gemini-2.5-flash")
 
-    # Normalise model_id: accept both 'gemini-1.5-flash' and 'models/gemini-1.5-flash'
+    # Normalise model_id: accept both 'gemini-2.5-flash' and 'models/gemini-2.5-flash'
     if not model_id.startswith("models/"):
         model_id = f"models/{model_id}"
 
