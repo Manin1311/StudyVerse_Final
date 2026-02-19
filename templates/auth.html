@@ -171,7 +171,7 @@
             </div>
 
             <!-- Sign In Form -->
-            <form id="form-signin" method="POST" action="{{ url_for('signin') }}"
+            <form id="form-signin" method="POST" action="{{ url_for('auth.signin') }}"
                 style="display: {{ 'none' if active_tab == 'signup' else 'flex' }}; flex-direction: column; gap: 16px;">
                 <input type="email" name="email" placeholder="Email address" required
                     style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
@@ -186,7 +186,7 @@
             </form>
 
             <!-- Sign Up Form -->
-            <form id="form-signup" method="POST" action="{{ url_for('signup') }}"
+            <form id="form-signup" method="POST" action="{{ url_for('auth.signup') }}"
                 style="display: {{ 'flex' if active_tab == 'signup' else 'none' }}; flex-direction: column; gap: 16px;">
                 <div style="display: flex; gap: 10px;">
                     <input type="text" name="first_name" placeholder="First Name"
@@ -213,7 +213,7 @@
                 <span>OR</span>
             </div>
 
-            <a href="{{ url_for('login_google') }}" class="btn-google" style="text-decoration: none;">
+            <a href="{{ url_for('auth.login_google') }}" class="btn-google" style="text-decoration: none;">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"
                     style="width: 20px; height: 20px;">
                 Continue with Google

@@ -195,31 +195,31 @@
             </div>
 
             <nav class="admin-nav">
-                <a href="{{ url_for('admin_dashboard') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                <a href="{{ url_for('admin.dashboard') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
                     <i class="fa-solid fa-gauge"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ url_for('admin_users') }}"
-                    class="admin-nav-item {% if 'admin_user' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('admin.users') }}"
+                    class="admin-nav-item {% if 'admin.user' in request.endpoint %}active{% endif %}">
                     <i class="fa-solid fa-users"></i>
                     <span>Users</span>
                 </a>
 
 
-                <a href="{{ url_for('admin_gamification') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_gamification' %}active{% endif %}">
+                <a href="{{ url_for('admin.gamification') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin.gamification' %}active{% endif %}">
                     <i class="fa-solid fa-trophy"></i>
                     <span>Gamification</span>
                 </a>
-                <a href="{{ url_for('admin_shop') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_shop' %}active{% endif %}">
+                <a href="{{ url_for('admin.shop') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin.shop' %}active{% endif %}">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span>Shop</span>
                 </a>
 
-                <a href="{{ url_for('admin_support') }}"
-                    class="admin-nav-item {% if 'admin_support' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('admin.support') }}"
+                    class="admin-nav-item {% if 'admin.support' in request.endpoint %}active{% endif %}">
                     <i class="fa-solid fa-headset"></i>
                     <span>Support</span>
                     {% if unread_support_count and unread_support_count > 0 %}
@@ -228,20 +228,20 @@
                         unread_support_count }}</span>
                     {% endif %}
                 </a>
-                <a href="{{ url_for('admin_battles') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_battles' %}active{% endif %}">
+                <a href="{{ url_for('admin.battles') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin.battles' %}active{% endif %}">
                     <i class="fa-solid fa-gamepad"></i>
                     <span>Battles</span>
                 </a>
-                <a href="{{ url_for('admin_analytics') }}"
-                    class="admin-nav-item {% if request.endpoint == 'admin_analytics' %}active{% endif %}">
+                <a href="{{ url_for('admin.analytics') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin.analytics' %}active{% endif %}">
                     <i class="fa-solid fa-chart-line"></i>
                     <span>Analytics</span>
                 </a>
 
                 <div class="admin-nav-divider"></div>
 
-                <a href="{{ url_for('dashboard') }}" class="admin-nav-item">
+                <a href="{{ url_for('auth.logout') }}" class="admin-nav-item">
                     <i class="fa-solid fa-arrow-left"></i>
                     <span>Back to App</span>
                 </a>

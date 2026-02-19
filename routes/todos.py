@@ -5,7 +5,7 @@ from extensions import db
 from models import Todo, TopicProficiency, Habit, HabitLog, StudySession
 from services.gamification import GamificationService
 from utils import Stack
-from datetime import datetime
+from datetime import datetime, timedelta
 
 todos_bp = Blueprint('todos', __name__)
 

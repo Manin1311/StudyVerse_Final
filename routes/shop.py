@@ -32,12 +32,19 @@ def index():
                 elif cat_item['type'] == 'frame':
                     equipped_frame = item.item_id
 
+    # Create active_ids set for template
+    active_ids = set()
+    if equipped_theme:
+        active_items_list = [equipped_theme]
+        active_ids.add(equipped_theme)
+    if equipped_frame:
+        active_ids.add(equipped_frame)
+
     return render_template(
         'shop.html', 
-        shop_items=active_items, 
+        items=active_items, 
         owned_ids=owned_ids,
-        equipped_theme=equipped_theme,
-        equipped_frame=equipped_frame,
+        active_ids=active_ids,
         user_coins=current_user.total_xp  # Using XP as coins for now
     )
 

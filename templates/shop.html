@@ -72,14 +72,14 @@
 
                 <div style="margin-top: auto; width: 100%;">
                     {% if item.id in active_ids %}
-                    <form action="{{ url_for('shop_unequip', item_id=item.id) }}" method="POST">
+                    <form action="{{ url_for('shop.unequip', item_id=item.id) }}" method="POST">
                         <button type="submit" class="buy-btn"
                             style="width: 100%; padding: 12px; background: rgba(74, 222, 128, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 8px; font-weight: 600; cursor: pointer;">
                             <i class="fa-solid fa-check-circle"></i> Unequip
                         </button>
                     </form>
                     {% elif item.id in owned_ids and item.type != 'consumable' %}
-                    <form action="{{ url_for('shop_equip', item_id=item.id) }}" method="POST">
+                    <form action="{{ url_for('shop.equip', item_id=item.id) }}" method="POST">
                         <button type="submit" class="buy-btn"
                             style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;">
                             Equip
@@ -91,7 +91,7 @@
                         <i class="fa-solid fa-check"></i> Owned
                     </button>
                     {% else %}
-                    <form action="{{ url_for('shop_buy', item_id=item.id) }}" method="POST">
+                    <form action="{{ url_for('shop.buy', item_id=item.id) }}" method="POST">
                         <button type="submit" class="buy-btn"
                             style="width: 100%; padding: 12px; background: {{ item.color }}; color: black; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
                             Buy for {{ item.price }} XP
