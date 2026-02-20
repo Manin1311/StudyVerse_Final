@@ -143,9 +143,9 @@
     }
 
     .new-ticket-btn {
-        background: var(--accent);
+        background: #4ade80;
         color: #000;
-        font-weight: 600;
+        font-weight: 700;
         border: none;
         padding: 12px 24px;
         border-radius: 12px;
@@ -159,7 +159,8 @@
 
     .new-ticket-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(74, 222, 128, 0.3);
+        box-shadow: 0 6px 20px rgba(74, 222, 128, 0.4);
+        background: #22c55e;
     }
 
     /* Ticket Grid & Card */
@@ -401,11 +402,21 @@
         transition: all 0.2s;
     }
 
+    .form-control::placeholder {
+        color: var(--text-muted);
+        opacity: 0.8;
+    }
+
     /* Specific fixes for Dark Mode if variables aren't catching heavily enough */
     [data-theme="dark"] .form-control {
-        background: #0a0a0a;
-        color: #e5e7eb;
+        background: #1f2937;
+        /* Lighter than black for visibility */
+        color: #f3f4f6;
         border-color: #374151;
+    }
+
+    [data-theme="dark"] .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
     [data-theme="light"] .form-control {
@@ -414,9 +425,13 @@
         border-color: #d1d5db;
     }
 
+    [data-theme="light"] .form-control::placeholder {
+        color: rgba(0, 0, 0, 0.4);
+    }
+
     .form-control:focus {
         outline: none;
-        border-color: var(--accent);
+        border-color: #4ade80;
         box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
     }
 
@@ -443,9 +458,9 @@
         width: 100%;
         padding: 16px;
         border-radius: 12px;
-        background: var(--accent);
+        background: #4ade80;
         color: #000;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 1rem;
         border: none;
         cursor: pointer;
@@ -453,7 +468,7 @@
     }
 
     .submit-btn:hover {
-        filter: brightness(1.1);
+        background: #22c55e;
     }
 
     /* Empty State */
