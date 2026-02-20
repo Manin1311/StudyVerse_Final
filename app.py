@@ -1911,6 +1911,34 @@ class SupportService:
         )
         db.session.add(msg)
         db.session.commit()
+        return ticket
+    
+    @staticmethod
+    def send_admin_notification(user_id, admin_id, subject, message, category='system'):
+        """Create a notification ticket from admin to user"""
+        ticket = SupportTicket(
+            user_id=user_id,
+            subject=subject,
+            category=category,
+            priority='normal',
+            status='closed', # System messages don't need user replies by default
+            user_unread_count=1,
+            admin_unread_count=0
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        
+        # Create initial message from Admin
+        msg = SupportMessage(
+            ticket_id=ticket.id,
+            sender_id=admin_id,
+            message=message,
+            is_admin=True,
+            read_by_user=False,
+            read_by_admin=True
+        )
+        db.session.add(msg)
+        db.session.commit()
         
         return ticket
     
@@ -5405,6 +5433,15 @@ def admin_adjust_xp(user_id):
         target_type='user',
         target_id=user_id,
         details={'amount': amount, 'reason': reason}
+    )
+    
+    # Notify user via Support System
+    action_type = "added" if amount > 0 else "removed"
+    SupportService.send_admin_notification(
+        user_id=user.id,
+        admin_id=current_user.id,
+        subject=f"System Notification: XP Adjusted",
+        message=f"Admin has {action_type} {abs(amount)} XP to your account.\n\nReason given: {reason}"
     )
     
     db.session.commit()
