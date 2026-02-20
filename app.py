@@ -403,12 +403,6 @@ class User(UserMixin, db.Model):
     longest_streak = db.Column(db.Integer, default=0)  # Best streak record
     last_activity_date = db.Column(db.Date, nullable=True)  # For streak tracking
     
-    # Ban/Moderation Fields
-    is_banned = db.Column(db.Boolean, default=False)  # Ban status
-    ban_reason = db.Column(db.Text, nullable=True)  # Reason for ban
-    banned_at = db.Column(db.DateTime, nullable=True)  # When user was banned
-    banned_by = db.Column(db.Integer, nullable=True)  # Admin ID who banned the user
-
     @property
     def rank_info(self):
         """
