@@ -6,8 +6,16 @@
 <header class="friends-header">
     <div class="friends-header-info">
         <div style="display: flex; align-items: center; gap: 12px;">
-            <h1 class="page-title-friends">Friends & Community</h1>
-
+            <h1 class="page-title-friends">Friends &amp; Community</h1>
+            {% if group %}
+            <form action="{{ url_for('group_leave') }}" method="POST" style="margin: 0;">
+                <button type="submit" title="Leave Group"
+                    style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 5px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;"
+                    onclick="return confirm('Are you sure you want to leave this group?');">
+                    <i class="fa-solid fa-right-from-bracket"></i> Leave Group
+                </button>
+            </form>
+            {% endif %}
         </div>
         <p class="friends-subtitle">Collaborate with your study squad in real-time.</p>
     </div>
@@ -65,14 +73,6 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="card-title" style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">Members
                 </div>
-
-                <form action="{{ url_for('group_leave') }}" method="POST" style="margin: 0;">
-                    <button type="submit" class="btn btn-danger" title="Leave Group"
-                        style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; display: flex; align-items: center; gap: 6px;"
-                        onclick="return confirm('Are you sure you want to leave this group?');">
-                        <i class="fa-solid fa-right-from-bracket"></i> Leave Group
-                    </button>
-                </form>
                 <div
                     style="font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
                     <i class="fa-solid fa-circle"
