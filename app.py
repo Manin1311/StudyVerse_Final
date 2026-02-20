@@ -5238,7 +5238,12 @@ def admin_dashboard():
     stats = AdminService.get_dashboard_stats()
     
     # Recent activity
-    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    # Recent activity
+    recent_users = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).order_by(User.created_at.desc()).limit(5).all()
     return render_template('admin/dashboard.html',
                          stats=stats,
                          recent_users=recent_users)
@@ -5257,7 +5262,12 @@ def admin_users():
     filter_type = request.args.get('filter', 'all')
     
     # Filter base query - exclude admins
-    query = User.query.filter(User.is_admin == False)
+    # Filter base query - exclude admins
+    query = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    )
     
     if search:
         query = query.filter(
@@ -5469,7 +5479,12 @@ def admin_gamification():
     avg_level = db.session.query(db.func.avg(User.level)).scalar() or 0
     
     # Top users by XP (excluding admins)
-    top_users = User.query.filter_by(is_admin=False).order_by(User.total_xp.desc()).limit(10).all()
+    # Top users by XP (excluding admins)
+    top_users = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).order_by(User.total_xp.desc()).limit(10).all()
     
     # Recent XP transactions
     recent_xp = XPHistory.query.order_by(XPHistory.timestamp.desc()).limit(20).all()
@@ -5563,7 +5578,11 @@ def admin_battles():
     from sqlalchemy import func
     top_studiers = db.session.query(
         User, func.sum(StudySession.duration).label('total_time')
-    ).join(StudySession).group_by(User.id).order_by(func.sum(StudySession.duration).desc()).limit(10).all()
+    ).join(StudySession).filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).group_by(User.id).order_by(func.sum(StudySession.duration).desc()).limit(10).all()
     
     stats = {
         'total_sessions': total_sessions,
