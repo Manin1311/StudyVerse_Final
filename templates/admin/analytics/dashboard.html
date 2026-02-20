@@ -1,150 +1,311 @@
 {% extends "admin/base.html" %}
-
-{% block title %}System Analytics{% endblock %}
-{% block page_title %}System Analytics{% endblock %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
 
 {% block content %}
 <style>
-    .stats-grid {
+    .analytics-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
     }
 
-    .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 24px;
-        color: white;
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 36px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        opacity: 0.9;
-        text-transform: uppercase;
-    }
-
-    .section {
+    .a-stat {
         background: var(--bg-card);
         border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .a-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .a-stat-icon {
+        width: 44px;
+        height: 44px;
         border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+        font-size: 18px;
+    }
+
+    .a-stat-val {
+        font-size: 30px;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -1px;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+
+    .a-stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .asc-green .a-stat-icon {
+        background: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+    }
+
+    .asc-green:hover {
+        border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .asc-blue .a-stat-icon {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .asc-blue:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .asc-purple .a-stat-icon {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+
+    .asc-purple:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .asc-orange .a-stat-icon {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .asc-orange:hover {
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .asc-pink .a-stat-icon {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
+    }
+
+    .asc-pink:hover {
+        border-color: rgba(236, 72, 153, 0.3);
+    }
+
+    .asc-teal .a-stat-icon {
+        background: rgba(20, 184, 166, 0.1);
+        color: #14b8a6;
+    }
+
+    .asc-teal:hover {
+        border-color: rgba(20, 184, 166, 0.3);
+    }
+
+    /* Metric cards grid (2 cols) */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+        margin-bottom: 22px;
+    }
+
+    .metric-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .metric-head {
+        padding: 17px 22px;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.015);
+    }
+
+    .metric-head i {
+        color: var(--accent);
+        font-size: 14px;
     }
 
     .metric-row {
         display: flex;
         justify-content: space-between;
-        padding: 15px;
+        align-items: center;
+        padding: 15px 22px;
         border-bottom: 1px solid var(--border);
+        transition: var(--transition);
     }
 
     .metric-row:last-child {
         border-bottom: none;
     }
 
+    .metric-row:hover {
+        background: rgba(74, 222, 128, 0.025);
+    }
+
     .metric-label {
-        font-weight: 600;
+        font-size: 13.5px;
+        font-weight: 500;
         color: var(--text-secondary);
     }
 
     .metric-value {
-        font-weight: 700;
-        font-size: 20px;
+        font-size: 18px;
+        font-weight: 800;
         color: var(--text-primary);
+        font-family: 'JetBrains Mono', monospace;
+        letter-spacing: -0.5px;
+    }
+
+    /* 7-day widget */
+    .seven-day-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .seven-day-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .seven-day-cell {
+        padding: 22px;
+        border-right: 1px solid var(--border);
+        text-align: center;
+    }
+
+    .seven-day-cell:last-child {
+        border-right: none;
+    }
+
+    .seven-day-val {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+        margin-bottom: 4px;
+    }
+
+    .seven-day-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 </style>
 
-<!-- Overview Stats -->
-<div class="stats-grid">
-    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div class="stat-value">{{ stats.new_users_30d }}</div>
-        <div class="stat-label">New Users (30d)</div>
+<!-- 6 Overview stats -->
+<div class="analytics-stats">
+    <div class="a-stat asc-green">
+        <div class="a-stat-icon"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="a-stat-val">{{ stats.new_users_30d }}</div>
+        <div class="a-stat-label">New Users (30d)</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-        <div class="stat-value">{{ stats.total_messages }}</div>
-        <div class="stat-label">Total Messages</div>
+    <div class="a-stat asc-blue">
+        <div class="a-stat-icon"><i class="fa-solid fa-message"></i></div>
+        <div class="a-stat-val">{{ '{:,}'.format(stats.total_messages) }}</div>
+        <div class="a-stat-label">Total Messages</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <div class="stat-value">{{ stats.total_sessions }}</div>
-        <div class="stat-label">Study Sessions</div>
+    <div class="a-stat asc-purple">
+        <div class="a-stat-icon"><i class="fa-solid fa-clock"></i></div>
+        <div class="a-stat-val">{{ stats.total_sessions }}</div>
+        <div class="a-stat-label">Study Sessions</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-        <div class="stat-value">{{ stats.total_study_hours }}</div>
-        <div class="stat-label">Study Hours</div>
+    <div class="a-stat asc-teal">
+        <div class="a-stat-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="a-stat-val">{{ stats.total_study_hours }}</div>
+        <div class="a-stat-label">Study Hours</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-        <div class="stat-value">{{ stats.total_groups }}</div>
-        <div class="stat-label">Study Groups</div>
+    <div class="a-stat asc-orange">
+        <div class="a-stat-icon"><i class="fa-solid fa-users"></i></div>
+        <div class="a-stat-val">{{ stats.total_groups }}</div>
+        <div class="a-stat-label">Study Groups</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
-        <div class="stat-value">{{ stats.total_xp_earned|int }}</div>
-        <div class="stat-label">Total XP Earned</div>
-    </div>
-</div>
-
-<!-- Task Statistics -->
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">📋 Task Statistics</h3>
-    <div class="metric-row">
-        <span class="metric-label">Total Tasks</span>
-        <span class="metric-value">{{ stats.total_tasks }}</span>
-    </div>
-    <div class="metric-row">
-        <span class="metric-label">Completed Tasks</span>
-        <span class="metric-value">{{ stats.completed_tasks }}</span>
-    </div>
-    <div class="metric-row">
-        <span class="metric-label">Completion Rate</span>
-        <span class="metric-value"
-            style="color: {% if stats.completion_rate > 50 %}#10b981{% else %}#ef4444{% endif %};">
-            {{ stats.completion_rate }}%
-        </span>
+    <div class="a-stat asc-pink">
+        <div class="a-stat-icon"><i class="fa-solid fa-star"></i></div>
+        <div class="a-stat-val">{{ '{:,}'.format(stats.total_xp_earned|int) }}</div>
+        <div class="a-stat-label">XP Earned</div>
     </div>
 </div>
 
-<!-- Group Activity -->
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">👥 Group Activity</h3>
-    <div class="metric-row">
-        <span class="metric-label">Total Groups</span>
-        <span class="metric-value">{{ stats.total_groups }}</span>
+<!-- Metrics grid -->
+<div class="metric-grid">
+
+    <!-- Task Stats -->
+    <div class="metric-card">
+        <div class="metric-head"><i class="fa-solid fa-list-check"></i> Task Statistics</div>
+        <div class="metric-row">
+            <span class="metric-label">Total Tasks</span>
+            <span class="metric-value">{{ stats.total_tasks }}</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Completed Tasks</span>
+            <span class="metric-value">{{ stats.completed_tasks }}</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Completion Rate</span>
+            <span class="metric-value" style="color: {{ '#4ade80' if stats.completion_rate > 50 else '#ef4444' }};">
+                {{ stats.completion_rate }}%
+            </span>
+        </div>
     </div>
-    <div class="metric-row">
-        <span class="metric-label">Total Group Members</span>
-        <span class="metric-value">{{ stats.total_group_members }}</span>
+
+    <!-- Group Activity -->
+    <div class="metric-card">
+        <div class="metric-head"><i class="fa-solid fa-people-group"></i> Group Activity</div>
+        <div class="metric-row">
+            <span class="metric-label">Total Groups</span>
+            <span class="metric-value">{{ stats.total_groups }}</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Total Members</span>
+            <span class="metric-value">{{ stats.total_group_members }}</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Avg Members / Group</span>
+            <span class="metric-value">
+                {{ (stats.total_group_members / stats.total_groups)|round(1) if stats.total_groups > 0 else 0 }}
+            </span>
+        </div>
     </div>
-    <div class="metric-row">
-        <span class="metric-label">Avg Members per Group</span>
-        <span class="metric-value">{{ (stats.total_group_members / stats.total_groups)|round(1) if stats.total_groups >
-            0 else 0 }}</span>
-    </div>
+
 </div>
 
-<!-- Recent Activity (Last 7 Days) -->
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">📈 Recent Activity (Last 7 Days)</h3>
-    <div class="metric-row">
-        <span class="metric-label">New Users</span>
-        <span class="metric-value">{{ stats.recent_users_7d }}</span>
+<!-- Last 7 Days (wide card) -->
+<div class="seven-day-card">
+    <div class="metric-head" style="padding:17px 22px; border-bottom: 1px solid var(--border);">
+        <i class="fa-solid fa-chart-line"></i> Activity — Last 7 Days
     </div>
-    <div class="metric-row">
-        <span class="metric-label">Study Sessions</span>
-        <span class="metric-value">{{ stats.recent_sessions_7d }}</span>
-    </div>
-    <div class="metric-row">
-        <span class="metric-label">Tasks Created</span>
-        <span class="metric-value">{{ stats.recent_tasks_7d }}</span>
+    <div class="seven-day-row">
+        <div class="seven-day-cell">
+            <div class="seven-day-val" style="color: #4ade80;">{{ stats.recent_users_7d }}</div>
+            <div class="seven-day-label">New Users</div>
+        </div>
+        <div class="seven-day-cell">
+            <div class="seven-day-val" style="color: #3b82f6;">{{ stats.recent_sessions_7d }}</div>
+            <div class="seven-day-label">Study Sessions</div>
+        </div>
+        <div class="seven-day-cell">
+            <div class="seven-day-val" style="color: #f59e0b;">{{ stats.recent_tasks_7d }}</div>
+            <div class="seven-day-label">Tasks Created</div>
+        </div>
     </div>
 </div>
-
-
 {% endblock %}

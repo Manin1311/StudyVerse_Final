@@ -1,108 +1,224 @@
 {% extends "admin/base.html" %}
-
 {% block title %}Shop Management{% endblock %}
 {% block page_title %}Shop Management{% endblock %}
 
 {% block content %}
 <style>
-    .stats-row {
+    .shop-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
     }
 
-    .stat-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        border-radius: 12px;
-        padding: 24px;
-        color: white;
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 36px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        opacity: 0.9;
-    }
-
-    .section {
+    .shop-stat {
         background: var(--bg-card);
         border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .shop-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .shop-stat::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        transform: translate(30px, -30px);
+        opacity: 0.06;
+    }
+
+    .shop-stat-icon {
+        width: 44px;
+        height: 44px;
         border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+        font-size: 18px;
+    }
+
+    .shop-stat-val {
+        font-size: 30px;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -1px;
+        line-height: 1;
+        margin-bottom: 5px;
+    }
+
+    .shop-stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .ssc-purple .shop-stat-icon {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+
+    .ssc-purple::after {
+        background: #8b5cf6;
+    }
+
+    .ssc-purple:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .ssc-orange .shop-stat-icon {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .ssc-orange::after {
+        background: #f59e0b;
+    }
+
+    .ssc-orange:hover {
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .ssc-green .shop-stat-icon {
+        background: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+    }
+
+    .ssc-green::after {
+        background: #4ade80;
+    }
+
+    .ssc-green:hover {
+        border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .section-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 22px;
+    }
+
+    .section-head {
+        padding: 17px 22px;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.015);
+    }
+
+    .section-head i {
+        color: var(--accent);
+        font-size: 14px;
     }
 
     .item-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px;
+        padding: 14px 22px;
         border-bottom: 1px solid var(--border);
+        transition: var(--transition);
     }
 
     .item-row:last-child {
         border-bottom: none;
     }
 
-    .purchase-badge {
-        background: #10b981;
-        color: white;
-        padding: 6px 16px;
-        border-radius: 20px;
+    .item-row:hover {
+        background: rgba(74, 222, 128, 0.025);
+    }
+
+    .item-info-main {
+        font-size: 14px;
         font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 3px;
+    }
+
+    .item-info-sub {
+        font-size: 12px;
+        color: var(--text-muted);
     }
 </style>
 
-<div class="stats-row">
-    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div class="stat-value">{{ stats.total_purchases }}</div>
-        <div class="stat-label">Total Purchases</div>
+<!-- Stats -->
+<div class="shop-stats">
+    <div class="shop-stat ssc-purple">
+        <div class="shop-stat-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+        <div class="shop-stat-val">{{ stats.total_purchases }}</div>
+        <div class="shop-stat-label">Total Purchases</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-        <div class="stat-value">{{ stats.unique_items }}</div>
-        <div class="stat-label">Unique Items</div>
+    <div class="shop-stat ssc-orange">
+        <div class="shop-stat-icon"><i class="fa-solid fa-box-open"></i></div>
+        <div class="shop-stat-val">{{ stats.unique_items }}</div>
+        <div class="shop-stat-label">Unique Items Sold</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <div class="stat-value">{{ stats.active_items }}</div>
-        <div class="stat-label">Active Items</div>
+    <div class="shop-stat ssc-green">
+        <div class="shop-stat-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="shop-stat-val">{{ stats.active_items }}</div>
+        <div class="shop-stat-label">Active Items</div>
     </div>
 </div>
 
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">📊 Popular Items</h3>
-    {% for item_id, count in stats.item_stats %}
-    <div class="item-row">
-        <div>
-            <div style="font-weight: 600; color: var(--text-primary);">{{ item_id }}</div>
-            <div style="font-size: 14px; color: var(--text-secondary);">Item ID</div>
-        </div>
-        <span class="purchase-badge">{{ count }} purchases</span>
+<!-- Popular Items table -->
+<div class="section-card">
+    <div class="section-head">
+        <i class="fa-solid fa-fire"></i> Popular Items
     </div>
-    {% endfor %}
-</div>
-
-<div class="section">
-    <h3 style="margin-bottom: 20px; color: var(--text-primary);">🛒 Recent Purchases</h3>
-    {% for purchase in stats.recent_purchases %}
-    <div class="item-row">
-        <div>
-            <div style="font-weight: 600; color: var(--text-primary);">{{ purchase.item_id }}</div>
-            <div style="font-size: 14px; color: var(--text-secondary);">
-                User #{{ purchase.user_id }} • {{ purchase.purchased_at.strftime('%Y-%m-%d %H:%M') }}
+    <div>
+        {% for item_id, count in stats.item_stats %}
+        <div class="item-row">
+            <div>
+                <div class="item-info-main">{{ item_id }}</div>
+                <div class="item-info-sub">Item ID</div>
             </div>
+            <span class="badge badge-green">{{ count }} purchases</span>
         </div>
-        <span
-            style="padding: 4px 12px; background: {% if purchase.is_active %}#10b981{% else %}#6b7280{% endif %}; color: white; border-radius: 20px; font-size: 12px;">
-            {{ 'Active' if purchase.is_active else 'Inactive' }}
-        </span>
+        {% else %}
+        <div style="text-align:center;padding:40px;color:var(--text-muted);">No items data yet</div>
+        {% endfor %}
     </div>
-    {% endfor %}
+</div>
+
+<!-- Recent Purchases -->
+<div class="section-card">
+    <div class="section-head">
+        <i class="fa-solid fa-clock-rotate-left"></i> Recent Purchases
+    </div>
+    <div>
+        {% for purchase in stats.recent_purchases %}
+        <div class="item-row">
+            <div>
+                <div class="item-info-main">{{ purchase.item_id }}</div>
+                <div class="item-info-sub">User #{{ purchase.user_id }} &bull; {{ purchase.purchased_at.strftime('%b %d,
+                    %H:%M') }}</div>
+            </div>
+            <span class="badge {{ 'badge-green' if purchase.is_active else 'badge-white' }}">
+                {{ 'Active' if purchase.is_active else 'Inactive' }}
+            </span>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:40px;color:var(--text-muted);">No recent purchases</div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
