@@ -132,6 +132,32 @@
     color: var(--text-primary) !important;
 }
 
+/* Specific Rank Colors for Light Mode (Darker versions for readability) */
+[data-theme="light"] .rank-text[data-rank="Platinum"] {
+    color: #5E6E78 !important;
+    /* Dark Platinum/Slate */
+}
+
+[data-theme="light"] .rank-text[data-rank="Silver"] {
+    color: #64748b !important;
+    /* Slate 500 */
+}
+
+[data-theme="light"] .rank-text[data-rank="Diamond"] {
+    color: #0284c7 !important;
+    /* Sky 600 */
+}
+
+[data-theme="light"] .rank-text[data-rank="Gold"] {
+    color: #ca8a04 !important;
+    /* Yellow 600 */
+}
+
+[data-theme="light"] .rank-text[data-rank="Bronze"] {
+    color: #b45309 !important;
+    /* Amber 700 */
+}
+
 /* Light mode gradient text - make it solid in light mode for readability */
 [data-theme="light"] .rank-big-number {
     background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%) !important;
