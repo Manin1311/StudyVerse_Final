@@ -547,9 +547,12 @@
         <h2 style="margin-bottom: 1rem;">BATTLE RESULT</h2>
 
         <div id="result-body"
-            style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <h3 id="res-winner" style="color: var(--battle-accent); margin-bottom: 0.5rem;">Winner: Player 1</h3>
-            <p id="res-reason" style="color: var(--battle-text-dim);">Reason: Better logic.</p>
+            style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; max-height: 250px; overflow-y: auto; text-align: left;">
+            <h3 id="res-winner" style="color: var(--battle-accent); margin-bottom: 0.5rem; text-align: center;">Winner:
+                Player 1</h3>
+            <p id="res-reason"
+                style="color: var(--battle-text-dim); white-space: pre-wrap; margin: 0; line-height: 1.5;">Reason:
+                Better logic.</p>
         </div>
 
         <p style="margin-bottom: 1rem; color: #fff;">Rematch?</p>
