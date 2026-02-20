@@ -5235,15 +5235,56 @@ def fix_db_schema():
 @admin_required
 def admin_dashboard():
     """Admin dashboard with overview statistics"""
-    stats = AdminService.get_dashboard_stats()
+    # Calculate stats manually to safely exclude admins
     
-    # Recent activity
+    # 1. Total Users (excluding admins)
+    total_users = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).count()
+    
+    # 2. Active Users (last 7 days, excluding admins)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    active_users = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com',
+        User.last_seen >= seven_days_ago
+    ).count()
+    
+    # 3. Total XP Awarded (from non-admin users)
+    total_xp = db.session.query(db.func.sum(User.total_xp)).filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).scalar() or 0
+    
+    # Helper to format large numbers
+    def format_number(num):
+        if num >= 1000000:
+            return f"{num/1000000:.1f}M"
+        if num >= 1000:
+            return f"{num/1000:.1f}K"
+        return str(num)
+        
+    # 4. Open Tickets
+    open_tickets = SupportTicket.query.filter(SupportTicket.status.in_(['open', 'in_progress'])).count()
+    
+    stats = {
+        'total_users': total_users,
+        'active_users': active_users,
+        'xp_awarded': format_number(int(total_xp)),
+        'open_tickets': open_tickets
+    }
+    
     # Recent activity
     recent_users = User.query.filter(
         User.is_admin == False,
         User.email != 'admin@studyverse.com',
         User.email != 'admin@studyversefinal.com'
     ).order_by(User.created_at.desc()).limit(5).all()
+    
     return render_template('admin/dashboard.html',
                          stats=stats,
                          recent_users=recent_users)
