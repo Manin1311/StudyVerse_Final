@@ -479,9 +479,9 @@
             <span class="val" style="color: #3b82f6;">{{ stats.active_users }}</span>
             <span class="lbl">Active</span>
         </div>
-        {% if stats.pending_support is defined %}
+        {% if stats.open_tickets is defined %}
         <div class="welcome-stat-pill">
-            <span class="val" style="color: #f59e0b;">{{ stats.pending_support|default(0) }}</span>
+            <span class="val" style="color: #f59e0b;">{{ stats.open_tickets|default(0) }}</span>
             <span class="lbl">Tickets</span>
         </div>
         {% endif %}
@@ -504,13 +504,13 @@
 
     <div class="stat-card sc-purple">
         <div class="stat-card-icon"><i class="fa-solid fa-trophy"></i></div>
-        <div class="stat-card-value">{{ stats.total_xp_awarded|default('—') }}</div>
+        <div class="stat-card-value">{{ stats.xp_awarded|default('—') }}</div>
         <div class="stat-card-label">XP Awarded</div>
     </div>
 
     <div class="stat-card sc-orange">
         <div class="stat-card-icon"><i class="fa-solid fa-headset"></i></div>
-        <div class="stat-card-value">{{ stats.pending_support|default(0) }}</div>
+        <div class="stat-card-value">{{ stats.open_tickets|default(0) }}</div>
         <div class="stat-card-label">Open Tickets</div>
     </div>
 </div>
