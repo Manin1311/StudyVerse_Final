@@ -515,7 +515,8 @@
                             </span>
                         </td>
                         <td>{{ xp.source.replace('_', ' ').title() }}</td>
-                        <td style="color:var(--text-muted);">{{ xp.timestamp.strftime('%b %d, %I:%M %p') }}</td>
+                        <td style="color:var(--text-muted);">{{ (xp.timestamp | to_ist).strftime('%b %d, %I:%M %p') }}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>

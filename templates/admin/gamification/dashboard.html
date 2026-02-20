@@ -472,7 +472,7 @@
             <div class="xp-tx-left">
                 <div class="xp-tx-id">User #{{ xp.user_id }}</div>
                 <span class="xp-tx-source">{{ xp.source.replace('_',' ').title() }}</span>
-                <span class="xp-tx-time">{{ xp.timestamp.strftime('%b %d, %H:%M') }}</span>
+                <span class="xp-tx-time">{{ (xp.timestamp | to_ist).strftime('%b %d, %H:%M') }}</span>
             </div>
             <span class="{{ 'xp-pos' if xp.amount > 0 else 'xp-neg' }}">
                 {{ '+' if xp.amount > 0 else '' }}{{ xp.amount }} XP

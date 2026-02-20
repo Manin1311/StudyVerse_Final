@@ -95,8 +95,10 @@
                 </td>
                 <td>
                     <div style="font-size: 13px;">
-                        <div style="color: var(--text-primary);">{{ log.timestamp.strftime('%b %d, %Y') }}</div>
-                        <div style="color: var(--text-secondary);">{{ log.timestamp.strftime('%I:%M %p') }}</div>
+                        <div style="color: var(--text-primary);">{{ (log.timestamp | to_ist).strftime('%b %d, %Y') }}
+                        </div>
+                        <div style="color: var(--text-secondary);">{{ (log.timestamp | to_ist).strftime('%I:%M %p') }}
+                        </div>
                     </div>
                 </td>
             </tr>

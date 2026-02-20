@@ -296,7 +296,7 @@
                 <div class="session-meta">
                     <strong>User #{{ session.user_id }}</strong> &bull; {{ session.duration }} min
                 </div>
-                <div class="session-time">{{ session.completed_at.strftime('%b %d, %H:%M') }}</div>
+                <div class="session-time">{{ (session.completed_at | to_ist).strftime('%b %d, %H:%M') }}</div>
             </div>
             {% else %}
             <div style="text-align:center;padding:40px;color:var(--text-muted);">No sessions yet</div>

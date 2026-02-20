@@ -150,6 +150,13 @@ from whitenoise import WhiteNoise
 
 app = Flask(__name__)
 
+# Template filter to convert UTC to IST
+@app.template_filter('to_ist')
+def to_ist_filter(dt):
+    if dt:
+        from datetime import timedelta
+        return dt + timedelta(hours=5, minutes=30)
+    return dt
 # ProxyFix: Critical for deployment on Render/Heroku behind reverse proxy
 # Ensures correct handling of HTTPS, host headers, and client IP addresses
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
