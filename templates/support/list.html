@@ -137,7 +137,7 @@
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 8px;
-        background: linear-gradient(to right, #ffffff, #a1a1aa);
+        background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
@@ -187,8 +187,8 @@
     .ticket-card:hover {
         transform: translateY(-2px);
         border-color: var(--accent-dim);
-        background: linear-gradient(to right, var(--bg-card), rgba(74, 222, 128, 0.03));
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(to right, var(--bg-card), rgba(74, 222, 128, 0.05));
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
     }
 
     /* Icon */
@@ -200,8 +200,8 @@
         align-items: center;
         justify-content: center;
         font-size: 1.25rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(128, 128, 128, 0.1);
+        border: 1px solid var(--border);
     }
 
     .ticket-icon-wrapper.status-open {
@@ -296,7 +296,7 @@
 
     .status-badge.status-closed {
         color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(128, 128, 128, 0.1);
     }
 
     .ticket-id {
@@ -332,12 +332,12 @@
     }
 
     .modal-card {
-        background: #141414;
+        background: var(--bg-card);
         width: 100%;
         max-width: 550px;
         padding: 32px;
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         animation: modalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -387,16 +387,31 @@
         font-weight: 500;
     }
 
+    /* Modal Inputs - Fixed for Light/Dark modes */
     .form-control {
         width: 100%;
         padding: 14px 16px;
-        background: #0a0a0a;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-primary);
+        /* Uses theme variable */
+        border: 1px solid var(--border);
         border-radius: 12px;
         color: var(--text-primary);
         font-size: 0.95rem;
         font-family: 'Inter', sans-serif;
         transition: all 0.2s;
+    }
+
+    /* Specific fixes for Dark Mode if variables aren't catching heavily enough */
+    [data-theme="dark"] .form-control {
+        background: #0a0a0a;
+        color: #e5e7eb;
+        border-color: #374151;
+    }
+
+    [data-theme="light"] .form-control {
+        background: #ffffff;
+        color: #111827;
+        border-color: #d1d5db;
     }
 
     .form-control:focus {
