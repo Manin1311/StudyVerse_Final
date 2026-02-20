@@ -166,6 +166,12 @@
     -webkit-text-fill-color: transparent !important;
 }
 
+[data-theme="light"] .task-count-badge {
+    background: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border);
+}
+
 /* Light mode card backgrounds */
 [data-theme="light"] .card,
 [data-theme="light"] .leaderboard-card,
