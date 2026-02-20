@@ -158,6 +158,21 @@
     /* Amber 700 */
 }
 
+[data-theme="light"] .rank-text[data-rank="Heroic"] {
+    color: #dc2626 !important;
+    /* Red 600 */
+}
+
+[data-theme="light"] .rank-text[data-rank="Master"] {
+    color: #991b1b !important;
+    /* Red 800 */
+}
+
+[data-theme="light"] .rank-text[data-rank="Grandmaster"] {
+    color: #6b21a8 !important;
+    /* Purple 800 */
+}
+
 /* Light mode gradient text - make it solid in light mode for readability */
 [data-theme="light"] .rank-big-number {
     background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%) !important;
@@ -476,6 +491,7 @@
 /* Fix all hardcoded dark backgrounds in dashboard */
 [data-theme="light"] [style*="background: #101010"],
 [data-theme="light"] [style*="background: #111"],
+[data-theme="light"] [style*="background: #1a1a1a"],
 [data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
 [data-theme="light"] [style*="background: rgba(0,0,0,0.4)"],
 [data-theme="light"] [style*="background: rgba(15,15,15"] {

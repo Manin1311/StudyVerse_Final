@@ -4867,6 +4867,11 @@ def quiz_generate():
     difficulty = data.get('difficulty', 'medium')
     syllabus_id = data.get('syllabus_id') # New field
     
+    # Check if user has uploaded any PDF
+    has_pdf = SyllabusDocument.query.filter_by(user_id=current_user.id).first()
+    if not has_pdf:
+        return jsonify({'status': 'error', 'message': 'Please first upload a PDF document in the Syllabus section to generate a quiz.'}), 400
+    
     questions = QuizService.generate_weakness_quiz(current_user.id, num_questions=num_questions, difficulty=difficulty, syllabus_id=syllabus_id)
     if not questions:
         # Fallback Mock if AI fails
