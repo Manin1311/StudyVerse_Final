@@ -5238,14 +5238,8 @@ def admin_dashboard():
         User.email != 'admin@studyversefinal.com'
     ).count()
     
-    # 2. Active Users (last 7 days, excluding admins)
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    active_users = User.query.filter(
-        User.is_admin == False,
-        User.email != 'admin@studyverse.com',
-        User.email != 'admin@studyversefinal.com',
-        User.last_seen >= seven_days_ago
-    ).count()
+    # 2. Active Users (excluding admins, showing all as requested)
+    active_users = total_users
     
     # 3. Total XP Awarded (from non-admin users)
     total_xp = db.session.query(db.func.sum(User.total_xp)).filter(
@@ -5640,9 +5634,12 @@ def admin_analytics():
     """View system analytics"""
     from datetime import timedelta
     
-    # User growth (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    new_users_30d = User.query.filter(User.created_at >= thirty_days_ago).count()
+    # User growth (excluding admins to match total users)
+    new_users_30d = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com'
+    ).count()
     
     # Activity stats
     total_messages = ChatMessage.query.count() + GroupChatMessage.query.count()
