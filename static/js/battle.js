@@ -283,23 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modals.joinReq) modals.joinReq.style.display = 'none';
     });
 
-    socket.on('battle_rejoined', (data) => {
-        setDebug('Rejoined: ' + data.room_code);
-        console.log('[Battle] Rejoined room:', data.room_code);
-        // ... (rest of logic same) ...
-    });
 
-    socket.on('battle_created', (data) => {
-        setDebug('Created: ' + data.room_code);
-        // ...
-    });
-
-    // ...
-
-    socket.on('battle_join_request_notify', (data) => {
-        setDebug('Join Req: ' + data.player_name);
-        // ...
-    });
 
     if (buttons.create) {
         buttons.create.addEventListener('click', () => {
@@ -333,25 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRoom = code;
     });
 
-    socket.on('battle_error', (data) => {
-        console.error('[Battle] Error:', data.message);
-        alert(data.message);
 
-        // If room is invalid, clear session to prevent stuck loop
-        if (data.message.includes('Invalid room') || data.message.includes('expired') || data.message.includes('not in this room')) {
-            sessionStorage.removeItem('battle_room_code');
-            currentRoom = null;
-            showScreen('entry');
-        }
-
-        // Reset join button if it was in a loading state
-        if (buttons.join.textContent === "Requesting...") {
-            buttons.join.textContent = "Join";
-            buttons.join.disabled = false;
-        }
-        // Hide modal if open
-        modals.joinReq.style.display = 'none';
-    });
 
     socket.on('battle_rejoined', (data) => {
         console.log('[Battle] Rejoined room:', data.room_code);
@@ -392,22 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addChatMsg("ByteBot", `Invite Code: **${currentRoom}**`, 'system');
     });
 
-    socket.on('battle_rejoined', (data) => {
-        // Handle rejoin (simple version)
-        currentRoom = data.room_code;
-        showScreen('battle');
-        display.room.textContent = currentRoom;
-        addChatMsg("ByteBot", "Reconnected to battle.", 'system');
-    });
 
-    socket.on('battle_error', (data) => {
-        alert(data.message);
-        buttons.join.textContent = "Join";
-        buttons.join.disabled = false;
-
-        // Hide modal if open
-        modals.joinReq.style.display = 'none';
-    });
 
     // --- 2. Join Request Flow (Host Side) ---
 
