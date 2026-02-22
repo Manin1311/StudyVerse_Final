@@ -5964,7 +5964,271 @@ def setup_admin_panel_once():
         """
 
 
+
+# ============================================================================
+# AI TOPIC RESOLVER — Routes
+# ============================================================================
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
+
+@app.route('/topic-resolver')
+@login_required
+def topic_resolver():
+    """Main AI Topic Resolver page — shows weak topics as quick picks."""
+    # Fetch user's weak topics (proficiency < 60) ordered by lowest first
+    weak_topics = TopicProficiency.query.filter_by(
+        user_id=current_user.id
+    ).filter(
+        TopicProficiency.proficiency < 60
+    ).order_by(TopicProficiency.proficiency.asc()).limit(6).all()
+
+    return render_template('topic_resolver.html', weak_topics=weak_topics)
+
+
+@app.route('/api/topic-resolver/explain', methods=['POST'])
+@login_required
+def topic_resolver_explain():
+    """
+    AI Explanation endpoint — uses Gemini to generate a structured deep-dive.
+    Returns: explanation, key_points, common_mistakes, memory_trick, youtube_query, summary
+    """
+    data = request.get_json()
+    topic = (data or {}).get('topic', '').strip()
+    if not topic:
+        return jsonify({'error': 'Topic is required'}), 400
+
+    if not GEMINI_AVAILABLE or not AI_API_KEY:
+        return jsonify({'error': 'AI service not configured'}), 503
+
+    try:
+        prompt = f"""You are an expert tutor. A student is struggling with: "{topic}"
+
+Generate a structured learning breakdown in JSON format:
+
+{{
+  "subtitle": "A one-line description of the topic",
+  "explanation": "A clear, friendly 3-4 sentence explanation of the concept. Use simple analogies.",
+  "key_points": ["Key point 1", "Key point 2", "Key point 3", "Key point 4"],
+  "common_mistakes": "The most common mistake students make with this topic in 1-2 sentences.",
+  "memory_trick": "A memorable trick, mnemonic, or analogy to remember this concept.",
+  "youtube_query": "A specific YouTube search query to find the best tutorial video on this topic",
+  "summary": "A 10-word summary of the topic for image generation"
+}}
+
+Return ONLY valid JSON. No markdown, no extra text."""
+
+        model = genai.GenerativeModel(AI_MODEL)
+        resp = model.generate_content(prompt)
+        raw = resp.text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+
+        result = json.loads(raw.strip())
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'explanation': f'This topic covers important concepts that require careful study. Break it down into smaller parts and practice regularly.',
+            'key_points': ['Understand the core definition', 'Practice with examples', 'Review related concepts', 'Test yourself regularly'],
+            'common_mistakes': 'Students often rush through this topic without building a solid foundation.',
+            'memory_trick': 'Connect this concept to something you already know well.',
+            'youtube_query': topic + ' explained tutorial',
+            'summary': topic,
+            'subtitle': 'AI-powered deep dive • YouTube curated videos • Visual diagram'
+        })
+
+
+@app.route('/api/topic-resolver/videos', methods=['POST'])
+@login_required
+def topic_resolver_videos():
+    """
+    YouTube video search endpoint — returns top educational videos for a topic.
+    Uses YouTube Data API v3.
+    """
+    data = request.get_json()
+    topic = (data or {}).get('topic', '').strip()
+    search_query = (data or {}).get('search_query', topic).strip()
+
+    if not topic:
+        return jsonify({'videos': [], 'error': 'Topic required'}), 400
+
+    if not YOUTUBE_API_KEY:
+        return jsonify({'videos': [], 'error': 'YouTube API not configured'}), 200
+
+    try:
+        # Build optimised search query (educational focus)
+        educational_query = f"{search_query} explained tutorial"
+
+        # YouTube Data API v3 search
+        yt_url = "https://www.googleapis.com/youtube/v3/search"
+        params = {
+            'part': 'snippet',
+            'q': educational_query,
+            'type': 'video',
+            'maxResults': 5,
+            'relevanceLanguage': 'en',
+            'videoDuration': 'medium',        # 4–20 min (ideal for tutorials)
+            'videoDefinition': 'high',
+            'key': YOUTUBE_API_KEY,
+            'safeSearch': 'strict',
+        }
+
+        resp = requests.get(yt_url, params=params, timeout=8)
+        resp.raise_for_status()
+        yt_data = resp.json()
+
+        video_ids = [item['id']['videoId'] for item in yt_data.get('items', [])]
+
+        # Fetch video statistics (view count) and content details (duration)
+        videos_info = []
+        if video_ids:
+            details_url = "https://www.googleapis.com/youtube/v3/videos"
+            detail_params = {
+                'part': 'contentDetails,statistics',
+                'id': ','.join(video_ids),
+                'key': YOUTUBE_API_KEY,
+            }
+            detail_resp = requests.get(details_url, params=detail_params, timeout=8)
+            detail_resp.raise_for_status()
+            detail_data = {v['id']: v for v in detail_resp.json().get('items', [])}
+
+            for item in yt_data.get('items', []):
+                vid_id = item['id']['videoId']
+                snippet = item['snippet']
+                details = detail_data.get(vid_id, {})
+
+                # Parse ISO 8601 duration (PT4M13S → 4:13)
+                duration_raw = details.get('contentDetails', {}).get('duration', '')
+                duration_str = _parse_yt_duration(duration_raw)
+
+                # Format view count
+                view_count = details.get('statistics', {}).get('viewCount', '')
+                views_str = _format_view_count(view_count)
+
+                # Best thumbnail
+                thumbs = snippet.get('thumbnails', {})
+                thumb = (thumbs.get('high') or thumbs.get('medium') or thumbs.get('default') or {}).get('url', '')
+
+                videos_info.append({
+                    'id': vid_id,
+                    'title': snippet.get('title', ''),
+                    'channel': snippet.get('channelTitle', ''),
+                    'thumbnail': thumb,
+                    'duration': duration_str,
+                    'views': views_str,
+                })
+
+        return jsonify({'videos': videos_info})
+
+    except Exception as e:
+        print(f"YouTube API error: {e}")
+        return jsonify({'videos': [], 'error': str(e)}), 200
+
+
+def _parse_yt_duration(iso_duration):
+    """Convert ISO 8601 duration PT4M13S to 4:13"""
+    if not iso_duration:
+        return ''
+    import re as _re
+    match = _re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', iso_duration)
+    if not match:
+        return ''
+    h, m, s = match.groups()
+    h = int(h or 0); m = int(m or 0); s = int(s or 0)
+    if h:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
+
+
+def _format_view_count(count_str):
+    """Format raw view count: 1234567 → 1.2M"""
+    try:
+        n = int(count_str)
+        if n >= 1_000_000:
+            return f"{n/1_000_000:.1f}M views"
+        if n >= 1_000:
+            return f"{n/1_000:.0f}K views"
+        return f"{n} views"
+    except Exception:
+        return ''
+
+
+@app.route('/api/topic-resolver/diagram', methods=['POST'])
+@login_required
+def topic_resolver_diagram():
+    """
+    AI Diagram generation endpoint.
+    Uses Gemini to generate an educational visual description or image.
+    Falls back to Gemini text diagram if image unavailable.
+    """
+    data = request.get_json()
+    topic = (data or {}).get('topic', '').strip()
+    description = (data or {}).get('description', topic).strip()
+
+    if not topic:
+        return jsonify({'error': 'Topic required'}), 400
+
+    if not GEMINI_AVAILABLE or not AI_API_KEY:
+        return jsonify({'description': 'AI diagram service not available.'}), 200
+
+    try:
+        # Try Gemini image generation model
+        image_model = genai.GenerativeModel('gemini-2.0-flash-preview-image-generation')
+        image_prompt = (
+            f"Create a clean, educational diagram or concept map for the topic: '{topic}'. "
+            f"The diagram should be: labeled clearly, use arrows and boxes, show relationships, "
+            f"use a dark background with colourful labels, academic style, no text clutter. "
+            f"Similar to a textbook figure or Khan Academy illustration."
+        )
+        image_response = image_model.generate_content(
+            image_prompt,
+            generation_config={"response_modalities": ["image", "text"]}
+        )
+
+        # Extract image from response
+        for part in image_response.candidates[0].content.parts:
+            if hasattr(part, 'inline_data') and part.inline_data:
+                import base64 as _b64
+                image_data = part.inline_data.data
+                mime = part.inline_data.mime_type or 'image/png'
+                data_uri = f"data:{mime};base64,{_b64.b64encode(image_data).decode()}"
+                return jsonify({'image_url': data_uri})
+
+    except Exception as img_err:
+        print(f"Image generation failed: {img_err}")
+
+    # Fallback: use Gemini to generate a text-based ASCII/structured diagram description
+    try:
+        fallback_prompt = f"""Create a clear, structured text diagram or concept map for: "{topic}"
+Use ASCII art, arrows (→, ↓, ←, ↑), boxes (┌─┐ │ └─┘), and indentation to show relationships.
+Make it educational, concise, and visually clear. Max 30 lines."""
+        model = genai.GenerativeModel(AI_MODEL)
+        fb_resp = model.generate_content(fallback_prompt)
+        return jsonify({'description': fb_resp.text.strip()})
+    except Exception as fb_err:
+        return jsonify({'description': f'Diagram generation unavailable for: {topic}'}), 200
+
+
+@app.route('/api/topic-resolver/award-xp', methods=['POST'])
+@login_required
+def topic_resolver_award_xp():
+    """Award XP for using the Topic Resolver feature."""
+    try:
+        result = GamificationService.add_xp(current_user.id, 'topic_resolver', 15)
+        GamificationService.update_streak(current_user.id)
+        earned = (result or {}).get('earned', 15) if result else 15
+        return jsonify({'earned': earned if earned > 0 else 15})
+    except Exception:
+        return jsonify({'earned': 0})
+
+
+# ============================================================================
+
 if __name__ == '__main__':
+
     # Start Background Scheduler ONLY in development mode
     # In production (gunicorn), this block doesn't run, avoiding eventlet conflicts
     # For production task reminders, use a separate cron job or background worker service
