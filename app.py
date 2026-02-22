@@ -6227,6 +6227,138 @@ def topic_resolver_award_xp():
 
 # ============================================================================
 
+# ============================================================================
+# AI PHOTO QUESTION SOLVER — Routes
+# ============================================================================
+
+@app.route('/photo-solver')
+@login_required
+def photo_solver():
+    """AI Photo Question Solver page."""
+    return render_template('photo_solver.html')
+
+
+@app.route('/api/photo-solver/solve', methods=['POST'])
+@login_required
+def photo_solver_solve():
+    """
+    Solve a question from an uploaded image using Gemini Vision (multimodal).
+    Accepts: multipart/form-data with 'image' field.
+    Returns: JSON with steps, final_answer, subject, topic, difficulty, concepts.
+    """
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
+
+    img_file = request.files['image']
+    if img_file.filename == '':
+        return jsonify({'error': 'No image selected'}), 400
+
+    # Read image bytes and determine MIME type
+    img_bytes = img_file.read()
+    mime_type = img_file.content_type or 'image/jpeg'
+    # Limit to 10 MB
+    if len(img_bytes) > 10 * 1024 * 1024:
+        return jsonify({'error': 'Image too large. Maximum 10MB.'}), 400
+
+    if not GEMINI_AVAILABLE or not AI_API_KEY:
+        return jsonify({'error': 'AI service not configured'}), 503
+
+    try:
+        import base64 as _b64
+
+        # Encode image for Gemini multimodal input
+        image_data = {
+            'mime_type': mime_type,
+            'data': _b64.b64encode(img_bytes).decode('utf-8')
+        }
+
+        prompt = """You are an expert academic tutor. Carefully look at this image which contains a question or problem.
+
+Analyse and solve it completely. Return your response as valid JSON with this EXACT structure:
+
+{
+  "question_preview": "A short 1-sentence description of what the question is about",
+  "subject": "Subject name (e.g. Mathematics, Physics, Chemistry, Biology, History, etc.)",
+  "topic": "Specific topic (e.g. Integration by Parts, Newton's Laws, Organic Chemistry)",
+  "difficulty": "Easy / Medium / Hard",
+  "steps": [
+    {
+      "title": "Step title (e.g. Identify the formula)",
+      "detail": "Clear explanation of this step in simple language",
+      "formula": "Optional: the formula or equation used in this step (omit if not applicable)"
+    }
+  ],
+  "final_answer": "The final answer clearly stated",
+  "concepts": ["Concept 1", "Concept 2", "Concept 3"],
+  "pro_tip": "A useful tip or shortcut for this type of problem"
+}
+
+IMPORTANT:
+- If the image is unclear or not a question, return {"error": "Could not read a clear question from this image. Try a clearer photo."}
+- Return ONLY valid JSON. No markdown, no extra text.
+- Be thorough with steps — explain each one clearly for a student.
+- Use simple, friendly language."""
+
+        model = genai.GenerativeModel(AI_MODEL)
+        response = model.generate_content(
+            contents=[
+                {'role': 'user', 'parts': [
+                    {'inline_data': image_data},
+                    {'text': prompt}
+                ]}
+            ]
+        )
+
+        raw = response.text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+
+        result = json.loads(raw.strip())
+
+        # If Gemini returned an error key inside JSON
+        if 'error' in result and len(result) == 1:
+            return jsonify(result), 422
+
+        return jsonify(result)
+
+    except json.JSONDecodeError:
+        # Try to return raw text as explanation if JSON parse fails
+        try:
+            return jsonify({
+                'question_preview': 'Question detected',
+                'subject': 'General',
+                'topic': 'Mixed',
+                'difficulty': 'Medium',
+                'steps': [{'title': 'AI Solution', 'detail': response.text, 'formula': ''}],
+                'final_answer': '',
+                'concepts': [],
+                'pro_tip': ''
+            })
+        except Exception:
+            return jsonify({'error': 'AI returned an unexpected response. Please try again.'}), 500
+    except Exception as e:
+        print(f"Photo solver error: {e}")
+        return jsonify({'error': f'Could not solve: {str(e)}'}), 500
+
+
+@app.route('/api/photo-solver/award-xp', methods=['POST'])
+@login_required
+def photo_solver_award_xp():
+    """Award XP for using the Photo Solver feature."""
+    try:
+        result = GamificationService.add_xp(current_user.id, 'photo_solver', 20)
+        GamificationService.update_streak(current_user.id)
+        earned = (result or {}).get('earned', 20) if result else 20
+        return jsonify({'earned': earned if earned > 0 else 20})
+    except Exception:
+        return jsonify({'earned': 0})
+
+
+# ============================================================================
+
 if __name__ == '__main__':
 
     # Start Background Scheduler ONLY in development mode
