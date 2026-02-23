@@ -6510,6 +6510,8 @@ def handle_go_live(data):
         'timer_min': timer_min,
         'watchers': set(),
         'elapsed': 0,
+        'started_at': datetime.utcnow(),
+        'messages': [],   # stores last 50 chat messages for replay on refresh
     }
 
     # Save to DB
@@ -6587,13 +6589,21 @@ def handle_join_stream(data):
         'watcher_count': watcher_count,
     }, room=f"stream_{sid}")
 
-    # Send current stream state to new watcher
+    # Compute live elapsed time from when stream started
+    started_at = _live_streams[sid].get('started_at')
+    if started_at:
+        server_elapsed = int((datetime.utcnow() - started_at).total_seconds())
+    else:
+        server_elapsed = _live_streams[sid].get('elapsed', 0)
+
+    # Send current stream state + recent messages to new watcher
     emit('stream_state', {
         'topic': _live_streams[sid]['topic'],
         'subject': _live_streams[sid]['subject'],
         'timer_min': _live_streams[sid]['timer_min'],
-        'elapsed': _live_streams[sid].get('elapsed', 0),
+        'elapsed': server_elapsed,
         'watcher_count': watcher_count,
+        'recent_messages': _live_streams[sid].get('messages', []),
     })
 
 
@@ -6656,12 +6666,20 @@ def handle_stream_message(data):
     message = (data.get('message') or '')[:200].strip()
     if not message:
         return
-    emit('new_stream_message', {
+    msg_obj = {
         'name': current_user.first_name,
         'avatar': current_user.get_avatar(28),
         'message': message,
         'user_id': current_user.id,
-    }, room=f"stream_{sid}")
+        'type': 'chat',
+    }
+    # Store for replay (keep last 50)
+    if sid in _live_streams:
+        msgs = _live_streams[sid].setdefault('messages', [])
+        msgs.append(msg_obj)
+        if len(msgs) > 50:
+            _live_streams[sid]['messages'] = msgs[-50:]
+    emit('new_stream_message', msg_obj, room=f"stream_{sid}")
 
 
 @socketio.on('solidarity_join')

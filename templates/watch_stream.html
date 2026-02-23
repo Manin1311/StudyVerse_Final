@@ -682,7 +682,10 @@
     const TIMER_MIN = {{ stream_info.timer_min }};
     const TOTAL_SEC = TIMER_MIN * 60;
 
-    let socket, solidarityInterval = null, solidaryActive = false, solidarityElapsed = 0;
+    let socket, solidarityInterval = null, solidaryActive = false;
+    let _localTimerInterval = null;
+    let _localElapsed = 0;   // local elapsed seconds, ticked every second
+    let _totalSec = TOTAL_SEC;
 
     // ── Connect ─────────────────────────────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
@@ -693,20 +696,30 @@
             socket.emit('join_stream', { stream_id: STREAM_ID });
         });
 
-        // Stream state from server
+        // Stream state from server — START local countdown from here
         socket.on('stream_state', (d) => {
-            updateTimerDisplay(d.elapsed || 0);
+            _localElapsed = d.elapsed || 0;
+            _totalSec = (d.timer_min || TIMER_MIN) * 60;
             updateWatcherCount(d.watcher_count || 0);
+            renderTimerFromElapsed(_localElapsed);
+            startLocalCountdown();  // ← begin ticking locally every second
+
+            // Replay recent messages
+            if (d.recent_messages && d.recent_messages.length) {
+                d.recent_messages.forEach(msg => {
+                    if (msg.type === 'system') appendSystemMsg(msg.text);
+                    else appendMessage(msg);
+                });
+            }
         });
 
-        // Timer sync from streamer
+        // Timer sync from streamer (every 5s) — resync local elapsed
         socket.on('timer_update', (d) => {
-            document.getElementById('streamTimerDisplay').textContent = d.remaining || '25:00';
-            document.getElementById('streamModeLabel').textContent =
-                d.mode === 'focus' ? 'Focus Mode' : '☕ Break Time';
             const elapsed = d.elapsed || 0;
-            const pct = Math.min((elapsed / TOTAL_SEC) * 100, 100);
-            document.getElementById('streamProgressFill').style.width = pct + '%';
+            _localElapsed = elapsed;   // resync to authoritative value
+            renderTimerFromElapsed(elapsed);
+            document.getElementById('streamModeLabel').textContent =
+                (d.mode === 'focus') ? 'Focus Mode' : '☕ Break Time';
             updateElapsedDisplay(elapsed);
         });
 
@@ -732,6 +745,7 @@
 
         // Stream ended
         socket.on('stream_ended', (d) => {
+            clearInterval(_localTimerInterval);
             document.getElementById('endedMinutes').textContent = d.duration_min || 0;
             document.getElementById('endedWatchers').textContent = d.watchers || 0;
             document.getElementById('streamEndedModal').classList.add('open');
@@ -742,6 +756,27 @@
     });
 
     // ── UI Helpers ───────────────────────────────────────────────────────────────
+    function startLocalCountdown() {
+        // Start a local 1-second countdown so the timer ticks smoothly
+        // SocketIO resync happens every 5s via timer_update
+        clearInterval(_localTimerInterval);
+        _localTimerInterval = setInterval(() => {
+            _localElapsed++;
+            renderTimerFromElapsed(_localElapsed);
+            updateElapsedDisplay(_localElapsed);
+            if (_localElapsed >= _totalSec) {
+                clearInterval(_localTimerInterval);
+            }
+        }, 1000);
+    }
+    function renderTimerFromElapsed(elapsedSec) {
+        const rem = Math.max(_totalSec - elapsedSec, 0);
+        const m = String(Math.floor(rem / 60)).padStart(2, '0');
+        const s = String(rem % 60).padStart(2, '0');
+        document.getElementById('streamTimerDisplay').textContent = m + ':' + s;
+        const pct = Math.min((elapsedSec / _totalSec) * 100, 100);
+        document.getElementById('streamProgressFill').style.width = pct + '%';
+    }
     function updateWatcherCount(n) {
         document.getElementById('watcherCountBanner').textContent = n;
         document.getElementById('watcherCountTimer').textContent = n;
@@ -749,14 +784,6 @@
     function updateElapsedDisplay(secs) {
         const m = Math.floor(secs / 60);
         document.getElementById('elapsedDisplay').textContent = m + ' min';
-    }
-    function updateTimerDisplay(elapsedSec) {
-        const rem = Math.max(TOTAL_SEC - elapsedSec, 0);
-        const m = String(Math.floor(rem / 60)).padStart(2, '0');
-        const s = String(rem % 60).padStart(2, '0');
-        document.getElementById('streamTimerDisplay').textContent = m + ':' + s;
-        const pct = (elapsedSec / TOTAL_SEC) * 100;
-        document.getElementById('streamProgressFill').style.width = pct + '%';
     }
 
     // ── Reactions ────────────────────────────────────────────────────────────────
