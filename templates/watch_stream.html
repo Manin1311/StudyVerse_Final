@@ -562,7 +562,8 @@
         <div class="live-meta">
             <span class="live-meta-item"><i class="fa-solid fa-users"></i> <strong id="watcherCountBanner">{{
                     stream_info.watchers|length }}</strong> watching</span>
-            <span class="live-meta-item"><i class="fa-solid fa-clock"></i> <span id="elapsedDisplay">0 min</span></span>
+            <span class="live-meta-item"><i class="fa-solid fa-hourglass-half"></i> Studying for <span
+                    id="elapsedDisplay">0</span> min</span>
         </div>
     </div>
 
@@ -578,6 +579,11 @@
                 <button onclick="endStream()"
                     style="margin-left:auto; padding:6px 16px; border-radius:8px; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.2); font-size:12.5px; font-weight:700; cursor:pointer;">
                     <i class="fa-solid fa-stop"></i> End Stream
+                </button>
+                {% else %}
+                <button onclick="leaveStream()"
+                    style="margin-left:auto; padding:6px 16px; border-radius:8px; background:rgba(148,163,184,0.08); color:var(--text-muted); border:1px solid var(--border); font-size:12.5px; font-weight:600; cursor:pointer;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Leave
                 </button>
                 {% endif %}
             </div>
@@ -611,7 +617,8 @@
                 <button class="btn-solidarity" id="solidarityBtn" onclick="joinSolidarity()">
                     <i class="fa-solid fa-dumbbell"></i> Study Together (+10% XP)
                 </button>
-                <div class="solidarity-timer visible" id="solidarityTimerBox" style="display:none;">
+                <div id="solidarityTimerBox"
+                    style="display:none; padding:12px 20px; background:rgba(74,222,128,0.08); border-top:1px solid rgba(74,222,128,0.15); text-align:center; font-size:13px; color:#4ade80;">
                     <i class="fa-solid fa-timer"></i> Your Pomodoro: <strong id="solidarityTimerDisplay">25:00</strong>
                 </div>
                 <div class="solidarity-count-display" id="solidarityCountDisplay"></div>
@@ -671,7 +678,7 @@
                 <div class="ended-stat-label">Watchers</div>
             </div>
         </div>
-        <button class="btn-ended-close" onclick="window.location.href='/friends'">Back to Friends</button>
+        <button class="btn-ended-close" onclick="window.location.href='/live'">Go to Live Streams</button>
     </div>
 </div>
 
@@ -681,30 +688,35 @@
     const IS_OWN_STREAM = {{ 'true' if is_own_stream else 'false' }};
     const TIMER_MIN = {{ stream_info.timer_min }};
     const TOTAL_SEC = TIMER_MIN * 60;
+    const SOLIDARITY_KEY = 'sv_solidarity_' + STREAM_ID;
 
     let socket, solidarityInterval = null, solidaryActive = false;
     let _localTimerInterval = null;
-    let _localElapsed = 0;   // local elapsed seconds, ticked every second
+    let _localElapsed = 0;
     let _totalSec = TOTAL_SEC;
+    let _streamEnded = false;
 
-    // ── Connect ─────────────────────────────────────────────────────────────────
+    // ── Connect ──────────────────────────────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
         socket = io();
 
         socket.on('connect', () => {
             socket.emit('join_user_room', {});
-            socket.emit('join_stream', { stream_id: STREAM_ID });
+            // Streamer doesn't join as a watcher — only spectators do
+            if (!IS_OWN_STREAM) {
+                socket.emit('join_stream', { stream_id: STREAM_ID });
+            }
         });
 
-        // Stream state from server — START local countdown from here
+        // Stream state — START local countdown
         socket.on('stream_state', (d) => {
             _localElapsed = d.elapsed || 0;
             _totalSec = (d.timer_min || TIMER_MIN) * 60;
             updateWatcherCount(d.watcher_count || 0);
             renderTimerFromElapsed(_localElapsed);
-            startLocalCountdown();  // ← begin ticking locally every second
+            startLocalCountdown();
 
-            // Replay recent messages
+            // Replay chat history
             if (d.recent_messages && d.recent_messages.length) {
                 d.recent_messages.forEach(msg => {
                     if (msg.type === 'system') appendSystemMsg(msg.text);
@@ -713,59 +725,58 @@
             }
         });
 
-        // Timer sync from streamer (every 5s) — resync local elapsed
+        // Timer resync from streamer every 5s
         socket.on('timer_update', (d) => {
-            const elapsed = d.elapsed || 0;
-            _localElapsed = elapsed;   // resync to authoritative value
-            renderTimerFromElapsed(elapsed);
+            _localElapsed = d.elapsed || 0;
+            renderTimerFromElapsed(_localElapsed);
             document.getElementById('streamModeLabel').textContent =
                 (d.mode === 'focus') ? 'Focus Mode' : '☕ Break Time';
-            updateElapsedDisplay(elapsed);
+            updateElapsedDisplay(_localElapsed);
         });
 
-        // Reactions
         socket.on('new_reaction', (d) => { spawnFloatingEmoji(d.emoji); });
-
-        // Chat messages
         socket.on('new_stream_message', (d) => { appendMessage(d); });
 
-        // System events
         socket.on('watcher_joined', (d) => {
             updateWatcherCount(d.watcher_count);
             appendSystemMsg('👀 ' + d.name + ' joined the stream!');
         });
         socket.on('watcher_left', (d) => {
             updateWatcherCount(d.watcher_count);
+            appendSystemMsg('� ' + d.name + ' left the stream.');
         });
         socket.on('solidarity_joined', (d) => {
             appendSystemMsg('💪 ' + d.name + ' is studying along!');
-            const el = document.getElementById('solidarityCountDisplay');
-            if (el) el.textContent = d.name + ' is studying with you!';
         });
 
-        // Stream ended
+        // Host ended the stream
         socket.on('stream_ended', (d) => {
+            _streamEnded = true;
             clearInterval(_localTimerInterval);
+            clearSolidarity();
             document.getElementById('endedMinutes').textContent = d.duration_min || 0;
             document.getElementById('endedWatchers').textContent = d.watchers || 0;
             document.getElementById('streamEndedModal').classList.add('open');
         });
-        socket.on('stream_not_found', () => {
-            window.location.href = '/friends';
-        });
+
+        socket.on('stream_not_found', () => { window.location.href = '/live'; });
+
+        // Restore solidarity from localStorage after page refresh
+        restoreSolidarity();
     });
 
-    // ── UI Helpers ───────────────────────────────────────────────────────────────
+    // ── Timer ─────────────────────────────────────────────────────────────────────
     function startLocalCountdown() {
-        // Start a local 1-second countdown so the timer ticks smoothly
-        // SocketIO resync happens every 5s via timer_update
         clearInterval(_localTimerInterval);
         _localTimerInterval = setInterval(() => {
+            if (_streamEnded) { clearInterval(_localTimerInterval); return; }
             _localElapsed++;
             renderTimerFromElapsed(_localElapsed);
             updateElapsedDisplay(_localElapsed);
             if (_localElapsed >= _totalSec) {
                 clearInterval(_localTimerInterval);
+                // Session timer done — notify in chat, but wait for host's stream_ended event
+                appendSystemMsg('⏱️ Session timer complete! Waiting for ' + (IS_OWN_STREAM ? 'you' : 'the streamer') + ' to end the stream...');
             }
         }, 1000);
     }
@@ -783,10 +794,10 @@
     }
     function updateElapsedDisplay(secs) {
         const m = Math.floor(secs / 60);
-        document.getElementById('elapsedDisplay').textContent = m + ' min';
+        document.getElementById('elapsedDisplay').textContent = m;
     }
 
-    // ── Reactions ────────────────────────────────────────────────────────────────
+    // ── Reactions ─────────────────────────────────────────────────────────────────
     function sendReaction(emoji) {
         socket.emit('stream_reaction', { stream_id: STREAM_ID, emoji });
         spawnFloatingEmoji(emoji);
@@ -801,7 +812,7 @@
         setTimeout(() => el.remove(), 2000);
     }
 
-    // ── Chat ─────────────────────────────────────────────────────────────────────
+    // ── Chat ──────────────────────────────────────────────────────────────────────
     function sendMessage() {
         const inp = document.getElementById('chatInput');
         const msg = inp.value.trim();
@@ -831,39 +842,80 @@
         box.scrollTop = box.scrollHeight;
     }
 
-    // ── Solidarity Pomodoro ───────────────────────────────────────────────────────
+    // ── Solidarity (persists across refresh) ──────────────────────────────────────
     function joinSolidarity() {
         if (solidaryActive) return;
         solidaryActive = true;
         socket.emit('solidarity_join', { stream_id: STREAM_ID });
 
-        const btn = document.getElementById('solidarityBtn');
-        btn.classList.add('active-solidarity');
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Studying Together! +10% XP';
+        const startedAt = Date.now();
+        localStorage.setItem(SOLIDARITY_KEY, startedAt);
 
-        const timerBox = document.getElementById('solidarityTimerBox');
-        if (timerBox) timerBox.style.display = 'block';
-
-        // Start a local countdown (25 mins)
-        let solidaritySec = 25 * 60;
+        startSolidarityTimer(startedAt);
+        setSolidarityActiveUI();
+    }
+    function restoreSolidarity() {
+        const savedAt = localStorage.getItem(SOLIDARITY_KEY);
+        if (!savedAt) return;
+        const elapsed = Math.floor((Date.now() - parseInt(savedAt)) / 1000);
+        const remaining = 25 * 60 - elapsed;
+        if (remaining <= 0) {
+            localStorage.removeItem(SOLIDARITY_KEY);
+            return;
+        }
+        solidaryActive = true;
+        setSolidarityActiveUI();
+        startSolidarityTimer(parseInt(savedAt));
+    }
+    function startSolidarityTimer(startedAt) {
+        clearInterval(solidarityInterval);
         solidarityInterval = setInterval(() => {
-            solidaritySec--;
-            const m = String(Math.floor(solidaritySec / 60)).padStart(2, '0');
-            const s = String(solidaritySec % 60).padStart(2, '0');
+            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            const rem = Math.max(25 * 60 - elapsed, 0);
+            const m = String(Math.floor(rem / 60)).padStart(2, '0');
+            const s = String(rem % 60).padStart(2, '0');
             const el = document.getElementById('solidarityTimerDisplay');
             if (el) el.textContent = m + ':' + s;
-            if (solidaritySec <= 0) {
+            if (rem <= 0) {
                 clearInterval(solidarityInterval);
-                appendSystemMsg('🎉 You completed a solidarity session! +10% XP bonus applied.');
+                localStorage.removeItem(SOLIDARITY_KEY);
+                appendSystemMsg('🎉 You completed a solidarity session! Great work!');
             }
         }, 1000);
+        const timerBox = document.getElementById('solidarityTimerBox');
+        if (timerBox) timerBox.style.display = 'block';
+    }
+    function setSolidarityActiveUI() {
+        const btn = document.getElementById('solidarityBtn');
+        if (btn) {
+            btn.classList.add('active-solidarity');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Studying Together! ✓';
+            btn.onclick = null;
+        }
+    }
+    function clearSolidarity() {
+        clearInterval(solidarityInterval);
+        localStorage.removeItem(SOLIDARITY_KEY);
+    }
+
+    // ── Leave Stream ──────────────────────────────────────────────────────────────
+    function leaveStream() {
+        socket.emit('leave_stream', { stream_id: STREAM_ID });
+        clearSolidarity();
+        setTimeout(() => window.location.href = '/live', 300);
     }
 
     // ── Own stream: End ──────────────────────────────────────────────────────────
     function endStream() {
         if (!confirm('End your live study stream?')) return;
-        socket.emit('end_stream', { stream_id: STREAM_ID, duration_min: 0 });
-        setTimeout(() => window.location.href = '/pomodoro', 1500);
+        const durMin = Math.floor(_localElapsed / 60);
+        socket.emit('end_stream', { stream_id: STREAM_ID, duration_min: durMin });
+        _streamEnded = true;
+        clearInterval(_localTimerInterval);
+        // Show end summary modal immediately for host
+        document.getElementById('endedMinutes').textContent = durMin;
+        document.getElementById('endedWatchers').textContent = document.getElementById('watcherCountTimer').textContent || 0;
+        document.getElementById('streamEndedModal').classList.add('open');
     }
 
     function escHtml(s) {

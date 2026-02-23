@@ -299,15 +299,35 @@
         <p>Watch your friends study live, cheer them on, and join in solidarity for bonus XP.</p>
     </div>
 
-    <!-- Go Live CTA card -->
+    <!-- Go Live CTA card OR You're Live banner -->
+    {% if user_is_live and own_stream %}
+    <div class="go-live-cta"
+        style="background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(249,115,22,0.06)); border-color:rgba(239,68,68,0.2);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span
+                style="width:10px;height:10px;border-radius:50%;background:#ef4444;animation:lp 1.2s ease infinite;"></span>
+            <span
+                style="font-size:13px;font-weight:800;color:#f87171;text-transform:uppercase;letter-spacing:0.5px;">YOU
+                ARE LIVE</span>
+        </div>
+        <h2 style="margin-bottom:6px;">📡 {{ own_stream.topic }}</h2>
+        {% if own_stream.subject %}<p style="margin-bottom:14px;">{{ own_stream.subject }} &middot; {{
+            own_stream.watcher_count }} watching</p>{% endif %}
+        <a href="/stream/{{ own_stream.user_id }}" class="btn-go-live-big"
+            style="background:linear-gradient(135deg,#ef4444,#f97316);">
+            <i class="fa-solid fa-eye"></i> View Your Stream
+        </a>
+    </div>
+    {% else %}
     <div class="go-live-cta">
         <i class="fa-solid fa-broadcast-tower"></i>
-        <h2>Go Live & Study Together</h2>
+        <h2>Go Live &amp; Study Together</h2>
         <p>Start a live study session. Friends get notified, can watch your timer, and cheer you on in real-time.</p>
         <a href="/pomodoro" class="btn-go-live-big">
             <i class="fa-solid fa-circle" style="font-size:10px;"></i> Start Your Live Session
         </a>
     </div>
+    {% endif %}
 
     <!-- Active streams -->
     {% if live_friends %}
@@ -315,7 +335,7 @@
         <div class="live-pulsedot"></div>
         <span class="live-count-label">{{ live_friends|length }} friend{{ 's' if live_friends|length != 1 }} live right
             now</span>
-        <span class="live-count-sub">· Updates automatically</span>
+        <span class="live-count-sub">&middot; Updates automatically</span>
     </div>
     <div class="streams-grid" id="streamsGrid">
         {% for s in live_friends %}
@@ -332,8 +352,10 @@
                 </div>
             </div>
             <div class="stream-card-bottom">
-                <span class="stream-meta-item"><i class="fa-solid fa-eye"></i> {{ s.watcher_count }} watching</span>
-                <span class="stream-meta-item"><i class="fa-solid fa-clock"></i> {{ s.timer_min }} min session</span>
+                <span class="stream-meta-item" id="wc-{{ s.user_id }}"><i class="fa-solid fa-eye"></i> {{
+                    s.watcher_count }} watching</span>
+                <span class="stream-meta-item"><i class="fa-solid fa-hourglass-half"></i> {{ s.timer_min }} min
+                    session</span>
                 <span class="btn-watch"><i class="fa-solid fa-play"></i> Watch</span>
             </div>
         </a>

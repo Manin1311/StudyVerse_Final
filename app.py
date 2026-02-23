@@ -6421,7 +6421,25 @@ def live_streams_page():
                     'watcher_count': len(info.get('watchers', set())),
                     'elapsed': info.get('elapsed', 0),
                 })
-    return render_template('live_streams.html', live_friends=live_friends)
+    # Check if the current user is already streaming
+    user_sid = str(current_user.id)
+    user_is_live = user_sid in _live_streams
+    own_stream = None
+    if user_is_live:
+        own_info = _live_streams[user_sid]
+        own_stream = {
+            'stream_id': user_sid,
+            'user_id': current_user.id,
+            'topic': own_info.get('topic', 'Studying'),
+            'subject': own_info.get('subject', ''),
+            'watcher_count': len(own_info.get('watchers', set())),
+        }
+
+    return render_template('live_streams.html',
+        live_friends=live_friends,
+        user_is_live=user_is_live,
+        own_stream=own_stream
+    )
 
 
 @app.route('/stream/<int:streamer_id>')
@@ -6432,8 +6450,7 @@ def watch_stream(streamer_id):
     sid = str(streamer_id)
     stream_info = _live_streams.get(sid)
     if not stream_info:
-        # Stream ended - redirect to friends page
-        return redirect(url_for('friends'))
+        return redirect(url_for('live_streams_page'))
     return render_template('watch_stream.html',
         streamer=streamer,
         stream_info=stream_info,
@@ -6565,6 +6582,21 @@ def handle_join_stream(data):
     join_room(f"stream_{sid}")
     uid = current_user.id
 
+    # Don't count the streamer as a watcher — only real spectators
+    if uid == _live_streams[sid]['user_id']:
+        # Streamer re-joining their own page: just send state, no watcher count change
+        started_at = _live_streams[sid].get('started_at')
+        server_elapsed = int((datetime.utcnow() - started_at).total_seconds()) if started_at else 0
+        emit('stream_state', {
+            'topic': _live_streams[sid]['topic'],
+            'subject': _live_streams[sid]['subject'],
+            'timer_min': _live_streams[sid]['timer_min'],
+            'elapsed': server_elapsed,
+            'watcher_count': len(_live_streams[sid]['watchers']),
+            'recent_messages': _live_streams[sid].get('messages', []),
+        })
+        return
+
     # Add to watchers set
     _live_streams[sid]['watchers'].add(uid)
     watcher_count = len(_live_streams[sid]['watchers'])
@@ -6591,10 +6623,7 @@ def handle_join_stream(data):
 
     # Compute live elapsed time from when stream started
     started_at = _live_streams[sid].get('started_at')
-    if started_at:
-        server_elapsed = int((datetime.utcnow() - started_at).total_seconds())
-    else:
-        server_elapsed = _live_streams[sid].get('elapsed', 0)
+    server_elapsed = int((datetime.utcnow() - started_at).total_seconds()) if started_at else _live_streams[sid].get('elapsed', 0)
 
     # Send current stream state + recent messages to new watcher
     emit('stream_state', {
@@ -6605,6 +6634,7 @@ def handle_join_stream(data):
         'watcher_count': watcher_count,
         'recent_messages': _live_streams[sid].get('messages', []),
     })
+
 
 
 @socketio.on('leave_stream')
