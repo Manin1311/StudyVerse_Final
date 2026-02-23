@@ -610,6 +610,26 @@ class Friendship(db.Model):
     # user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('friendships_sent', lazy='dynamic'))
     # friend = db.relationship('User', foreign_keys=[friend_id], backref=db.backref('friendships_received', lazy='dynamic'))
 
+
+class StudyStream(db.Model):
+    """
+    StudyStream Model — Live study broadcast sessions.
+    When a user goes live, a record is created here.
+    Watchers and reactions are ephemeral (handled via SocketIO rooms).
+    """
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    topic        = db.Column(db.String(200), default='Studying')
+    subject      = db.Column(db.String(100), default='General')
+    started_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    ended_at     = db.Column(db.DateTime, nullable=True)
+    duration_min = db.Column(db.Integer, default=0)        # minutes actually studied
+    peak_watchers    = db.Column(db.Integer, default=0)    # max concurrent watchers
+    solidarity_count = db.Column(db.Integer, default=0)    # friends who joined in
+    status       = db.Column(db.String(20), default='live')  # 'live' | 'ended'
+    timer_minutes = db.Column(db.Integer, default=25)       # Pomodoro session length
+
+
 class Badge(db.Model):
     """
     Badge Model - Achievement badges for gamification
@@ -6359,7 +6379,365 @@ def photo_solver_award_xp():
 
 # ============================================================================
 
+
+# ============================================================================
+# 📡 LIVE STUDY STREAMS — Routes + SocketIO Events
+# ============================================================================
+
+# In-memory registry: stream_id → {user_id, topic, subject, timer_min, watchers: set()}
+# This resets on server restart — that's fine; streams are ephemeral by nature
+_live_streams = {}   # key = stream_id (str(user_id))
+
+
+# ── HTTP Routes ──────────────────────────────────────────────────────────────
+
+@app.route('/live')
+@login_required
+def live_streams_page():
+    """Discovery page: shows all currently live friends."""
+    # Get current user's accepted friends
+    friend_ids = [
+        f.friend_id if f.user_id == current_user.id else f.user_id
+        for f in Friendship.query.filter(
+            ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
+            Friendship.status == 'accepted'
+        ).all()
+    ]
+    # Find which friends are currently live
+    live_friends = []
+    for sid, info in _live_streams.items():
+        uid = info.get('user_id')
+        if uid in friend_ids or uid == current_user.id:
+            user = User.query.get(uid)
+            if user:
+                live_friends.append({
+                    'stream_id': sid,
+                    'user_id': uid,
+                    'name': f"{user.first_name} {user.last_name}".strip(),
+                    'avatar': user.get_avatar(64),
+                    'topic': info.get('topic', 'Studying'),
+                    'subject': info.get('subject', ''),
+                    'timer_min': info.get('timer_min', 25),
+                    'watcher_count': len(info.get('watchers', set())),
+                    'elapsed': info.get('elapsed', 0),
+                })
+    return render_template('live_streams.html', live_friends=live_friends)
+
+
+@app.route('/stream/<int:streamer_id>')
+@login_required
+def watch_stream(streamer_id):
+    """Watcher view for a specific user's live stream."""
+    streamer = User.query.get_or_404(streamer_id)
+    sid = str(streamer_id)
+    stream_info = _live_streams.get(sid)
+    if not stream_info:
+        # Stream ended - redirect to friends page
+        return redirect(url_for('friends'))
+    return render_template('watch_stream.html',
+        streamer=streamer,
+        stream_info=stream_info,
+        is_own_stream=(streamer_id == current_user.id)
+    )
+
+
+@app.route('/api/streams/live')
+@login_required
+def api_live_streams():
+    """JSON API: returns all live streams from user's friends."""
+    friend_ids = [
+        f.friend_id if f.user_id == current_user.id else f.user_id
+        for f in Friendship.query.filter(
+            ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
+            Friendship.status == 'accepted'
+        ).all()
+    ]
+    result = []
+    for sid, info in _live_streams.items():
+        uid = info.get('user_id')
+        if uid in friend_ids or uid == current_user.id:
+            user = User.query.get(uid)
+            if user:
+                result.append({
+                    'stream_id': sid,
+                    'user_id': uid,
+                    'name': f"{user.first_name} {user.last_name}".strip(),
+                    'avatar': user.get_avatar(48),
+                    'topic': info.get('topic', 'Studying'),
+                    'subject': info.get('subject', ''),
+                    'watcher_count': len(info.get('watchers', set())),
+                    'elapsed': info.get('elapsed', 0),
+                })
+    return jsonify({'streams': result})
+
+
+@app.route('/api/streams/history')
+@login_required
+def api_stream_history():
+    """Return current user's past study streams."""
+    streams = StudyStream.query.filter_by(
+        user_id=current_user.id, status='ended'
+    ).order_by(StudyStream.ended_at.desc()).limit(10).all()
+    return jsonify({'history': [{
+        'topic': s.topic, 'subject': s.subject,
+        'duration_min': s.duration_min,
+        'peak_watchers': s.peak_watchers,
+        'solidarity_count': s.solidarity_count,
+        'ended_at': s.ended_at.isoformat() if s.ended_at else None,
+    } for s in streams]})
+
+
+# ── SocketIO Events ──────────────────────────────────────────────────────────
+
+from flask_socketio import leave_room
+
+@socketio.on('go_live')
+def handle_go_live(data):
+    """Streamer goes live. Creates stream entry; notifies friends."""
+    if not current_user.is_authenticated:
+        return
+    uid = current_user.id
+    sid = str(uid)
+    topic = (data.get('topic') or 'Studying')[:200]
+    subject = (data.get('subject') or 'General')[:100]
+    timer_min = int(data.get('timer_min', 25))
+
+    # Register in memory
+    _live_streams[sid] = {
+        'user_id': uid,
+        'topic': topic,
+        'subject': subject,
+        'timer_min': timer_min,
+        'watchers': set(),
+        'elapsed': 0,
+    }
+
+    # Save to DB
+    try:
+        with app.app_context():
+            stream = StudyStream(
+                user_id=uid, topic=topic, subject=subject,
+                timer_minutes=timer_min, status='live'
+            )
+            db.session.add(stream)
+            db.session.commit()
+            _live_streams[sid]['db_id'] = stream.id
+    except Exception as e:
+        print(f"Stream DB save error: {e}")
+
+    # Streamer joins their own room
+    join_room(f"stream_{sid}")
+
+    # Notify all friends
+    friend_ids = [
+        f.friend_id if f.user_id == uid else f.user_id
+        for f in Friendship.query.filter(
+            ((Friendship.user_id == uid) | (Friendship.friend_id == uid)),
+            Friendship.status == 'accepted'
+        ).all()
+    ]
+    notification = {
+        'user_id': uid,
+        'stream_id': sid,
+        'name': f"{current_user.first_name} {current_user.last_name}".strip(),
+        'avatar': current_user.get_avatar(48),
+        'topic': topic,
+        'subject': subject,
+    }
+    for fid in friend_ids:
+        emit('friend_went_live', notification, room=f"user_{fid}")
+
+    emit('stream_started', {'stream_id': sid, 'topic': topic})
+
+
+@socketio.on('join_stream')
+def handle_join_stream(data):
+    """Watcher joins a live stream room."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(data.get('stream_id', ''))
+    if sid not in _live_streams:
+        emit('stream_not_found', {})
+        return
+
+    join_room(f"stream_{sid}")
+    uid = current_user.id
+
+    # Add to watchers set
+    _live_streams[sid]['watchers'].add(uid)
+    watcher_count = len(_live_streams[sid]['watchers'])
+
+    # Update peak
+    db_id = _live_streams[sid].get('db_id')
+    if db_id and watcher_count > _live_streams[sid].get('peak', 0):
+        _live_streams[sid]['peak'] = watcher_count
+        try:
+            with app.app_context():
+                s = StudyStream.query.get(db_id)
+                if s:
+                    s.peak_watchers = watcher_count
+                    db.session.commit()
+        except Exception:
+            pass
+
+    # Tell everyone in room someone joined
+    emit('watcher_joined', {
+        'name': f"{current_user.first_name}".strip(),
+        'avatar': current_user.get_avatar(32),
+        'watcher_count': watcher_count,
+    }, room=f"stream_{sid}")
+
+    # Send current stream state to new watcher
+    emit('stream_state', {
+        'topic': _live_streams[sid]['topic'],
+        'subject': _live_streams[sid]['subject'],
+        'timer_min': _live_streams[sid]['timer_min'],
+        'elapsed': _live_streams[sid].get('elapsed', 0),
+        'watcher_count': watcher_count,
+    })
+
+
+@socketio.on('leave_stream')
+def handle_leave_stream(data):
+    """Watcher leaves a stream."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(data.get('stream_id', ''))
+    leave_room(f"stream_{sid}")
+    if sid in _live_streams:
+        _live_streams[sid]['watchers'].discard(current_user.id)
+        watcher_count = len(_live_streams[sid]['watchers'])
+        emit('watcher_left', {
+            'name': current_user.first_name,
+            'watcher_count': watcher_count,
+        }, room=f"stream_{sid}")
+
+
+@socketio.on('timer_tick')
+def handle_timer_tick(data):
+    """Streamer broadcasts timer state every 5 seconds to watchers."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(current_user.id)
+    if sid not in _live_streams:
+        return
+    elapsed = data.get('elapsed', 0)
+    remaining = data.get('remaining', '25:00')
+    mode = data.get('mode', 'focus')
+    _live_streams[sid]['elapsed'] = elapsed
+    # Broadcast to watchers only (not back to streamer)
+    emit('timer_update', {
+        'remaining': remaining,
+        'elapsed': elapsed,
+        'mode': mode,
+    }, room=f"stream_{sid}", include_self=False)
+
+
+@socketio.on('stream_reaction')
+def handle_stream_reaction(data):
+    """Someone sends an emoji reaction in a stream."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(data.get('stream_id', ''))
+    emoji = data.get('emoji', '🔥')[:4]
+    emit('new_reaction', {
+        'emoji': emoji,
+        'name': current_user.first_name,
+        'avatar': current_user.get_avatar(24),
+    }, room=f"stream_{sid}")
+
+
+@socketio.on('stream_message')
+def handle_stream_message(data):
+    """Someone sends a cheer/comment message in a stream."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(data.get('stream_id', ''))
+    message = (data.get('message') or '')[:200].strip()
+    if not message:
+        return
+    emit('new_stream_message', {
+        'name': current_user.first_name,
+        'avatar': current_user.get_avatar(28),
+        'message': message,
+        'user_id': current_user.id,
+    }, room=f"stream_{sid}")
+
+
+@socketio.on('solidarity_join')
+def handle_solidarity_join(data):
+    """A watcher starts their own Pomodoro in solidarity."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(data.get('stream_id', ''))
+    if sid not in _live_streams:
+        return
+    # Track it
+    db_id = _live_streams[sid].get('db_id')
+    if db_id:
+        try:
+            with app.app_context():
+                s = StudyStream.query.get(db_id)
+                if s:
+                    s.solidarity_count = (s.solidarity_count or 0) + 1
+                    db.session.commit()
+        except Exception:
+            pass
+    emit('solidarity_joined', {
+        'name': f"{current_user.first_name}",
+        'avatar': current_user.get_avatar(28),
+    }, room=f"stream_{sid}")
+
+
+@socketio.on('end_stream')
+def handle_end_stream(data):
+    """Streamer ends their live session."""
+    if not current_user.is_authenticated:
+        return
+    sid = str(current_user.id)
+    info = _live_streams.pop(sid, {})
+    duration_min = int(data.get('duration_min', 0))
+    # Update DB
+    db_id = info.get('db_id')
+    if db_id:
+        try:
+            with app.app_context():
+                s = StudyStream.query.get(db_id)
+                if s:
+                    s.status = 'ended'
+                    s.ended_at = datetime.utcnow()
+                    s.duration_min = duration_min
+                    db.session.commit()
+        except Exception:
+            pass
+
+    # XP reward: base + watcher bonus
+    watcher_bonus = min(len(info.get('watchers', set())) * 5, 50)
+    try:
+        with app.app_context():
+            GamificationService.add_xp(current_user.id, 'study_stream', 25 + watcher_bonus)
+    except Exception:
+        pass
+
+    emit('stream_ended', {
+        'duration_min': duration_min,
+        'watchers': len(info.get('watchers', set())),
+        'xp_earned': 25 + watcher_bonus,
+    }, room=f"stream_{sid}")
+    leave_room(f"stream_{sid}")
+
+
+@socketio.on('join_user_room')
+def handle_join_user_room(data):
+    """Every connected user joins their personal notification room."""
+    if current_user.is_authenticated:
+        join_room(f"user_{current_user.id}")
+
+
+# ============================================================================
+
 if __name__ == '__main__':
+
 
     # Start Background Scheduler ONLY in development mode
     # In production (gunicorn), this block doesn't run, avoiding eventlet conflicts

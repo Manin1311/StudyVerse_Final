@@ -94,6 +94,56 @@
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                 loading="lazy"></iframe>
         </div>
+
+        <!-- 📡 GO LIVE Panel -->
+        <div class="card" id="goLivePanel"
+            style="padding:0; overflow:hidden; border-radius:16px; border:1px solid var(--border);">
+            <div
+                style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; background:rgba(239,68,68,0.04);">
+                <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"
+                    id="liveDotNav"></span>
+                <span style="font-size:13.5px;font-weight:700;color:var(--text-primary);">Live Study Stream</span>
+                <a href="/live"
+                    style="margin-left:auto;font-size:12px;color:var(--text-muted);text-decoration:none;">View All →</a>
+            </div>
+            <div style="padding:16px 20px;" id="goLiveContent">
+                <!-- PRE-LIVE state -->
+                <div id="preLiveState">
+                    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Go live and let friends watch
+                        & cheer your session in real-time!</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+                        <input type="text" id="liveTopicInput"
+                            placeholder="What are you studying? (e.g. Thermodynamics Ch.5)"
+                            style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:13px;outline:none;">
+                        <input type="text" id="liveSubjectInput" placeholder="Subject (e.g. Physics)"
+                            style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:13px;outline:none;">
+                    </div>
+                    <button id="goLiveBtn" onclick="goLive()"
+                        style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#f97316);color:white;border:none;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;box-shadow:0 4px 14px rgba(239,68,68,0.3);">
+                        <i class="fa-solid fa-circle" style="font-size:10px;"></i> Go Live
+                    </button>
+                </div>
+                <!-- LIVE state -->
+                <div id="liveActiveState" style="display:none;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <span
+                            style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:livePulse 1.2s ease infinite;"></span>
+                        <span style="font-size:13px;font-weight:700;color:#f87171;">YOU ARE LIVE</span>
+                        <span id="liveWatcherCount" style="margin-left:auto;font-size:12px;color:var(--text-muted);">0
+                            watching</span>
+                    </div>
+                    <div id="liveTopicDisplay" style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
+                    </div>
+                    <a id="viewMyStreamBtn" href="#"
+                        style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);text-decoration:none;font-size:13px;font-weight:700;margin-bottom:10px;">
+                        <i class="fa-solid fa-eye"></i> View My Stream
+                    </a>
+                    <button onclick="endLiveStream()"
+                        style="width:100%;padding:10px;border-radius:10px;background:transparent;color:var(--text-muted);border:1px solid var(--border);font-size:13px;cursor:pointer;">End
+                        Stream</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Right Column: Brain Dump & Notes -->
@@ -187,7 +237,103 @@
     window.currentUserId = "{{ current_user.id }}";
 </script>
 <script src="{{ url_for('static', filename='js/pomodoro.js') }}"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
     document.querySelector('[data-nav="pomodoro"]').classList.add('active');
+
+    // ── Live Stream SocketIO Integration ────────────────────────────────
+    const _liveSocket = io();
+    let _isLive = false;
+    let _liveStreamId = null;
+    let _tickInterval = null;
+
+    _liveSocket.on('connect', () => {
+        _liveSocket.emit('join_user_room', {});
+    });
+
+    // Friendly went live notification
+    _liveSocket.on('friend_went_live', (d) => {
+        showLiveNotification(d);
+    });
+
+    // Watcher joined
+    _liveSocket.on('watcher_joined', (d) => {
+        const el = document.getElementById('liveWatcherCount');
+        if (el) el.textContent = d.watcher_count + ' watching';
+    });
+
+    function goLive() {
+        const topic = (document.getElementById('liveTopicInput').value || 'Studying').trim();
+        const subject = (document.getElementById('liveSubjectInput').value || 'General').trim();
+        const timerDisplay = document.getElementById('timer-display');
+        const timerText = timerDisplay ? timerDisplay.textContent : '25:00';
+        const parts = timerText.split(':');
+        const timerMin = parts[0] ? parseInt(parts[0]) : 25;
+
+        _liveSocket.emit('go_live', { topic, subject, timer_min: timerMin });
+        _isLive = true;
+        _liveStreamId = '{{ current_user.id }}';
+
+        document.getElementById('preLiveState').style.display = 'none';
+        document.getElementById('liveActiveState').style.display = 'block';
+        document.getElementById('liveTopicDisplay').textContent = '📚 ' + topic + ' · ' + subject;
+        document.getElementById('viewMyStreamBtn').href = '/stream/{{ current_user.id }}';
+
+        // Broadcast timer every 5 seconds
+        _tickInterval = setInterval(() => {
+            if (!_isLive) return;
+            const timerEl = document.getElementById('timer-display');
+            const labelEl = document.getElementById('timerLabel');
+            const remaining = timerEl ? timerEl.textContent.trim() : '25:00';
+            const mode = labelEl ? (labelEl.textContent || 'focus').toLowerCase() : 'focus';
+            // Calculate elapsed
+            const p = remaining.split(':');
+            const remSec = (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0);
+            const totalSec = (timerMin || 25) * 60;
+            const elapsed = Math.max(totalSec - remSec, 0);
+            _liveSocket.emit('timer_tick', { remaining, elapsed, mode });
+        }, 5000);
+    }
+
+    function endLiveStream() {
+        if (!_isLive) return;
+        _isLive = false;
+        clearInterval(_tickInterval);
+        const timerMin = 25;
+        _liveSocket.emit('end_stream', { stream_id: _liveStreamId, duration_min: timerMin });
+        document.getElementById('preLiveState').style.display = 'block';
+        document.getElementById('liveActiveState').style.display = 'none';
+    }
+
+    function showLiveNotification(d) {
+        // Floating notification
+        const el = document.createElement('div');
+        el.style.cssText = `position:fixed;top:20px;right:20px;z-index:9998;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(249,115,22,0.1));border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;animation:slideIn 0.3s ease;max-width:320px;backdrop-filter:blur(8px);`;
+        el.innerHTML = `
+            <img src="${d.avatar}" style="width:36px;height:36px;border-radius:50%;border:2px solid #ef4444;">
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#f87171;">🔴 LIVE</div>
+              <div style="font-size:13px;color:white;font-weight:600;">${d.name} just went live!</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.6);">📚 ${d.topic}</div>
+            </div>
+            <a href="/stream/${d.user_id}" style="margin-left:auto;padding:6px 14px;background:#ef4444;color:white;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;">Watch</a>`;
+        document.body.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300); }, 6000);
+    }
 </script>
+<style>
+    @keyframes livePulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+</style>
 {% endblock %}
