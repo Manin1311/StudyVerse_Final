@@ -372,7 +372,9 @@
 </div>
 
 <script>
-    document.querySelector('[data-nav="group"]') && document.querySelector('[data-nav="group"]').classList.add('active');
+    // Highlight 'Live Streams' in sidebar
+    document.querySelector('[data-nav="live"]') && document.querySelector('[data-nav="live"]').classList.add('active');
+
 
     // Auto-refresh live feed every 15 seconds
     setInterval(() => {

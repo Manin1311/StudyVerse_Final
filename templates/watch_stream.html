@@ -702,10 +702,9 @@
 
         socket.on('connect', () => {
             socket.emit('join_user_room', {});
-            // Streamer doesn't join as a watcher — only spectators do
-            if (!IS_OWN_STREAM) {
-                socket.emit('join_stream', { stream_id: STREAM_ID });
-            }
+            // Always join the stream room — backend handles owner vs watcher logic
+            // Owner gets stream_state (elapsed, timer_min) but isn't counted as a watcher
+            socket.emit('join_stream', { stream_id: STREAM_ID });
         });
 
         // Stream state — START local countdown
@@ -923,5 +922,7 @@
         d.appendChild(document.createTextNode(String(s || '')));
         return d.innerHTML;
     }
+    // Highlight 'Live Streams' in sidebar
+    document.querySelector('[data-nav="live"]') && document.querySelector('[data-nav="live"]').classList.add('active');
 </script>
 {% endblock %}

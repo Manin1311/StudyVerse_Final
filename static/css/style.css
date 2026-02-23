@@ -1886,6 +1886,13 @@ h4 {
     border-color: var(--border-light);
 }
 
+/* Go Live panel: must NOT have overflow:hidden (blocks input events) or hover transform */
+#goLivePanel,
+#goLivePanel:hover {
+    overflow: visible !important;
+    transform: none !important;
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
