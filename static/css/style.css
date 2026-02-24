@@ -559,6 +559,40 @@
     text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
 }
 
+/* ===== PROFILE PAGE LIGHT MODE OVERRIDES ===== */
+[data-theme="light"] .overview-section-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .about-me-text {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .empty-state-text {
+    color: var(--text-secondary) !important;
+    background: var(--bg-hover) !important;
+    border-color: var(--border) !important;
+}
+
+[data-theme="light"] .badge-item [style*="color: var(--text-primary)"],
+[data-theme="light"] .badge-list-container [style*="color: var(--text-primary)"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .tab-link {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .tab-link.active {
+    color: var(--accent-green) !important;
+}
+
+/* Fix: caret visibility inside Edit Profile modal inputs in light mode */
+[data-theme="light"] #editProfileModal input,
+[data-theme="light"] #editProfileModal textarea {
+    caret-color: var(--text-primary) !important;
+}
+
 /* Edit Profile Modal Light Mode Overrides */
 [data-theme="light"] #editProfileModal>div {
     background: #ffffff !important;
