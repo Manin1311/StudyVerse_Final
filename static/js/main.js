@@ -201,9 +201,79 @@ async function apiCall(url, options = {}) {
  *   StudyVerse.showToast('Success!', 'success');
  *   const formatted = StudyVerse.formatTime(125);
  */
+// ============================================================================
+// BROWSER NOTIFICATION SYSTEM
+// ============================================================================
+
+/**
+ * Request notification permission once (after first user interaction)
+ * Works in all modern browsers. Silently skips if already granted/denied.
+ */
+function requestNotifPermission() {
+    if (!('Notification' in window)) return; // Browser doesn't support it
+    if (Notification.permission === 'default') {
+        // Ask after a small delay so it doesn't feel intrusive on load
+        setTimeout(() => {
+            Notification.requestPermission();
+        }, 5000);
+    }
+}
+
+/**
+ * Show a browser notification
+ * Falls back gracefully if permission not granted
+ *
+ * @param {string} title   - Notification title
+ * @param {string} body    - Notification body text
+ * @param {string} icon    - Icon URL (optional, defaults to StudyVerse favicon)
+ * @param {string} tag     - Unique tag to prevent duplicate notifications
+ * @param {string} url     - URL to open when notification is clicked (optional)
+ */
+function sendNotification(title, body, icon = '/static/img/favicon.png', tag = 'studyverse', url = null) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const notif = new Notification(title, {
+        body,
+        icon,
+        tag,           // Same tag = replaces previous notification (no spam)
+        badge: '/static/img/favicon.png',
+        silent: false
+    });
+
+    // Open URL on click if provided
+    if (url) {
+        notif.onclick = () => {
+            window.focus();
+            window.location.href = url;
+            notif.close();
+        };
+    }
+
+    // Auto close after 6 seconds
+    setTimeout(() => notif.close(), 6000);
+}
+
+// Request permission after first interaction (click/keypress anywhere)
+function _requestOnFirstInteraction() {
+    const handler = () => {
+        requestNotifPermission();
+        document.removeEventListener('click', handler);
+        document.removeEventListener('keydown', handler);
+    };
+    document.addEventListener('click', handler);
+    document.addEventListener('keydown', handler);
+}
+_requestOnFirstInteraction();
+
+// ============================================================================
+// PUBLIC API EXPORT
+// ============================================================================
+
 window.StudyVerse = {
     showToast,
     formatTime,
     formatDate,
-    apiCall
+    apiCall,
+    notify: sendNotification
 };

@@ -673,6 +673,62 @@
             });
         });
     </script>
+    <!-- 🔔 Socket.IO Browser Notifications (Global) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        (function () {
+            // Only connect if user is authenticated (check for a user-specific element)
+            try {
+                const _notifSocket = io({ reconnectionAttempts: 3 });
+
+                _notifSocket.on('connect', () => {
+                    _notifSocket.emit('join_user_room', {});
+                });
+
+                // 🔴 Friend went LIVE
+                _notifSocket.on('friend_went_live', (d) => {
+                    if (window.StudyVerse && window.StudyVerse.notify) {
+                        window.StudyVerse.notify(
+                            `🔴 ${d.name} is Live!`,
+                            `📚 Studying: ${d.topic || 'General'} — Click to watch!`,
+                            d.avatar || '/static/img/favicon.png',
+                            'friend-live-' + d.user_id,
+                            `/stream/${d.user_id}`
+                        );
+                    }
+                });
+
+                // ⚔️ Battle invite received
+                _notifSocket.on('battle_invite', (d) => {
+                    if (window.StudyVerse && window.StudyVerse.notify) {
+                        window.StudyVerse.notify(
+                            `⚔️ Battle Challenge!`,
+                            `${d.challenger_name || 'Someone'} challenged you to a Byte Battle!`,
+                            '/static/img/favicon.png',
+                            'battle-invite',
+                            '/battle'
+                        );
+                    }
+                });
+
+                // 🏆 XP / Level up notification
+                _notifSocket.on('level_up', (d) => {
+                    if (window.StudyVerse && window.StudyVerse.notify) {
+                        window.StudyVerse.notify(
+                            `🎉 Level Up! You're now Level ${d.new_level}!`,
+                            `Keep going — ${d.xp_to_next} XP to reach Level ${d.new_level + 1}.`,
+                            '/static/img/favicon.png',
+                            'level-up',
+                            '/profile'
+                        );
+                    }
+                });
+
+            } catch (e) {
+                // Silently fail if socket not available
+            }
+        })();
+    </script>
     <!-- Zen Mode Overlay -->
     <div id="zen-mode-overlay" class="zen-overlay">
         <!-- Minimal Header -->

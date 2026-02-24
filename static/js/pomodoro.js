@@ -291,13 +291,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     const completedMode = currentMode;
                     saveSession(completedMode, timerConfig[completedMode].duration);
 
+                    // 🔔 Browser Notification
+                    if (completedMode === 'focus') {
+                        if (window.StudyVerse && window.StudyVerse.notify) {
+                            window.StudyVerse.notify(
+                                '🎯 Focus Session Complete!',
+                                'Great work! Time for a short break. You earned your rest.',
+                                '/static/img/favicon.png',
+                                'pomodoro-done',
+                                '/pomodoro'
+                            );
+                        }
+                    } else if (completedMode === 'shortBreak') {
+                        if (window.StudyVerse && window.StudyVerse.notify) {
+                            window.StudyVerse.notify(
+                                '⏱️ Break Over!',
+                                'Ready to focus again? Your next session is starting.',
+                                '/static/img/favicon.png',
+                                'break-done',
+                                '/pomodoro'
+                            );
+                        }
+                    }
+
                     // Show Feedback Modal for Focus Sessions
                     if (completedMode === 'focus') {
                         const feedbackModal = document.getElementById('feedback-modal');
                         if (feedbackModal) feedbackModal.style.display = 'flex';
-                        // Pre-fill topic attempt?
-                        // const goals = document.querySelectorAll('.goal-title');
-                        // if(goals.length > 0) document.getElementById('feedback-topic').value = goals[0].textContent; 
                     }
 
                     // Auto switch logic
