@@ -3742,7 +3742,11 @@ def leaderboard():
     # EXCLUDE ADMINS from leaderboard
     top_users = (
         User.query
-        .filter(User.is_public_profile == True, User.is_admin == False)
+        .filter(
+            User.is_public_profile == True,
+            User.is_admin == False,
+            User.is_banned == False
+        )
         .order_by(User.level.desc(), User.total_xp.desc(), User.id.asc())
         .limit(50)
         .all()
@@ -3766,6 +3770,7 @@ def leaderboard():
     my_rank = User.query.filter(
         User.is_public_profile == True,
         User.is_admin == False,
+        User.is_banned == False,
         db.or_(
             User.level > current_user.level,
             db.and_(
@@ -5334,8 +5339,13 @@ def admin_dashboard():
         User.email != 'admin@studyversefinal.com'
     ).count()
     
-    # 2. Active Users (excluding admins, showing all as requested)
-    active_users = total_users
+    # 2. Active Users (excluding admins AND banned users)
+    active_users = User.query.filter(
+        User.is_admin == False,
+        User.email != 'admin@studyverse.com',
+        User.email != 'admin@studyversefinal.com',
+        User.is_banned == False
+    ).count()
     
     # 3. Total XP Awarded (from non-admin users)
     total_xp = db.session.query(db.func.sum(User.total_xp)).filter(
