@@ -4686,7 +4686,18 @@ def send_friend_request(user_id):
     req = Friendship(user_id=current_user.id, friend_id=user_id, status='pending')
     db.session.add(req)
     db.session.commit()
-    
+
+    # 🔔 Notify the target user in real-time via Socket.IO
+    try:
+        socketio.emit('friend_request_received', {
+            'from_id':   current_user.id,
+            'from_name': f"{current_user.first_name} {current_user.last_name or ''}".strip(),
+            'avatar':    current_user.get_avatar(64),
+            'request_id': req.id
+        }, room=f"user_{user_id}")
+    except Exception:
+        pass  # Never break the friend-request flow over a notification error
+
     return jsonify({'status': 'success'})
 
 @app.route('/friends/accept/<int:request_id>', methods=['POST'])

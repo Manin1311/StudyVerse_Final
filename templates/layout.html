@@ -711,6 +711,19 @@
                     }
                 });
 
+                // 👋 Friend request received
+                _notifSocket.on('friend_request_received', (d) => {
+                    if (window.StudyVerse && window.StudyVerse.notify) {
+                        window.StudyVerse.notify(
+                            `👋 New Friend Request!`,
+                            `${d.from_name} wants to be your study buddy!`,
+                            d.avatar || '/static/img/favicon.png',
+                            'friend-request-' + d.from_id,
+                            '/friends'
+                        );
+                    }
+                });
+
                 // 🏆 XP / Level up notification
                 _notifSocket.on('level_up', (d) => {
                     if (window.StudyVerse && window.StudyVerse.notify) {
