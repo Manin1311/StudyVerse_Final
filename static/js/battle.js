@@ -508,14 +508,40 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('battle_rematch_declined', () => {
         // Close result modal and return both players to entry screen
         modals.result.style.display = 'none';
-        showScreen('entry');
 
-        // Reset room state
+        // Clear room state completely (room is expired on server)
+        sessionStorage.removeItem('battle_room_code');
         currentRoom = null;
         isHost = false;
 
         // Clear chat
         display.chat.innerHTML = '';
+
+        showScreen('entry');
+        addChatMsg('ByteBot', 'Match ended. Room has been closed. Create or join a new room to play again!', 'system');
+    });
+
+    // Handle room closed by host leaving
+    socket.on('battle_room_closed', (data) => {
+        // Notify user and kick to entry screen
+        modals.result.style.display = 'none';
+        modals.joinReq.style.display = 'none';
+
+        sessionStorage.removeItem('battle_room_code');
+        currentRoom = null;
+        isHost = false;
+        stopTimer();
+
+        display.chat.innerHTML = '';
+        showScreen('entry');
+
+        // Show a brief toast notification
+        const msg = (data && data.reason) ? data.reason : 'The room has expired.';
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#1a1a1a;border:1px solid #ef4444;color:#fca5a5;padding:14px 20px;border-radius:10px;font-size:14px;box-shadow:0 4px 20px rgba(239,68,68,0.3);animation:fadeInDown 0.3s ease;';
+        toast.innerHTML = `<i class="fa-solid fa-door-open" style="margin-right:8px;color:#ef4444;"></i>${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     });
 
     // --- Timer Util ---
@@ -546,4 +572,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (seconds < 60) display.timer.style.color = '#ef4444'; // Red
         else display.timer.style.color = 'inherit';
     }
+
+    // ── Leave Room (expire for everyone) ──────────────────────────────────
+    window.leaveRoom = function () {
+        if (!confirm('Are you sure you want to leave? This will close the room for both players.')) return;
+
+        if (currentRoom) {
+            // Tell server to expire room and kick other player
+            socket.emit('battle_leave', { room_code: currentRoom });
+        }
+
+        // Clear local state and navigate away
+        sessionStorage.removeItem('battle_room_code');
+        currentRoom = null;
+        window.location.href = '/battle';
+    };
 });

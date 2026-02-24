@@ -4441,6 +4441,10 @@ def on_battle_rematch_vote(data):
         
         # Send event to close modal and return both players to entry screen
         emit('battle_rematch_declined', {}, room=room_code)
+        
+        # Clean up room from server state
+        if room_code in battles:
+            del battles[room_code]
         return
     
     # If this person voted YES, notify the other player
@@ -4484,6 +4488,27 @@ def on_battle_heartbeat(data):
         room['players'][current_user.id]['sid'] = request.sid
         print(f"Heartbeat from {current_user.first_name} in {room_code}")
 
+@socketio.on('battle_leave')
+def on_battle_leave(data):
+    """Host or player leaves - expire room, kick everyone out"""
+    if not current_user.is_authenticated:
+        return
+
+    room_code = data.get('room_code', '').strip().upper()
+    if room_code not in battles:
+        return
+
+    room = battles[room_code]
+    player_name = room['players'].get(current_user.id, {}).get('name', 'A player')
+
+    # Notify all players in the room that it's closing
+    socketio.emit('battle_room_closed', {
+        'reason': f"{player_name} left the battle. Room expired."
+    }, room=room_code)
+
+    # Delete the room from server state
+    del battles[room_code]
+    print(f"[Battle] Room {room_code} expired because {player_name} left.")
 
 
 # Profile management can be extended later (kept simple for this semester project).

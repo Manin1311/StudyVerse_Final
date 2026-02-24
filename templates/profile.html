@@ -219,17 +219,17 @@
         font-size: 1.25rem;
         font-weight: 800;
         color: #ffffff;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
     .about-me-text {
         color: #e4e4e7;
-        /* Brighter than text-secondary */
         font-size: 1.05rem;
-        /* Slightly larger */
         line-height: 1.7;
         margin-bottom: 25px;
         white-space: pre-wrap;
+        /* Crisp text, no blur */
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
     }
 
     .empty-state-text {
@@ -513,9 +513,11 @@
                     </div>
                     <div>
                         <h3 class="overview-section-title">About Me</h3>
-                        <p id="profile-about-me" class="about-me-text">
-                        </p>
-
+                        <p id="profile-about-me" class="about-me-text">{{ user.about_me or '' }}</p>
+                        {% if not user.about_me and user.id == current_user.id %}
+                        <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">No bio yet. Click
+                            "Edit Profile" to add one.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>

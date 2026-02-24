@@ -18,9 +18,13 @@
     {% if tickets %}
     <div class="ticket-grid">
         {% for ticket in tickets %}
-        <a href="{{ url_for('support_detail', ticket_id=ticket.id) }}" class="ticket-card">
+        <a href="{{ url_for('support_detail', ticket_id=ticket.id) }}"
+            class="ticket-card {% if ticket.user_unread_count > 0 %}ticket-unread{% else %}ticket-read{% endif %}">
             <!-- Icon Column -->
             <div class="ticket-icon-wrapper status-{{ ticket.status }}">
+                {% if ticket.user_unread_count > 0 %}
+                <span class="unread-dot-indicator"></span>
+                {% endif %}
                 {% if ticket.status == 'closed' %}
                 <i class="fa-solid fa-check"></i>
                 {% elif ticket.status == 'in_progress' %}
@@ -33,9 +37,11 @@
             <!-- Main Info Column -->
             <div class="ticket-content">
                 <div class="ticket-header">
-                    <h3 class="ticket-subject">{{ ticket.subject }}</h3>
+                    <h3
+                        class="ticket-subject {% if ticket.user_unread_count > 0 %}subject-unread{% else %}subject-read{% endif %}">
+                        {{ ticket.subject }}</h3>
                     {% if ticket.user_unread_count > 0 %}
-                    <span class="unread-badge">{{ ticket.user_unread_count }} new</span>
+                    <span class="unread-badge">{{ ticket.user_unread_count }} NEW</span>
                     {% endif %}
                 </div>
                 <div class="ticket-meta">
@@ -139,6 +145,7 @@
         margin-bottom: 8px;
         background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
@@ -234,6 +241,44 @@
         font-weight: 600;
         color: var(--text-primary);
         margin: 0;
+    }
+
+    /* ── Read / Unread visual differentiation ── */
+    .ticket-unread {
+        border-left: 3px solid var(--accent-green, #4ade80);
+        background: linear-gradient(to right, rgba(74, 222, 128, 0.06), var(--bg-card));
+    }
+
+    .ticket-read {
+        border-left: 3px solid transparent;
+        opacity: 0.85;
+    }
+
+    .subject-unread {
+        font-weight: 800 !important;
+        color: var(--text-primary) !important;
+    }
+
+    .subject-read {
+        font-weight: 500 !important;
+        color: var(--text-secondary) !important;
+    }
+
+    /* Pulsing green dot on unread tickets */
+    .unread-dot-indicator {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #4ade80;
+        border: 2px solid var(--bg-card);
+        animation: pulse 2s infinite;
+    }
+
+    .ticket-icon-wrapper {
+        position: relative;
     }
 
     .unread-badge {
