@@ -1614,7 +1614,12 @@ def signup():
     password = request.form.get('password', '')
     first_name = request.form.get('first_name', '').strip()
     last_name = request.form.get('last_name', '').strip()
-    referral_code = request.form.get('ref', '').strip() or request.args.get('ref', '').strip()
+    referral_code = (
+        request.form.get('ref', '').strip()
+        or request.args.get('ref', '').strip()
+        or session.pop('ref_code', None)  # Set by /invite/<code> redirect
+        or ''
+    )
 
     if not email or not password:
         flash('Email and password are required.', 'error')
