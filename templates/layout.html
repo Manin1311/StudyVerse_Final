@@ -130,6 +130,10 @@
                     <i class="fa-solid fa-wind"></i>
                     <span>Zen Mode</span>
                 </a>
+                <a href="#" class="nav-item" onclick="openReferralModal(); return false;" title="Invite Friends">
+                    <i class="fa-solid fa-gift"></i>
+                    <span>Invite & Earn</span>
+                </a>
             </nav>
             <div style="margin-top: auto;">
                 {% if current_user.is_authenticated %}
@@ -795,6 +799,612 @@
 
     <!-- Zen Mode Script -->
     <script src="{{ url_for('static', filename='js/zen_mode.js') }}"></script>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FEEDBACK WIDGET
+         ═══════════════════════════════════════════════════════ -->
+    <style>
+        /* Feedback Button */
+        #feedbackBtn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 3000;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
+            transition: all 0.3s;
+            animation: fbPulse 3s ease-in-out infinite;
+        }
+
+        #feedbackBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(74, 222, 128, 0.5);
+        }
+
+        @keyframes fbPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 4px 30px rgba(74, 222, 128, 0.7);
+            }
+        }
+
+        /* Feedback Popup */
+        #feedbackPopup {
+            position: fixed;
+            bottom: 90px;
+            right: 28px;
+            z-index: 3001;
+            width: 340px;
+            background: rgba(15, 20, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(74, 222, 128, 0.1);
+            display: none;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        #feedbackPopup.show {
+            display: block;
+            transform: translateY(0);
+        }
+
+        .fb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .fb-header h4 {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .fb-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .fb-close:hover {
+            color: #fff;
+        }
+
+        /* Emoji Row */
+        .fb-emoji-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 18px;
+        }
+
+        .fb-emoji {
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .fb-emoji:hover {
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .fb-emoji.selected {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.15);
+            transform: scale(1.15);
+        }
+
+        /* Category chips */
+        .fb-categories {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .fb-cat-chip {
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fb-cat-chip:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ccc;
+        }
+
+        .fb-cat-chip.selected {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+
+        /* Textarea */
+        .fb-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: #fff;
+            font-size: 0.85rem;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            margin-bottom: 14px;
+        }
+
+        .fb-textarea:focus {
+            border-color: #4ade80;
+        }
+
+        .fb-textarea::placeholder {
+            color: #444;
+        }
+
+        /* Submit */
+        .fb-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fb-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .fb-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Thank you state */
+        #fbThankyou {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        #fbThankyou .fb-ty-emoji {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        #fbThankyou h4 {
+            color: #4ade80;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        #fbThankyou p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        /* ──── REFERRAL MODAL ──── */
+        #referralModalOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 4000;
+            place-items: center;
+            backdrop-filter: blur(6px);
+        }
+
+        #referralModalOverlay.open {
+            display: grid;
+        }
+
+        .ref-modal {
+            background: #0f1423;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 24px;
+            padding: 36px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+            animation: refModalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes refModalIn {
+            from {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .ref-modal h3 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .ref-modal p {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .ref-stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .ref-stat-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .ref-stat-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .ref-stat-lbl {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .ref-link-box {
+            background: rgba(74, 222, 128, 0.06);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ref-link-text {
+            flex: 1;
+            font-size: 0.82rem;
+            color: #4ade80;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .ref-copy-btn {
+            background: #4ade80;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .ref-copy-btn:hover {
+            background: #22c55e;
+        }
+
+        .ref-how {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .ref-how h5 {
+            color: #888;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .ref-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .ref-step-num {
+            width: 22px;
+            height: 22px;
+            background: rgba(74, 222, 128, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #4ade80;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+    </style>
+
+    <!-- Feedback Button -->
+    {% if current_user.is_authenticated %}
+    <button id="feedbackBtn" onclick="toggleFeedback()">
+        <i class="fa-regular fa-comment-dots"></i> Feedback
+    </button>
+
+    <!-- Feedback Popup -->
+    <div id="feedbackPopup">
+        <div id="fbForm">
+            <div class="fb-header">
+                <h4>✨ Share Your Thoughts</h4>
+                <button class="fb-close" onclick="toggleFeedback()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Emoji Rating -->
+            <p style="color:#888; font-size:0.8rem; margin-bottom:10px;">How's your experience?</p>
+            <div class="fb-emoji-row" id="fbEmojiRow">
+                <span class="fb-emoji" data-rating="love" title="Love it!">😍</span>
+                <span class="fb-emoji" data-rating="happy" title="Happy">😊</span>
+                <span class="fb-emoji" data-rating="neutral" title="Neutral">😐</span>
+                <span class="fb-emoji" data-rating="sad" title="Sad">😞</span>
+                <span class="fb-emoji" data-rating="awful" title="Awful">😡</span>
+            </div>
+
+            <!-- Category -->
+            <div class="fb-categories" id="fbCategories">
+                <div class="fb-cat-chip selected" data-cat="general">💬 General</div>
+                <div class="fb-cat-chip" data-cat="bug">🐛 Bug Report</div>
+                <div class="fb-cat-chip" data-cat="feature">✨ Feature Idea</div>
+            </div>
+
+            <!-- Message -->
+            <textarea class="fb-textarea" id="fbMessage" rows="3" placeholder="Tell us more... (optional)"></textarea>
+
+            <button class="fb-submit" id="fbSubmitBtn" onclick="submitFeedback()">
+                <i class="fa-solid fa-paper-plane"></i> Send Feedback
+            </button>
+        </div>
+
+        <div id="fbThankyou">
+            <div class="fb-ty-emoji">🎉</div>
+            <h4>Thanks so much!</h4>
+            <p>Your feedback helps us improve StudyVerse. We read every single one! ❤️</p>
+        </div>
+    </div>
+
+    <!-- ═══════ REFERRAL MODAL ═══════ -->
+    <div id="referralModalOverlay" onclick="if(event.target===this) closeReferralModal()">
+        <div class="ref-modal">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <h3>🎁 Invite & Earn XP</h3>
+                <button onclick="closeReferralModal()"
+                    style="background:none;border:none;color:#666;font-size:1.4rem;cursor:pointer;"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p>Invite friends to StudyVerse. When they sign up, <strong style="color:#4ade80;">you both win 500
+                    XP</strong>! 🚀</p>
+
+            <!-- Stats -->
+            <div class="ref-stats-row">
+                <div class="ref-stat-box">
+                    <div class="ref-stat-val" id="refTotalInvites">–</div>
+                    <div class="ref-stat-lbl">Friends Invited</div>
+                </div>
+                <div class="ref-stat-box">
+                    <div class="ref-stat-val" id="refTotalXP">–</div>
+                    <div class="ref-stat-lbl">XP Earned</div>
+                </div>
+            </div>
+
+            <!-- Referral Link -->
+            <div class="ref-link-box">
+                <div class="ref-link-text" id="refLink">Loading…</div>
+                <button class="ref-copy-btn" onclick="copyRefLink()">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+            </div>
+
+            <!-- How it works -->
+            <div class="ref-how">
+                <h5>How it works</h5>
+                <div class="ref-step">
+                    <div class="ref-step-num">1</div>
+                    <div>Share your unique link with a friend</div>
+                </div>
+                <div class="ref-step">
+                    <div class="ref-step-num">2</div>
+                    <div>They sign up using your link</div>
+                </div>
+                <div class="ref-step">
+                    <div class="ref-step-num">3</div>
+                    <div>You instantly get <strong style="color:#4ade80;">+500 XP</strong> 🎉</div>
+                </div>
+            </div>
+
+            <!-- Share buttons -->
+            <div style="display:flex; gap:10px;">
+                <button onclick="shareWhatsApp()"
+                    style="flex:1; padding:12px; background:rgba(37,211,102,0.15); color:#25d366; border:1px solid rgba(37,211,102,0.3); border-radius:12px; font-weight:700; cursor:pointer; font-size:0.85rem; transition:all 0.2s;"
+                    onmouseover="this.style.background='rgba(37,211,102,0.25)'"
+                    onmouseout="this.style.background='rgba(37,211,102,0.15)'">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </button>
+                <button onclick="closeReferralModal()"
+                    style="flex:1; padding:12px; background:rgba(255,255,255,0.05); color:#888; border:1px solid rgba(255,255,255,0.1); border-radius:12px; font-weight:600; cursor:pointer; font-size:0.85rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════ FEEDBACK WIDGET ═══════
+        let selectedRating = 'neutral';
+        let selectedCategory = 'general';
+
+        function toggleFeedback() {
+            const popup = document.getElementById('feedbackPopup');
+            if (popup.classList.contains('show')) {
+                popup.classList.remove('show');
+                setTimeout(() => popup.style.display = 'none', 300);
+            } else {
+                popup.style.display = 'block';
+                requestAnimationFrame(() => popup.classList.add('show'));
+            }
+        }
+
+        // Emoji selection
+        document.querySelectorAll('.fb-emoji').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.fb-emoji').forEach(e => e.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedRating = el.dataset.rating;
+            });
+        });
+
+        // Category selection
+        document.querySelectorAll('.fb-cat-chip').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.fb-cat-chip').forEach(e => e.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedCategory = el.dataset.cat;
+            });
+        });
+
+        async function submitFeedback() {
+            const btn = document.getElementById('fbSubmitBtn');
+            const message = document.getElementById('fbMessage').value.trim();
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const res = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rating: selectedRating,
+                        message: message,
+                        category: selectedCategory,
+                        page_url: window.location.pathname
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('fbForm').style.display = 'none';
+                    document.getElementById('fbThankyou').style.display = 'block';
+                    setTimeout(() => {
+                        toggleFeedback();
+                        setTimeout(() => {
+                            document.getElementById('fbForm').style.display = 'block';
+                            document.getElementById('fbThankyou').style.display = 'none';
+                            document.getElementById('fbMessage').value = '';
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Feedback';
+                        }, 400);
+                    }, 2500);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Feedback';
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Feedback';
+            }
+        }
+
+        // ═══════ REFERRAL SYSTEM ═══════
+        let _refLink = '';
+
+        async function openReferralModal() {
+            document.getElementById('referralModalOverlay').classList.add('open');
+            const res = await fetch('/api/referral/info');
+            const data = await res.json();
+            if (data.status === 'success') {
+                _refLink = data.referral_link;
+                document.getElementById('refLink').textContent = data.referral_link;
+                document.getElementById('refTotalInvites').textContent = data.total_referrals;
+                document.getElementById('refTotalXP').textContent = '+' + data.total_xp_earned + ' XP';
+            }
+        }
+
+        function closeReferralModal() {
+            document.getElementById('referralModalOverlay').classList.remove('open');
+        }
+
+        function copyRefLink() {
+            if (!_refLink) return;
+            navigator.clipboard.writeText(_refLink).then(() => {
+                const btn = document.querySelector('.ref-copy-btn');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                btn.style.background = '#22c55e';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                    btn.style.background = '#4ade80';
+                }, 2000);
+            });
+        }
+
+        function shareWhatsApp() {
+            if (!_refLink) return;
+            const text = encodeURIComponent(`Hey! I've been using StudyVerse to boost my studies 📚🚀\n\nIt has AI coaching, battle quizzes, streaks and more!\n\nJoin using my invite link — we both get 500 XP 🎁\n${_refLink}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+    </script>
+    {% endif %}
+
 </body>
 
 </html>

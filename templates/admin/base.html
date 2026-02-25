@@ -84,6 +84,12 @@
                     <span>Analytics</span>
                 </a>
 
+                <a href="{{ url_for('admin_feedback') }}"
+                    class="admin-nav-item {% if request.endpoint == 'admin_feedback' %}active{% endif %}">
+                    <i class="fa-solid fa-comment-dots nav-icon"></i>
+                    <span>Feedback</span>
+                </a>
+
                 <div class="admin-nav-divider"></div>
 
             </nav>

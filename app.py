@@ -335,7 +335,11 @@ def ist_time_filter(utc_datetime):
     return to_ist_time(utc_datetime)
 
 # Make to_ist_time available as a global function in all templates
-app.jinja_env.globals.update(to_ist_time=to_ist_time)
+app.jinja_env.globals.update(
+    to_ist_time=to_ist_time,
+    timedelta=timedelta,
+    datetime=datetime
+)
 
 
 # ============================================================================
@@ -538,6 +542,10 @@ class User(UserMixin, db.Model):
     ban_reason = db.Column(db.Text, nullable=True)  # Reason for ban
     banned_at = db.Column(db.DateTime, nullable=True)  # When user was banned
     banned_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Admin who banned
+
+    # Referral System Fields
+    referral_code = db.Column(db.String(20), nullable=True, unique=True)  # Unique referral code
+    referred_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Who referred this user
 
 class SupportTicket(db.Model):
     """
@@ -1057,6 +1065,34 @@ class AdminAction(db.Model):
     
     admin = db.relationship('User', backref='admin_actions')
 
+class UserFeedback(db.Model):
+    """
+    UserFeedback Model - Quick feedback from users about the app
+    Accessible from admin panel to understand user sentiment.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for anon
+    rating = db.Column(db.String(10), nullable=False)  # Emoji: 'love','happy','neutral','sad','awful'
+    message = db.Column(db.Text, nullable=True)  # Optional message
+    category = db.Column(db.String(30), default='general')  # bug, feature, general
+    page_url = db.Column(db.String(200), nullable=True)  # Which page they were on
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='feedbacks')
+
+class ReferralReward(db.Model):
+    """
+    ReferralReward Model - Tracks completed referrals and rewards
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    referrer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Who shared link
+    referred_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Who signed up
+    xp_awarded = db.Column(db.Integer, default=500)  # XP given to referrer
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    referrer = db.relationship('User', foreign_keys=[referrer_id], backref='referrals_made')
+    referred = db.relationship('User', foreign_keys=[referred_id], backref='referral_from')
+
 # ------------------------------
 # Data Structures (DS) Utilities
 # ------------------------------
@@ -1127,18 +1163,46 @@ class AuthService:
     """Authentication service (OOP abstraction around auth logic)."""
 
     @staticmethod
-    def create_user(email: str, password: str, first_name: str, last_name: str) -> "User":
+    def create_user(email: str, password: str, first_name: str, last_name: str, referral_code: str = None) -> "User":
         if User.query.filter_by(email=email).first():
             raise ValueError("Email already registered")
+
+        import random, string
+        def generate_ref_code():
+            chars = string.ascii_uppercase + string.digits
+            return ''.join(random.choices(chars, k=8))
+
+        # Generate unique referral code for this new user
+        ref_code = generate_ref_code()
+        while User.query.filter_by(referral_code=ref_code).first():
+            ref_code = generate_ref_code()
+
+        # Find referrer if a code was provided
+        referrer = None
+        if referral_code:
+            referrer = User.query.filter_by(referral_code=referral_code).first()
 
         user = User(
             email=email,
             password_hash=generate_password_hash(password),
             first_name=first_name,
             last_name=last_name,
+            referral_code=ref_code,
+            referred_by=referrer.id if referrer else None
         )
         db.session.add(user)
         db.session.commit()
+
+        # Award XP to referrer
+        if referrer:
+            try:
+                reward = ReferralReward(referrer_id=referrer.id, referred_id=user.id, xp_awarded=500)
+                db.session.add(reward)
+                GamificationService.add_xp(referrer.id, 'referral', 500)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
         return user
 
     @staticmethod
@@ -1550,6 +1614,7 @@ def signup():
     password = request.form.get('password', '')
     first_name = request.form.get('first_name', '').strip()
     last_name = request.form.get('last_name', '').strip()
+    referral_code = request.form.get('ref', '').strip() or request.args.get('ref', '').strip()
 
     if not email or not password:
         flash('Email and password are required.', 'error')
@@ -1574,7 +1639,7 @@ def signup():
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     try:
-        user = AuthService.create_user(email, password, first_name, last_name)
+        user = AuthService.create_user(email, password, first_name, last_name, referral_code=referral_code or None)
     except ValueError as e:
         flash(str(e), 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
@@ -6829,8 +6894,181 @@ def handle_join_user_room(data):
 
 
 # ============================================================================
+# FEEDBACK ROUTES
+# ============================================================================
+
+@app.route('/api/feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    """Save user feedback to DB."""
+    try:
+        data = request.get_json() or {}
+        rating   = data.get('rating', 'neutral')
+        message  = (data.get('message') or '').strip()[:1000]
+        category = data.get('category', 'general')
+        page_url = (data.get('page_url') or '')[:200]
+
+        fb = UserFeedback(
+            user_id  = current_user.id,
+            rating   = rating,
+            message  = message or None,
+            category = category,
+            page_url = page_url or None
+        )
+        db.session.add(fb)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Thanks for your feedback! ❤️'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/admin/feedback')
+@admin_required
+def admin_feedback():
+    """Admin view for all user feedback."""
+    page     = request.args.get('page', 1, type=int)
+    category = request.args.get('category', '')
+    rating   = request.args.get('rating', '')
+
+    query = UserFeedback.query.order_by(UserFeedback.created_at.desc())
+    if category:
+        query = query.filter_by(category=category)
+    if rating:
+        query = query.filter_by(rating=rating)
+
+    feedbacks  = query.limit(100).all()
+    total      = UserFeedback.query.count()
+
+    # Sentiment summary
+    rating_counts = {}
+    for r in ['love','happy','neutral','sad','awful']:
+        rating_counts[r] = UserFeedback.query.filter_by(rating=r).count()
+
+    unread_support_count = SupportTicket.query.filter_by(status='open').count()
+
+    return render_template('admin/feedback/list.html',
+        feedbacks=feedbacks,
+        total=total,
+        rating_counts=rating_counts,
+        unread_support_count=unread_support_count
+    )
+
+
+# ============================================================================
+# REFERRAL ROUTES
+# ============================================================================
+
+@app.route('/api/referral/info')
+@login_required
+def referral_info():
+    """Get current user's referral code, link, and stats."""
+    total_referrals = ReferralReward.query.filter_by(referrer_id=current_user.id).count()
+    total_xp_earned = db.session.query(db.func.sum(ReferralReward.xp_awarded))\
+        .filter_by(referrer_id=current_user.id).scalar() or 0
+
+    # Ensure user has a referral code (for existing users who signed up before this feature)
+    if not current_user.referral_code:
+        import random, string
+        chars = string.ascii_uppercase + string.digits
+        code = ''.join(random.choices(chars, k=8))
+        while User.query.filter_by(referral_code=code).first():
+            code = ''.join(random.choices(chars, k=8))
+        current_user.referral_code = code
+        db.session.commit()
+
+    base_url = request.host_url.rstrip('/')
+    referral_link = f"{base_url}/invite/{current_user.referral_code}"
+
+    return jsonify({
+        'status': 'success',
+        'referral_code': current_user.referral_code,
+        'referral_link': referral_link,
+        'total_referrals': total_referrals,
+        'total_xp_earned': total_xp_earned
+    })
+
+
+@app.route('/invite/<code>')
+def referral_landing(code):
+    """Referral link landing — stores ref code in session and redirects to signup."""
+    # Verify the code is valid
+    referrer = User.query.filter_by(referral_code=code).first()
+    if referrer:
+        # Store in session so signup page can pick it up
+        session['ref_code'] = code
+        flash(f'🎁 You were invited by {referrer.first_name}! Sign up to give them 500 XP.', 'success')
+    return redirect(url_for('auth') + f'?ref={code}')
+
+
+# ============================================================================
+# STREAK API
+# ============================================================================
+
+@app.route('/api/streak')
+@login_required
+def get_streak():
+    """Return current user's streak info."""
+    return jsonify({
+        'status': 'success',
+        'current_streak': current_user.current_streak or 0,
+        'longest_streak': current_user.longest_streak or 0,
+        'last_activity_date': str(current_user.last_activity_date) if current_user.last_activity_date else None
+    })
+
+
+# ============================================================================
+# AUTO-CREATE NEW DB TABLES + SAFE COLUMN MIGRATIONS ON STARTUP
+#
+# db.create_all()  → creates brand-new tables (UserFeedback, ReferralReward)
+# ALTER TABLE      → adds new columns to EXISTING tables (PostgreSQL + SQLite)
+#
+# Both operations are idempotent: safe to run on every startup, will silently
+# skip if tables / columns already exist. No Flask-Migrate required.
+# ============================================================================
+with app.app_context():
+    # Step 1: Create any new tables that don't exist yet
+    try:
+        db.create_all()
+        print("✅  DB tables verified / created.")
+    except Exception as _dbe:
+        print(f"⚠️  db.create_all() warning: {_dbe}")
+
+    # Step 2: Safely add new columns to the existing 'user' table.
+    #
+    # PostgreSQL supports ADD COLUMN IF NOT EXISTS natively.
+    # SQLite does NOT support IF NOT EXISTS for columns, so we catch the
+    # "duplicate column" OperationalError and continue.
+    _new_user_columns = [
+        # (sql_for_postgres,                                   sql_for_sqlite)
+        ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20) UNIQUE",
+         'ALTER TABLE "user" ADD COLUMN referral_code VARCHAR(20)'),
+        ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES \"user\"(id)",
+         'ALTER TABLE "user" ADD COLUMN referred_by INTEGER'),
+    ]
+
+    _is_postgres = 'postgresql' in app.config.get('SQLALCHEMY_DATABASE_URI', '')
+
+    for _pg_sql, _sqlite_sql in _new_user_columns:
+        try:
+            _sql = _pg_sql if _is_postgres else _sqlite_sql
+            db.session.execute(db.text(_sql))
+            db.session.commit()
+            print(f"✅  Migration OK: {_sql[:60]}…")
+        except Exception as _col_err:
+            db.session.rollback()
+            _msg = str(_col_err).lower()
+            if 'already exists' in _msg or 'duplicate column' in _msg:
+                pass  # Column already present — this is fine
+            else:
+                print(f"⚠️  Migration warning: {_col_err}")
+
+    print("✅  DB migrations complete.")
+
+
+# ============================================================================
 
 if __name__ == '__main__':
+
 
 
     # Start Background Scheduler ONLY in development mode
@@ -6844,3 +7082,4 @@ if __name__ == '__main__':
     # Use socketio.run instead of app.run
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
+
