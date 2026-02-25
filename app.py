@@ -1193,15 +1193,28 @@ class AuthService:
         db.session.add(user)
         db.session.commit()
 
-        # Award XP to referrer
+        # Award XP to BOTH referrer and new user
         if referrer:
             try:
-                reward = ReferralReward(referrer_id=referrer.id, referred_id=user.id, xp_awarded=500)
+                # Track the referral reward in DB
+                reward = ReferralReward(
+                    referrer_id=referrer.id,
+                    referred_id=user.id,
+                    xp_awarded=500  # Per person
+                )
                 db.session.add(reward)
-                GamificationService.add_xp(referrer.id, 'referral', 500)
                 db.session.commit()
-            except Exception:
+
+                # +500 XP to referrer (person who shared the link)
+                GamificationService.add_xp(referrer.id, 'referral', 500)
+
+                # +500 XP to new user (person who joined via the link)
+                GamificationService.add_xp(user.id, 'referral_bonus', 500)
+
+            except Exception as e:
+                print(f"Referral reward error: {e}")
                 db.session.rollback()
+
 
         return user
 
