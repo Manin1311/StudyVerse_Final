@@ -1875,36 +1875,51 @@ def admin_required(f):
     return decorated_function
 
 # ============================================================================
-# BAN CHECK MIDDLEWARE - Automatically logs out banned users
+# ONLINE USERS TRACKER - In-memory set of currently connected user IDs
+# ============================================================================
+
+# Tracks user IDs currently active (updated on every request, cleared on logout)
+# Uses a simple set for O(1) add/remove/lookup — resets on server restart (ephemeral by design)
+online_users = set()
+
+# How many minutes of inactivity before a user is considered "offline"
+ONLINE_THRESHOLD_MINUTES = 5
+
+# ============================================================================
+# BAN CHECK + LAST SEEN MIDDLEWARE
 # ============================================================================
 
 @app.before_request
 def check_ban_status():
     """
-    Check if current user is banned before processing any request.
-    If banned, immediately log them out and redirect to auth page.
-    This runs on EVERY request, ensuring banned users cannot access anything.
+    Runs on EVERY request:
+    1. Updates user's last_seen timestamp (powers the admin activity tracker)
+    2. Adds user to the in-memory online_users set
+    3. Checks if user is banned → logs them out immediately if so
     """
-    # Skip ban check for static files and auth routes
+    # Skip for static files and auth routes to avoid unnecessary DB hits
     if request.endpoint and (request.endpoint.startswith('static') or request.endpoint == 'auth'):
         return None
-    
-    # Check if user is authenticated and banned
+
     if current_user.is_authenticated:
-        # Reload user from database to get latest ban status
+        # Reload user from DB to get the freshest ban status
         user = User.query.get(current_user.id)
-        
+
         if user and user.is_banned:
-            # Log them out immediately
             from flask_login import logout_user
             logout_user()
-            
-            # Show ban message
             flash(f'Your account has been banned. Reason: {user.ban_reason or "Violation of terms"}', 'error')
-            
-            # Redirect to auth page
             return redirect(url_for('auth'))
-    
+
+        # ── Update last_seen + online set ──────────────────────────────────
+        if user:
+            try:
+                user.last_seen = datetime.utcnow()
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            online_users.add(current_user.id)
+
     return None
 
 class AdminService:
@@ -5504,6 +5519,53 @@ def admin_users():
     users = query.order_by(User.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
     
     return render_template('admin/users/list.html', users=users, search=search, filter_type=filter_type)
+
+@app.route('/admin/user-activity')
+@login_required
+@admin_required
+def admin_user_activity():
+    """Admin view for user presence and recent activity."""
+    # Define threshold for "offline"
+    threshold = datetime.utcnow() - timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+    
+    # Fetch actually online users (in set AND seen recently)
+    active_users = []
+    if online_users:
+        active_users = User.query.filter(
+            User.id.in_(online_users), 
+            User.last_seen >= threshold,
+            User.is_admin == False
+        ).all()
+        # Prune stale IDs from set
+        active_ids = {u.id for u in active_users}
+        online_users.intersection_update(active_ids)
+        
+    # Format current time to IST helper
+    def format_ist(dt):
+        if not dt: return "Never"
+        if dt.tzinfo is None:
+            dt = utc.localize(dt)
+        ist_dt = dt.astimezone(IST)
+        
+        # If it was today, just show time. If yesterday, "Yesterday at ...". Else "DD MMM at ..."
+        now = datetime.now(IST)
+        if ist_dt.date() == now.date():
+            return f"Today at {ist_dt.strftime('%I:%M %p')}"
+        elif (now.date() - ist_dt.date()).days == 1:
+            return f"Yesterday at {ist_dt.strftime('%I:%M %p')}"
+        return ist_dt.strftime('%d %b at %I:%M %p')
+
+    # All regular users sorted by last_seen
+    page = request.args.get('page', 1, type=int)
+    all_users = User.query.filter(User.is_admin == False).order_by(db.desc(User.last_seen)).paginate(page=page, per_page=30, error_out=False)
+    
+    unread_support_count = SupportTicket.query.filter_by(status='open').count()
+    
+    return render_template('admin/user_activity.html', 
+                          active_users=active_users, 
+                          all_users=all_users,
+                          format_ist=format_ist,
+                          unread_support_count=unread_support_count)
 
 @app.route('/admin/users/<int:user_id>')
 @login_required
