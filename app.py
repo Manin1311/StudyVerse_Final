@@ -249,14 +249,18 @@ def validate_name_field(name: str, field_label: str) -> str:
 
 def send_otp_email(to_email: str, otp_code: str, first_name: str) -> bool:
     """
-    Send a 6-digit OTP verification email via Resend HTTP API.
-    No SMTP needed — works perfectly on Render.
+    Send a 6-digit OTP verification email via Brevo (Sendinblue) HTTP API.
+    No SMTP, no domain needed — delivers to ANY email address. Works on Render.
     Returns True if sent successfully, False otherwise.
     """
-    RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
-    if not RESEND_API_KEY:
-        print("[OTP] RESEND_API_KEY not set — skipping email send")
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY', '')
+    SENDER_EMAIL  = os.getenv('BREVO_SENDER_EMAIL', 'alwayspositive1311@gmail.com')
+    SENDER_NAME   = os.getenv('BREVO_SENDER_NAME', 'StudyVerse')
+
+    if not BREVO_API_KEY:
+        print("[OTP] BREVO_API_KEY not set — skipping email send")
         return False
+
 
     html_body = f"""
     <!DOCTYPE html>
@@ -309,28 +313,30 @@ def send_otp_email(to_email: str, otp_code: str, first_name: str) -> bool:
 
     try:
         response = requests.post(
-            'https://api.resend.com/emails',
+            'https://api.brevo.com/v3/smtp/email',
             headers={
-                'Authorization': f'Bearer {RESEND_API_KEY}',
+                'api-key':      BREVO_API_KEY,
                 'Content-Type': 'application/json',
+                'Accept':       'application/json',
             },
             json={
-                'from': 'StudyVerse <onboarding@resend.dev>',
-                'to': [to_email],
-                'subject': f'{otp_code} is your StudyVerse verification code',
-                'html': html_body,
+                'sender':      {'name': SENDER_NAME, 'email': SENDER_EMAIL},
+                'to':          [{'email': to_email}],
+                'subject':     f'{otp_code} is your StudyVerse verification code',
+                'htmlContent': html_body,
             },
             timeout=10
         )
-        if response.status_code == 200 or response.status_code == 201:
-            print(f"[OTP] Email sent successfully to {to_email}")
+        if response.status_code in (200, 201):
+            print(f"[OTP] Email sent via Brevo to {to_email}")
             return True
         else:
-            print(f"[OTP] Failed to send email: {response.status_code} — {response.text}")
+            print(f"[OTP] Brevo failed: {response.status_code} — {response.text}")
             return False
     except Exception as e:
-        print(f"[OTP] Exception sending email: {e}")
+        print(f"[OTP] Exception sending via Brevo: {e}")
         return False
+
 
 
 
