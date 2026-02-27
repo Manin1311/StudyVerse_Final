@@ -190,6 +190,12 @@
                 style="display: {{ 'flex' if active_tab == 'signup' else 'none' }}; flex-direction: column; gap: 14px;"
                 onsubmit="return validateSignupForm()">
 
+                <!-- Validation Error Banner -->
+                <div id="signup_error_banner" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.5);
+                           border-radius:10px; padding:10px 14px; color:#fca5a5; font-size:0.85rem;
+                           text-align:left; line-height:1.5;">
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
                         <input type="text" name="first_name" id="first_name" placeholder="First Name"
@@ -436,25 +442,87 @@
             el.querySelector('i').style.fontSize = '0.5rem';
         }
 
-        // ── Final client-side check before form submit ─────────────────────────
-        function validateSignupForm() {
-            const firstName = document.getElementById('first_name').value.trim();
-            const lastName = document.getElementById('last_name').value.trim();
-            const email = document.getElementById('signup_email').value.trim();
+        // ── Final client-side validation (hard block on submit) ────────────────────
+        const signupBanner = document.getElementById('signup_error_banner');
 
-            if (!/^[A-Za-z\s\-\']+$/.test(firstName) || containsBadWord(firstName)) {
-                alert('Please enter a valid first name without numbers or inappropriate words.');
+        function showBannerError(msg) {
+            signupBanner.innerHTML = msg;
+            signupBanner.style.display = 'block';
+            signupBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        function clearBanner() {
+            signupBanner.style.display = 'none';
+            signupBanner.innerHTML = '';
+        }
+
+        function validateSignupForm() {
+            clearBanner();
+
+            const firstInput = document.getElementById('first_name');
+            const lastInput = document.getElementById('last_name');
+            const emailInput = document.getElementById('signup_email');
+            const pwInput = document.getElementById('signup-password');
+            const firstErr = document.getElementById('first_name_err');
+            const lastErr = document.getElementById('last_name_err');
+
+            const fn = firstInput.value.trim();
+            const ln = lastInput.value.trim();
+            const em = emailInput.value.trim();
+            const pw = pwInput.value;
+
+            // — All fields required
+            if (!fn) { showBannerError('❌ <strong>First name</strong> is required.'); firstInput.focus(); return false; }
+            if (!ln) { showBannerError('❌ <strong>Last name</strong> is required.'); lastInput.focus(); return false; }
+            if (!em) { showBannerError('❌ <strong>Email address</strong> is required.'); emailInput.focus(); return false; }
+            if (!pw) { showBannerError('❌ <strong>Password</strong> is required.'); pwInput.focus(); return false; }
+
+            // — Name length check
+            if (fn.length < 2) { showBannerError('❌ First name must be at least 2 characters.'); firstInput.focus(); return false; }
+            if (ln.length < 2) { showBannerError('❌ Last name must be at least 2 characters.'); lastInput.focus(); return false; }
+
+            // — Name format — letters only
+            if (!/^[A-Za-z\s\-\']+$/.test(fn)) {
+                firstInput.style.borderColor = '#f87171';
+                showBannerError('❌ Your <strong>first name</strong> contains numbers or invalid characters. Only letters, spaces, hyphens and apostrophes are allowed.');
+                firstInput.focus(); return false;
+            }
+            if (!/^[A-Za-z\s\-\']+$/.test(ln)) {
+                lastInput.style.borderColor = '#f87171';
+                showBannerError('❌ Your <strong>last name</strong> contains numbers or invalid characters. Only letters, spaces, hyphens and apostrophes are allowed.');
+                lastInput.focus(); return false;
+            }
+
+            // — Profanity / slang check
+            if (containsBadWord(fn) || containsBadWord(ln)) {
+                firstInput.style.borderColor = '#f87171';
+                lastInput.style.borderColor = '#f87171';
+                showBannerError('⚠️ <strong>Inappropriate name detected.</strong> Slang, bad words, and offensive terms are <strong>not allowed</strong> on StudyVerse. Please use your real name.');
                 return false;
             }
-            if (!/^[A-Za-z\s\-\']+$/.test(lastName) || containsBadWord(lastName)) {
-                alert('Please enter a valid last name without numbers or inappropriate words.');
-                return false;
+
+            // — Block if inline field errors are still visible
+            if (firstErr.style.display !== 'none' && firstErr.textContent) {
+                showBannerError('❌ ' + firstErr.textContent); return false;
             }
-            const dom = email.split('@')[1] || '';
+            if (lastErr.style.display !== 'none' && lastErr.textContent) {
+                showBannerError('❌ ' + lastErr.textContent); return false;
+            }
+
+            // — Email format
+            if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(em)) {
+                emailInput.style.borderColor = '#f87171';
+                showBannerError('❌ Please enter a <strong>valid email address</strong>.');
+                emailInput.focus(); return false;
+            }
+
+            // — Disposable email
+            const dom = em.split('@')[1] || '';
             if (BLOCKED_DOMAINS.includes(dom.toLowerCase())) {
-                alert('Disposable email addresses are not allowed.');
+                emailInput.style.borderColor = '#f87171';
+                showBannerError('🚫 <strong>Disposable or temporary email addresses</strong> are not allowed. Please use your real email address.');
                 return false;
             }
+
             return true;
         }
     </script>

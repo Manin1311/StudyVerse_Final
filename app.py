@@ -1904,10 +1904,20 @@ def signup():
         flash('Password must contain at least one special character (!@#$%^&*).', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
-    # ── 7. Check if user already exists BEFORE sending OTP ─────────────────────
+    # ── 7. Check if email OR full name already exists ──────────────────────────
     if User.query.filter_by(email=email).first():
         flash('Email is already registered. Please sign in.', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # Prevent duplicate full names (same first + last name already in DB)
+    duplicate_name = User.query.filter(
+        db.func.lower(User.first_name) == first_name.lower(),
+        db.func.lower(User.last_name)  == last_name.lower()
+    ).first()
+    if duplicate_name:
+        flash(f'A user named "{first_name} {last_name}" already exists. Please use a different name or contact support if this is you.', 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
 
     # ── 8. Generate OTP & Send Email ───────────────────────────────────────────
     import random
