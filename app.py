@@ -254,7 +254,7 @@ def send_otp_email(to_email: str, otp_code: str, first_name: str) -> bool:
     Returns True if sent successfully, False otherwise.
     """
     SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
-    SENDER_EMAIL     = os.getenv('SENDGRID_SENDER_EMAIL', 'alwayspositive1311@gmail.com')
+    SENDER_EMAIL     = os.getenv('SENDGRID_SENDER_EMAIL', 'bhavsard094@gmail.com')
     SENDER_NAME      = os.getenv('SENDGRID_SENDER_NAME', 'StudyVerse')
 
     if not SENDGRID_API_KEY:
