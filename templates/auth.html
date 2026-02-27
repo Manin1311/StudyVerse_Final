@@ -187,25 +187,69 @@
 
             <!-- Sign Up Form -->
             <form id="form-signup" method="POST" action="{{ url_for('signup') }}"
-                style="display: {{ 'flex' if active_tab == 'signup' else 'none' }}; flex-direction: column; gap: 16px;">
+                style="display: {{ 'flex' if active_tab == 'signup' else 'none' }}; flex-direction: column; gap: 14px;"
+                onsubmit="return validateSignupForm()">
+
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" name="first_name" placeholder="First Name"
-                        value="{{ form_data.get('first_name', '') if form_data else '' }}" required
-                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
-                    <input type="text" name="last_name" placeholder="Last Name"
-                        value="{{ form_data.get('last_name', '') if form_data else '' }}" required
-                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
+                    <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                        <input type="text" name="first_name" id="first_name" placeholder="First Name"
+                            value="{{ form_data.get('first_name', '') if form_data else '' }}" required
+                            oninput="validateNameField(this, 'first_name_err')"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none; box-sizing:border-box;">
+                        <span id="first_name_err"
+                            style="font-size:0.72rem; color:#f87171; display:none; text-align:left; padding-left:4px;"></span>
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                        <input type="text" name="last_name" id="last_name" placeholder="Last Name"
+                            value="{{ form_data.get('last_name', '') if form_data else '' }}" required
+                            oninput="validateNameField(this, 'last_name_err')"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none; box-sizing:border-box;">
+                        <span id="last_name_err"
+                            style="font-size:0.72rem; color:#f87171; display:none; text-align:left; padding-left:4px;"></span>
+                    </div>
                 </div>
-                <input type="email" name="email" placeholder="Email address"
-                    value="{{ form_data.get('email', '') if form_data else '' }}" required
-                    style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
-                <div class="password-container">
-                    <input type="password" name="password" id="signup-password" placeholder="Password" required
-                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none;">
-                    <i class="fa-solid fa-eye-slash toggle-password" id="toggle-signup"></i>
+
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <input type="email" name="email" id="signup_email" placeholder="Email address"
+                        value="{{ form_data.get('email', '') if form_data else '' }}" required
+                        oninput="validateEmailField(this)"
+                        style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none; box-sizing:border-box;">
+                    <span id="email_err"
+                        style="font-size:0.72rem; color:#f87171; display:none; text-align:left; padding-left:4px;"></span>
                 </div>
+
+                <div class="password-container" style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="position:relative;">
+                        <input type="password" name="password" id="signup-password" placeholder="Password" required
+                            oninput="updatePasswordStrength(this.value)"
+                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px; border-radius: 12px; color: white; outline: none; box-sizing:border-box;">
+                        <i class="fa-solid fa-eye-slash toggle-password" id="toggle-signup"></i>
+                    </div>
+                    <!-- Password strength bar -->
+                    <div id="pw_strength_bar"
+                        style="height:4px; border-radius:4px; background:#333; overflow:hidden; display:none;">
+                        <div id="pw_strength_fill"
+                            style="height:100%; width:0%; transition: width 0.3s, background 0.3s;"></div>
+                    </div>
+                    <span id="pw_strength_label"
+                        style="font-size:0.72rem; color:#9ca3af; text-align:left; padding-left:4px; display:none;"></span>
+                    <!-- Password requirements checklist -->
+                    <div id="pw_requirements"
+                        style="font-size:0.72rem; text-align:left; padding-left:4px; display:none; line-height:1.8;">
+                        <div id="req_len" style="color:#6b7280;"><i class="fa fa-circle"
+                                style="font-size:0.5rem; margin-right:5px;"></i>At least 8 characters</div>
+                        <div id="req_upper" style="color:#6b7280;"><i class="fa fa-circle"
+                                style="font-size:0.5rem; margin-right:5px;"></i>One uppercase letter</div>
+                        <div id="req_num" style="color:#6b7280;"><i class="fa fa-circle"
+                                style="font-size:0.5rem; margin-right:5px;"></i>One number</div>
+                        <div id="req_special" style="color:#6b7280;"><i class="fa fa-circle"
+                                style="font-size:0.5rem; margin-right:5px;"></i>One special character (!@#$%^&amp;*)
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-primary"
-                    style="width: 100%; padding: 12px; background: var(--accent-green); color: black; font-weight: 600; border-radius: 12px;">Create
+                    style="width: 100%; padding: 12px; background: var(--accent-green); color: black; font-weight: 600; border-radius: 12px; margin-top: 4px;">Create
                     Account</button>
             </form>
 
@@ -271,6 +315,148 @@
 
         setupPasswordToggle('signin-password', 'toggle-signin');
         setupPasswordToggle('signup-password', 'toggle-signup');
+
+        // ── Real-time name validation ─────────────────────────────────────────
+        const BAD_WORDS = [
+            'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'pussy',
+            'cock', 'whore', 'slut', 'nigger', 'nigga', 'faggot', 'retard', 'idiot',
+            'stupid', 'moron', 'dumbass', 'jackass', 'prick', 'wanker', 'twat',
+            'rape', 'rapist', 'pedo', 'porn', 'nude', 'boob', 'tits', 'ass', 'arse',
+            'anal', 'dildo', 'jerk', 'loser', 'gay', 'homo', 'tranny', 'spic',
+        ];
+
+        function containsBadWord(text) {
+            const clean = text.toLowerCase();
+            return BAD_WORDS.some(w => clean.includes(w));
+        }
+
+        function validateNameField(input, errId) {
+            const err = document.getElementById(errId);
+            const val = input.value.trim();
+            let msg = '';
+
+            if (val.length > 0 && val.length < 2) {
+                msg = 'Must be at least 2 characters.';
+            } else if (val.length > 50) {
+                msg = 'Must be at most 50 characters.';
+            } else if (val && !/^[A-Za-z\s\-\']+$/.test(val)) {
+                msg = 'Only letters, spaces, hyphens and apostrophes allowed.';
+            } else if (containsBadWord(val)) {
+                msg = '⚠️ Inappropriate language detected. Use your real name.';
+            }
+
+            if (msg) {
+                err.textContent = msg;
+                err.style.display = 'block';
+                input.style.borderColor = '#f87171';
+            } else {
+                err.style.display = 'none';
+                input.style.borderColor = val.length >= 2 ? '#4ade80' : '';
+            }
+        }
+
+        // ── Real-time email validation ────────────────────────────────────────
+        const BLOCKED_DOMAINS = [
+            'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'yopmail.com',
+            'trashmail.com', 'sharklasers.com', 'maildrop.cc', 'discard.email',
+            'throwaway.email', 'temp-mail.org', 'temp-mail.io', 'fakeinbox.com',
+            'spambox.us', 'tempr.email', 'tmpmail.net', 'spamgourmet.com',
+        ];
+
+        function validateEmailField(input) {
+            const err = document.getElementById('email_err');
+            const val = input.value.trim().toLowerCase();
+            let msg = '';
+
+            if (val.length > 0) {
+                const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+                if (!emailRegex.test(val)) {
+                    msg = 'Please enter a valid email format.';
+                } else {
+                    const domain = val.split('@')[1];
+                    if (BLOCKED_DOMAINS.includes(domain)) {
+                        msg = '🚫 Disposable emails are not allowed.';
+                    }
+                }
+            }
+
+            if (msg) {
+                err.textContent = msg;
+                err.style.display = 'block';
+                input.style.borderColor = '#f87171';
+            } else {
+                err.style.display = 'none';
+                input.style.borderColor = val.includes('@') ? '#4ade80' : '';
+            }
+        }
+
+        // ── Password strength indicator ────────────────────────────────────────
+        function updatePasswordStrength(val) {
+            const bar = document.getElementById('pw_strength_bar');
+            const fill = document.getElementById('pw_strength_fill');
+            const label = document.getElementById('pw_strength_label');
+            const reqs = document.getElementById('pw_requirements');
+
+            bar.style.display = val.length > 0 ? 'block' : 'none';
+            label.style.display = val.length > 0 ? 'block' : 'none';
+            reqs.style.display = val.length > 0 ? 'block' : 'none';
+
+            const checks = {
+                len: val.length >= 8,
+                upper: /[A-Z]/.test(val),
+                num: /[0-9]/.test(val),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(val),
+            };
+
+            setReq('req_len', checks.len);
+            setReq('req_upper', checks.upper);
+            setReq('req_num', checks.num);
+            setReq('req_special', checks.special);
+
+            const score = Object.values(checks).filter(Boolean).length;
+            const levels = [
+                { w: '0%', c: '#ef4444', t: '' },
+                { w: '25%', c: '#ef4444', t: '🔴 Very Weak' },
+                { w: '50%', c: '#f59e0b', t: '🟠 Weak' },
+                { w: '75%', c: '#3b82f6', t: '🔵 Good' },
+                { w: '100%', c: '#22c55e', t: '🟢 Strong' },
+            ];
+            const lvl = levels[score];
+            fill.style.width = lvl.w;
+            fill.style.background = lvl.c;
+            label.textContent = lvl.t;
+            label.style.color = lvl.c;
+        }
+
+        function setReq(id, met) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.color = met ? '#4ade80' : '#6b7280';
+            el.querySelector('i').className = met ? 'fa fa-check-circle' : 'fa fa-circle';
+            el.querySelector('i').style.fontSize = '0.5rem';
+        }
+
+        // ── Final client-side check before form submit ─────────────────────────
+        function validateSignupForm() {
+            const firstName = document.getElementById('first_name').value.trim();
+            const lastName = document.getElementById('last_name').value.trim();
+            const email = document.getElementById('signup_email').value.trim();
+
+            if (!/^[A-Za-z\s\-\']+$/.test(firstName) || containsBadWord(firstName)) {
+                alert('Please enter a valid first name without numbers or inappropriate words.');
+                return false;
+            }
+            if (!/^[A-Za-z\s\-\']+$/.test(lastName) || containsBadWord(lastName)) {
+                alert('Please enter a valid last name without numbers or inappropriate words.');
+                return false;
+            }
+            const dom = email.split('@')[1] || '';
+            if (BLOCKED_DOMAINS.includes(dom.toLowerCase())) {
+                alert('Disposable email addresses are not allowed.');
+                return false;
+            }
+            return true;
+        }
     </script>
 </body>
 

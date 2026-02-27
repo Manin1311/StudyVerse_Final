@@ -122,6 +122,105 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================================================
+# SIGNUP VALIDATION HELPERS
+# ============================================================================
+
+# --- Profanity Filter ---
+# A curated list of common bad words / slang to block in user names.
+_PROFANITY_LIST = [
+    'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'pussy',
+    'cock', 'whore', 'slut', 'nigger', 'nigga', 'faggot', 'retard', 'idiot',
+    'stupid', 'moron', 'dumbass', 'jackass', 'prick', 'wanker', 'twat',
+    'rape', 'rapist', 'pedo', 'pedophile', 'sex', 'porn', 'nude', 'naked',
+    'boob', 'tits', 'ass', 'arse', 'anal', 'dildo', 'jerk', 'loser',
+    'gay', 'homo', 'tranny', 'chink', 'spic', 'kike', 'cracker',
+    'admin', 'moderator', 'studyverse', 'support', 'official',
+]
+
+def contains_profanity(text: str) -> bool:
+    """Check if text contains any profanity or bad words."""
+    if not text:
+        return False
+    clean = text.lower().strip()
+    # Check for whole word matches and partial matches inside compound words
+    for word in _PROFANITY_LIST:
+        if word in clean:
+            return True
+    return False
+
+
+# --- Disposable / Fake Email Domain Blocklist ---
+_BLOCKED_EMAIL_DOMAINS = {
+    'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'throwam.com',
+    'yopmail.com', 'trashmail.com', 'sharklasers.com', 'guerrillamailblock.com',
+    'grr.la', 'guerrillamail.info', 'spam4.me', 'bccto.me', 'chacuo.net',
+    'dispostable.com', 'fakeinbox.com', 'filzmail.com', 'gawab.com',
+    'get2mail.fr', 'getairmail.com', 'getmam.com', 'girlsundertheinfluence.com',
+    'gkumar.com', 'glubex.com', 'gmailnull.com', 'gotmail.net', 'gotmail.org',
+    'gowikibooks.com', 'gowikicampus.com', 'gowikifilms.com', 'gowikigames.com',
+    'gowikimusic.com', 'gowikinetwork.com', 'gowikitravel.com', 'gowikitv.com',
+    'gpatil.net', 'great-host.in', 'greensloth.com', 'grish.de', 'grr.la',
+    'gs.com', 'gsrv.co.uk', 'gtermy.com', 'guam.net', 'guerrillamail.biz',
+    'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'guerrillamail.com',
+    'maildrop.cc', 'mailnull.com', 'mailtemp.info', 'mailnesia.com',
+    'spamgourmet.com', 'discard.email', 'tempinbox.com', 'tempr.email',
+    'throwaway.email', 'nwytg.com', 'mohmal.com', 'owlpic.com',
+    'spamboy.com', 'jourrapide.com', 'armyspy.com', 'cuvox.de',
+    'dayrep.com', 'einrot.com', 'fleckens.hu', 'gustr.com', 'rhyta.com',
+    'einrot.com', 'superrito.com', 'teleworm.us', 'thetestmail.com',
+    'inboxbear.com', 'spambox.us', 'tempail.com', 'temp-mail.org',
+    'temp-mail.io', 'tmpmail.net', 'tmpmail.org', 'emkei.cz', 'mt2014.com',
+    'mt2015.com', 'verificationemail.com', 'vomoto.com', 'wpg.im',
+    'xagloo.com', 'xemaps.com', 'xents.com', 'xmaily.com', 'xoxy.net',
+    'ypmail.webarnak.fr.eu.org', 'yuurok.com', 'z1p.biz', 'za.com',
+    'zippymail.info', 'zoemail.net', 'zoemail.org', 'zomg.info',
+}
+
+
+def is_blocked_email_domain(email: str) -> bool:
+    """Check if the email domain is a known disposable/fake domain."""
+    try:
+        domain = email.strip().lower().split('@')[1]
+        return domain in _BLOCKED_EMAIL_DOMAINS
+    except (IndexError, AttributeError):
+        return True  # Malformed email
+
+
+def email_domain_has_mx(email: str) -> bool:
+    """
+    Check if the email domain has valid MX (Mail eXchange) DNS records.
+    Uses dnspython to query DNS — catches fake domains like abc@notrealdomain123.com.
+    Returns True if valid, False if the domain cannot receive emails.
+    """
+    try:
+        import dns.resolver
+        domain = email.strip().lower().split('@')[1]
+        answers = dns.resolver.resolve(domain, 'MX', lifetime=5)
+        return len(answers) > 0
+    except Exception:
+        # If DNS lookup fails (NXDOMAIN, timeout, etc.) → domain is invalid/fake
+        return False
+
+
+def validate_name_field(name: str, field_label: str) -> str:
+    """
+    Validate a name field (first name / last name).
+    Returns an error message string, or empty string if valid.
+    """
+    name = name.strip()
+    if not name:
+        return f'{field_label} is required.'
+    if len(name) < 2:
+        return f'{field_label} must be at least 2 characters.'
+    if len(name) > 50:
+        return f'{field_label} must be at most 50 characters.'
+    if not re.match(r"^[A-Za-z\s\-\']+$", name):
+        return f'{field_label} can only contain letters, spaces, hyphens, and apostrophes.'
+    if contains_profanity(name):
+        return f'{field_label} contains inappropriate language. Please use your real name.'
+    return ''
+
+# ============================================================================
 # AI API CONFIGURATION
 # ============================================================================
 
@@ -1167,6 +1266,14 @@ class AuthService:
         if User.query.filter_by(email=email).first():
             raise ValueError("Email already registered")
 
+        # Validate names (server-side redundancy check)
+        name_err = validate_name_field(first_name, 'First name')
+        if name_err:
+            raise ValueError(name_err)
+        name_err = validate_name_field(last_name, 'Last name')
+        if name_err:
+            raise ValueError(name_err)
+
         import random, string
         def generate_ref_code():
             chars = string.ascii_uppercase + string.digits
@@ -1634,16 +1741,43 @@ def signup():
         or ''
     )
 
+    # ── 1. Basic required field check ──────────────────────────────────────────
     if not email or not password:
         flash('Email and password are required.', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
-    # Password Strength Validation
-    import re
+    # ── 2. Name Validation ─────────────────────────────────────────────────────
+    name_err = validate_name_field(first_name, 'First name')
+    if name_err:
+        flash(name_err, 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    name_err = validate_name_field(last_name, 'Last name')
+    if name_err:
+        flash(name_err, 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # ── 3. Email Format Validation ─────────────────────────────────────────────
+    email_regex = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_regex, email):
+        flash('Please enter a valid email address.', 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # ── 4. Disposable / Fake Domain Blocklist ──────────────────────────────────
+    if is_blocked_email_domain(email):
+        flash('Disposable or temporary email addresses are not allowed. Please use your real email.', 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # ── 5. DNS MX Record Check — verify the email domain actually exists ───────
+    if not email_domain_has_mx(email):
+        flash('This email domain does not appear to exist or cannot receive emails. Please use a real email address.', 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # ── 6. Password Strength Validation ───────────────────────────────────────
     if len(password) < 8:
         flash('Password must be at least 8 characters long.', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
-    
+
     if not re.search(r"[A-Z]", password):
         flash('Password must contain at least one uppercase letter.', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
@@ -1656,6 +1790,7 @@ def signup():
         flash('Password must contain at least one special character (!@#$%^&*).', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
+    # ── 7. Create user ─────────────────────────────────────────────────────────
     try:
         user = AuthService.create_user(email, password, first_name, last_name, referral_code=referral_code or None)
     except ValueError as e:
@@ -1663,11 +1798,9 @@ def signup():
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
     # Automatically log in the user after signup
-    login_user(user, remember=True)  # Enable remember me for persistent sessions
+    login_user(user, remember=True)
     session.permanent = True
-    
 
-        
     return redirect(url_for('dashboard'))
 
 @app.route('/signin', methods=['POST'])
