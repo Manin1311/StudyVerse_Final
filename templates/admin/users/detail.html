@@ -434,6 +434,12 @@
                 <i class="fa-solid fa-ban"></i> Ban User
             </button>
             {% endif %}
+
+            <button onclick="document.getElementById('deleteModal').style.display='flex'"
+                class="admin-btn admin-btn-danger"
+                style="width:100%; margin-top: 8px; background: transparent; border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;">
+                <i class="fa-solid fa-trash"></i> Delete Account
+            </button>
         </div>
     </div>
 
@@ -555,6 +561,26 @@
                 </button>
                 <button type="submit" class="admin-btn admin-btn-danger" style="flex:1;">
                     <i class="fa-solid fa-ban"></i> Confirm Ban
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Delete Modal ── -->
+<div id="deleteModal" class="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <h3><i class="fa-solid fa-trash"></i> Delete User Account</h3>
+        <p>This will <strong>permanently delete</strong> <strong style="color:var(--text-primary);">{{ user.first_name
+                }} {{ user.last_name }}</strong>'s account and all associated data. This action cannot be undone.</p>
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}">
+            <div style="display:flex; gap:10px; margin-top: 24px;">
+                <button type="button" onclick="document.getElementById('deleteModal').style.display='none'"
+                    class="admin-btn admin-btn-ghost" style="flex:1;">
+                    Cancel
+                </button>
+                <button type="submit" class="admin-btn admin-btn-danger" style="flex:1;">
+                    <i class="fa-solid fa-trash"></i> Confirm Delete
                 </button>
             </div>
         </form>

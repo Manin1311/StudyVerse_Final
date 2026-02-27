@@ -2330,6 +2330,65 @@ class AdminService:
             target_id=user_id
         )
 
+    @staticmethod
+    def delete_user(user_id, admin_id):
+        """Permanently delete a user and all associated data"""
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError("User not found")
+        
+        # 1. Habits (delete logs first)
+        habits = Habit.query.filter_by(user_id=user_id).all()
+        for habit in habits:
+            HabitLog.query.filter_by(habit_id=habit.id).delete()
+        Habit.query.filter_by(user_id=user_id).delete()
+        
+        # 2. Support Tickets (delete messages first)
+        tickets = SupportTicket.query.filter_by(user_id=user_id).all()
+        for ticket in tickets:
+            SupportMessage.query.filter_by(ticket_id=ticket.id).delete()
+            db.session.delete(ticket)
+            
+        # 3. Groups where user is admin (delete messages and members first)
+        groups = Group.query.filter_by(admin_id=user_id).all()
+        for group in groups:
+            GroupMember.query.filter_by(group_id=group.id).delete()
+            GroupChatMessage.query.filter_by(group_id=group.id).delete()
+            db.session.delete(group)
+
+        # 4. Standard one-to-many dependencies
+        Todo.query.filter_by(user_id=user_id).delete()
+        ChatMessage.query.filter_by(user_id=user_id).delete()
+        StudySession.query.filter_by(user_id=user_id).delete()
+        TopicProficiency.query.filter_by(user_id=user_id).delete()
+        Event.query.filter_by(user_id=user_id).delete()
+        SyllabusDocument.query.filter_by(user_id=user_id).delete()
+        XPHistory.query.filter_by(user_id=user_id).delete()
+        UserItem.query.filter_by(user_id=user_id).delete()
+        ActivePowerUp.query.filter_by(user_id=user_id).delete()
+        UserBadge.query.filter_by(user_id=user_id).delete()
+        GroupMember.query.filter_by(user_id=user_id).delete()
+        GroupChatMessage.query.filter_by(user_id=user_id).delete()
+        UserFeedback.query.filter_by(user_id=user_id).delete()
+        StudyStream.query.filter_by(user_id=user_id).delete()
+        
+        # 5. Many-to-many & other relationships
+        Friendship.query.filter(db.or_(Friendship.user_id==user_id, Friendship.friend_id==user_id)).delete()
+        ReferralReward.query.filter(db.or_(ReferralReward.referrer_id==user_id, ReferralReward.referred_id==user_id)).delete()
+        AdminAction.query.filter_by(target_id=user_id, target_type='user').delete()
+        
+        # 6. Delete User
+        db.session.delete(user)
+        db.session.commit()
+        
+        # Log action after commit
+        AdminService.log_action(
+            admin_id=admin_id,
+            action='delete_user',
+            target_type='user',
+            target_id=user_id
+        )
+
 class SupportService:
     """Service for handling support tickets and messages"""
     
@@ -5952,6 +6011,23 @@ def admin_unban_user(user_id):
         flash(f'Error: {str(e)}', 'error')
     
     return redirect(url_for('admin_user_detail', user_id=user_id))
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_user(user_id):
+    """Permanently delete a user"""
+    if user_id == current_user.id:
+        flash('You cannot delete yourself!', 'error')
+        return redirect(url_for('admin_users'))
+        
+    try:
+        AdminService.delete_user(user_id, current_user.id)
+        flash('User account permanently deleted', 'success')
+    except Exception as e:
+        flash(f'Error deleting user: {str(e)}', 'error')
+        
+    return redirect(url_for('admin_users'))
 
 @app.route('/admin/users/<int:user_id>/adjust-xp', methods=['POST'])
 @login_required
