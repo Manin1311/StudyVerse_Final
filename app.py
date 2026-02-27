@@ -135,16 +135,42 @@ _PROFANITY_LIST = [
     'boob', 'tits', 'ass', 'arse', 'anal', 'dildo', 'jerk', 'loser',
     'gay', 'homo', 'tranny', 'chink', 'spic', 'kike', 'cracker',
     'admin', 'moderator', 'studyverse', 'support', 'official',
+    'fuk', 'fck', 'fucc', 'fvck', 'phuck', 'sht', 'shyt', 'biatch',
+    'bytch', 'b1tch', 'btch', 'azz', 'a55', 'a$$',
 ]
 
+# Leet speak / symbol substitution map
+# Converts tricks like f*ck → fuck, sh!t → shit, b!tch → bitch, @ss → ass
+_LEET_MAP = str.maketrans({
+    '@': 'a',  '4': 'a',  '3': 'e',  '1': 'i',  '!': 'i',
+    '0': 'o',  '5': 's',  '$': 's',  '7': 't',  '+': 't',
+    '9': 'g',  '6': 'g',  '8': 'b',  '2': 'z',
+    '*': '',   '-': '',   '_': '',   '.': '',   ',': '',
+    '(': 'c',  ')': '',   '#': 'h',  '%': '',   '^': '',
+    '&': '',   '=': '',   '~': '',   '`': '',   "'": '',
+    '"': '',   '/': '',   '\\': '',  '|': 'i',  '<': 'c',
+    '>': '',   '[': '',   ']': '',   '{': '',   '}': '',
+})
+
+def _normalize_leet(text: str) -> str:
+    """
+    Normalize leet speak and symbol substitutions.
+    e.g.  'f*ck' → 'fck', 'sh!t' → 'shit', 'b!tch' → 'bitch', '@ss' → 'ass'
+    """
+    return text.lower().translate(_LEET_MAP)
+
 def contains_profanity(text: str) -> bool:
-    """Check if text contains any profanity or bad words."""
+    """
+    Check if text contains any profanity or bad words.
+    Checks both the raw text AND the leet-speak-normalized version
+    so tricks like f*ck, sh!t, b1tch, @sshole are all caught.
+    """
     if not text:
         return False
-    clean = text.lower().strip()
-    # Check for whole word matches and partial matches inside compound words
+    raw   = text.lower().strip()
+    clean = _normalize_leet(raw)       # leet-decoded version
     for word in _PROFANITY_LIST:
-        if word in clean:
+        if word in raw or word in clean:
             return True
     return False
 
@@ -219,6 +245,94 @@ def validate_name_field(name: str, field_label: str) -> str:
     if contains_profanity(name):
         return f'{field_label} contains inappropriate language. Please use your real name.'
     return ''
+
+
+def send_otp_email(to_email: str, otp_code: str, first_name: str) -> bool:
+    """
+    Send a 6-digit OTP verification email via Resend HTTP API.
+    No SMTP needed — works perfectly on Render.
+    Returns True if sent successfully, False otherwise.
+    """
+    RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+    if not RESEND_API_KEY:
+        print("[OTP] RESEND_API_KEY not set — skipping email send")
+        return False
+
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;">
+        <tr><td align="center">
+          <table width="480" cellpadding="0" cellspacing="0"
+                 style="background:#1a1a2e;border-radius:20px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+            <!-- Header -->
+            <tr>
+              <td align="center" style="padding:36px 40px 24px;background:linear-gradient(135deg,#0ea5e9,#6366f1);">
+                <div style="font-size:2.4rem;">🎓</div>
+                <h1 style="color:white;margin:8px 0 0;font-size:1.6rem;font-weight:700;letter-spacing:-0.5px;">StudyVerse</h1>
+                <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:0.9rem;">Email Verification</p>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding:36px 40px;">
+                <p style="color:#e2e8f0;font-size:1rem;margin:0 0 8px;">Hey <strong>{first_name}</strong> 👋</p>
+                <p style="color:#94a3b8;font-size:0.95rem;margin:0 0 28px;line-height:1.6;">
+                  Thanks for joining StudyVerse! Use the verification code below to confirm your email address.
+                  This code expires in <strong style="color:#f59e0b;">10 minutes</strong>.
+                </p>
+                <!-- OTP Box -->
+                <div style="background:#0f172a;border:2px solid #0ea5e9;border-radius:16px;padding:28px;text-align:center;margin-bottom:28px;">
+                  <p style="color:#64748b;font-size:0.8rem;margin:0 0 12px;text-transform:uppercase;letter-spacing:2px;">Your Verification Code</p>
+                  <div style="font-size:3rem;font-weight:800;letter-spacing:12px;color:#0ea5e9;font-family:monospace;">{otp_code}</div>
+                </div>
+                <p style="color:#64748b;font-size:0.82rem;margin:0;line-height:1.6;">
+                  ⚠️ Never share this code with anyone. StudyVerse will never ask for it.<br>
+                  If you didn't request this, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+                <p style="color:#475569;font-size:0.75rem;margin:0;">© 2026 StudyVerse · AI-Powered Study Companion</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+
+    try:
+        response = requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {RESEND_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': 'StudyVerse <onboarding@resend.dev>',
+                'to': [to_email],
+                'subject': f'{otp_code} is your StudyVerse verification code',
+                'html': html_body,
+            },
+            timeout=10
+        )
+        if response.status_code == 200 or response.status_code == 201:
+            print(f"[OTP] Email sent successfully to {to_email}")
+            return True
+        else:
+            print(f"[OTP] Failed to send email: {response.status_code} — {response.text}")
+            return False
+    except Exception as e:
+        print(f"[OTP] Exception sending email: {e}")
+        return False
+
+
 
 # ============================================================================
 # AI API CONFIGURATION
@@ -1790,18 +1904,86 @@ def signup():
         flash('Password must contain at least one special character (!@#$%^&*).', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
-    # ── 7. Create user ─────────────────────────────────────────────────────────
-    try:
-        user = AuthService.create_user(email, password, first_name, last_name, referral_code=referral_code or None)
-    except ValueError as e:
-        flash(str(e), 'error')
+    # ── 7. Check if user already exists BEFORE sending OTP ─────────────────────
+    if User.query.filter_by(email=email).first():
+        flash('Email is already registered. Please sign in.', 'error')
         return render_template('auth.html', active_tab='signup', form_data=request.form)
 
-    # Automatically log in the user after signup
-    login_user(user, remember=True)
-    session.permanent = True
+    # ── 8. Generate OTP & Send Email ───────────────────────────────────────────
+    import random
+    otp_code = str(random.randint(100000, 999999))
+    
+    # Store registration data temporarily in the session
+    session['signup_data'] = {
+        'email': email,
+        'password': password,
+        'first_name': first_name,
+        'last_name': last_name,
+        'referral_code': referral_code,
+        'otp': otp_code,
+        'otp_time': datetime.utcnow().timestamp()
+    }
 
-    return redirect(url_for('dashboard'))
+    # Send OTP
+    success = send_otp_email(email, otp_code, first_name)
+    if not success:
+        session.pop('signup_data', None)
+        flash('Failed to send verification email. Please try again later or check if the email is valid.', 'error')
+        return render_template('auth.html', active_tab='signup', form_data=request.form)
+
+    # Redirect to the page where they enter the 6-digit code
+    return redirect(url_for('verify_otp'))
+
+@app.route('/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    """Route where users enter the 6-digit OTP sent to their email."""
+    signup_data = session.get('signup_data')
+    if not signup_data:
+        flash('Session expired or no signup in progress. Please sign up again.', 'error')
+        return redirect(url_for('auth'))
+
+    if request.method == 'POST':
+        user_otp = request.form.get('otp', '').strip()
+        
+        # Check expiry (10 minutes = 600 seconds)
+        otp_time = signup_data.get('otp_time', 0)
+        current_time = datetime.utcnow().timestamp()
+        
+        if current_time - otp_time > 600:
+            session.pop('signup_data', None)
+            flash('Verification code expired (10 minutes). Please sign up again.', 'error')
+            return redirect(url_for('auth'))
+            
+        # Check if code matches
+        if user_otp != signup_data.get('otp'):
+            flash('Invalid verification code. Please try again.', 'error')
+            return render_template('otp_verify.html', email=signup_data.get('email'))
+            
+        # Success! Create the user in the database
+        try:
+            user = AuthService.create_user(
+                signup_data['email'], 
+                signup_data['password'], 
+                signup_data['first_name'], 
+                signup_data['last_name'], 
+                referral_code=signup_data.get('referral_code') or None
+            )
+            
+            # Clear session data now that we are done
+            session.pop('signup_data', None)
+            
+            # Log in the user
+            login_user(user, remember=True)
+            session.permanent = True
+            
+            return redirect(url_for('dashboard'))
+            
+        except ValueError as e:
+            flash(str(e), 'error')
+            return redirect(url_for('auth'))
+
+    # GET request — just show the form
+    return render_template('otp_verify.html', email=signup_data.get('email'))
 
 @app.route('/signin', methods=['POST'])
 def signin():
