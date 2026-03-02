@@ -496,6 +496,8 @@
             navigate_calendar: '/calendar',
             navigate_topic_resolver: '/topic-resolver',
             navigate_photo_solver: '/photo-solver',
+            navigate_support: '/support',
+            navigate_live: '/live',
         };
         if (navMap[action]) {
             const target = navMap[action];
@@ -514,7 +516,10 @@
         // ── Real server-side actions ──────────────────────
         const serverActions = [
             'add_todo', 'read_pending_todos', 'send_friend_request',
-            'start_quiz', 'start_battle', 'get_stats', 'get_streak', 'get_xp',
+            'start_quiz', 'start_battle',
+            'get_stats', 'get_streak', 'get_xp',
+            'get_leaderboard', 'get_friends',
+            'shop_item',
             'dom_interact'
         ];
         if (!serverActions.includes(action)) return;
@@ -599,6 +604,25 @@
                         { op: 'click', id: 'btn-create', delay: 800 }
                     ]));
                     setTimeout(() => { window.location.href = path; }, 1500);
+                }
+
+            } else if (action === 'get_leaderboard' || action === 'get_friends' ||
+                action === 'get_stats' || action === 'get_streak' || action === 'get_xp') {
+                // These return a spoken message — just speak it
+                const msg = result.message || data.reply;
+                showBubble('reply', null, msg);
+                stopSpeaking();
+                setTimeout(() => speak(msg), 200);
+
+            } else if (action === 'shop_item') {
+                const msg = result.message || data.reply;
+                showToast((result.success ? '🛍️ ' : '❌ ') + msg);
+                showBubble('reply', null, msg);
+                stopSpeaking();
+                setTimeout(() => speak(msg), 200);
+                // Navigate to shop so user sees the change applied visually
+                if (result.success && window.location.pathname !== '/shop') {
+                    setTimeout(() => { window.location.href = '/shop'; }, 2500);
                 }
             }
 

@@ -7606,14 +7606,35 @@ def voice_assistant():
             Friendship.status == 'accepted'
         ).all()
         friends_names = []
-        for f in accepted[:8]:
+        for f in accepted[:10]:
             fid = f.friend_id if f.user_id == current_user.id else f.user_id
-            friend = User.query.get(fid)
+            friend = User.query.filter_by(id=fid).first()  # always works
             if friend:
-                friends_names.append(f"{friend.first_name} {friend.last_name or ''}".strip())
-        friends_str = ', '.join(friends_names) or 'none'
+                name = f"{friend.first_name or ''} {friend.last_name or ''}".strip()
+                if name:
+                    friends_names.append(name)
+        friends_str = ', '.join(friends_names) if friends_names else 'none'
     except Exception as _e:
         print(f"[Verse] Friends context error: {_e}")
+
+    # ── Leaderboard context ─────────────────────────────────────
+    my_rank = 999
+    rank_1_user = 'unknown'
+    rank_1_xp   = 0
+    try:
+        my_rank = User.query.filter(
+            User.is_public_profile == True, User.is_admin == False, User.is_banned == False,
+            db.or_(User.level > current_user.level,
+                   db.and_(User.level == current_user.level, User.total_xp > current_user.total_xp))
+        ).count() + 1
+        top = User.query.filter(
+            User.is_public_profile == True, User.is_admin == False, User.is_banned == False
+        ).order_by(User.level.desc(), User.total_xp.desc()).first()
+        if top:
+            rank_1_user = f"{top.first_name} {top.last_name or ''}".strip()
+            rank_1_xp   = top.total_xp or 0
+    except Exception as _e:
+        print(f"[Verse] Leaderboard context error: {_e}")
 
     # ── System prompt with FULL DOM knowledge ─────────────────
     system_prompt = f"""You are Verse, the AI voice assistant that FULLY CONTROLS the StudyVerse app.
@@ -7622,7 +7643,9 @@ You can navigate pages AND directly interact with any UI element on the current 
 === LIVE USER DATA ===
 Name: {user_name} | Streak: {streak} days | XP: {xp} | Level: {level}
 Pending todos ({pending_count}): {todo_list_str}
-Upcoming events: {upcoming_count} | Friends: {friends_str}
+Upcoming events: {upcoming_count}
+Friends: {friends_str}
+Leaderboard: You are rank #{my_rank} globally | #1 is {rank_1_user} with {rank_1_xp} XP
 Current page: {page}
 
 === YOUR PERSONALITY ===
@@ -7637,75 +7660,53 @@ navigate_progress, navigate_chat, navigate_battle, navigate_profile,
 navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver
 
 ──── SERVER ACTIONS (use "action" field) ────
-- read_pending_todos  → read task list aloud  (params: {{}})
-- add_todo            → save todo to database  (params: {{"title":"...", "priority":"high/medium/low"}})
-- send_friend_request → send friend req by name (params: {{"name":"..."}})
-- start_quiz          → go to quiz + press start (params: {{"difficulty":"easy/medium/hard"}})
-- start_battle        → go to battle + create room (params: {{}})
-- get_streak          → speak streak number
-- get_stats           → speak XP, level, streak
-- get_xp              → speak XP total
-- dom_interact        → ONLY use dom_actions, no server call needed
+- read_pending_todos  → read pending task list aloud (params: {{}})
+- add_todo            → save todo to DB (params: {{"title":"...", "priority":"high/medium/low"}})
+- send_friend_request → send request by name (params: {{"name":"..."}})
+- start_quiz          → navigate to quiz + auto-start (params: {{"difficulty":"easy/medium/hard"}})
+- start_battle        → navigate to battle + auto-create room (params: {{}})
+- shop_item           → buy/equip/unequip a shop item (params: {{"item_name":"...","operation":"buy|equip|unequip"}})
+- get_leaderboard     → speak user's rank + who is #1 (use live data above in reply)
+- get_streak          → speak streak (use live data)
+- get_stats           → speak XP, level, streak, rank (use live data)
+- get_xp              → speak XP total (use live data)
+- get_friends         → list friend names aloud (use live data)
+- dom_interact        → pure DOM interaction, no server call
 - conversation        → just reply, nothing else
 
 ──── DOM ACTIONS (use "dom_actions" array) ────
-These execute directly on the browser DOM. Use element IDs below.
+These execute on the browser DOM. Use IDs below.
 
-BATTLE PAGE (/battle) IDs:
-- btn-create → "Create Room" button  
-- btn-join → "Join Room" button  
-- join-code → room code input  
-- btn-submit → submit solution  
-- btn-vote-yes / btn-vote-no → voting  
-- chat-input → battle chat  
-- btn-accept / btn-reject → join requests  
+BATTLE (/battle): btn-create, btn-join, join-code (input), btn-submit, btn-vote-yes, btn-vote-no, btn-accept, btn-reject, chat-input
+POMODORO (/pomodoro): start-btn (start/pause), reset-btn, focusMode, shortBreakMode, stopwatchMode, goLiveBtn, add-goal-btn, new-goal-input, brain-dump-area, liveTopicInput, liveSubjectInput
+QUIZ (/quiz): start-quiz-btn, next-question-btn; answers = clickNth on #options-container .quiz-option (index 0=A,1=B,2=C,3=D); settings = clickByText on .btn-select ("5","10","15","20","Easy","Medium","Hard")
+TODOS (/todos): taskTitle, taskPriority (select: high/medium/low), taskDueDate, btnDone; open modal = click text "Add Task"
+CHAT (/chat): chatInput, sendButton, chatForm
+FRIENDS (/friends): user-search
+SHOP (/shop): shop-search [NOTE: for buying/equipping items, use shop_item action, NOT DOM clicks]
+CALENDAR (/calendar): quick-add-title
+SYLLABUS (/syllabus): uploadPdf (click to open file picker)
+GLOBAL (any page): theme-toggle, sidebar-toggle, zen-mode-nav-btn, feedbackBtn
 
-POMODORO PAGE (/pomodoro) IDs:
-- start-btn → Start/Pause timer  
-- reset-btn → Reset timer  
-- focusMode → focus/pomodoro mode button  
-- shortBreakMode → short break mode  
-- stopwatchMode → stopwatch mode  
-- goLiveBtn → go live / stream button  
-- add-goal-btn → add session goal  
-- new-goal-input → goal text input  
-- brain-dump-area → brain dump textarea  
+=== SHOP CATALOG (use shop_item action) ===
+Themes (apply visual theme to the entire app):
+- "neon city" (theme_neon_city) → 3800 XP
+- "sakura" (theme_sakura) → 2800 XP
+- "cyberpunk" (theme_cyberpunk) → 4000 XP
+- "synthwave" (theme_synthwave) → 3500 XP
+- "aurora" (theme_aurora) → 3000 XP
 
-QUIZ PAGE (/quiz) IDs:
-- start-quiz-btn → start the quiz  
-- next-question-btn → next question  
-- options-container > button (nth): answer A=index 0, B=1, C=2, D=3  
+Frames (avatar border effects):
+- "golden frame" (frame_gold) → 2500 XP
+- "diamond frame" (frame_diamond) → 7500 XP
+- "fire frame" (frame_fire) → 4000 XP
+- "ice frame" (frame_ice) → 3500 XP
+- "glitch frame" (frame_glitch) → 5000 XP
 
-TODOS PAGE (/todos) IDs:
-- addTaskModal (click button that opens it, text: "Add Task")
-- taskTitle → task title input  
-- taskPriority → priority select (values: high, medium, low)  
-- taskDueDate → due date input  
-- btnDone → submit/save task  
-
-CHAT PAGE (/chat) IDs:
-- chatInput → message input  
-- sendButton → send button  
-- chatForm → form to submit  
-
-FRIENDS PAGE (/friends) IDs:
-- user-search → search input  
-
-SHOP PAGE (/shop) IDs:
-- shop-search → search input  
-
-CALENDAR PAGE (/calendar) IDs:
-- quick-add-title → event title input  
-- quickAddModal → quick add event modal area  
-
-SYLLABUS PAGE (/syllabus) IDs:
-- uploadPdf → upload PDF button  
-
-GLOBAL (any page) IDs:
-- theme-toggle → toggle dark/light mode  
-- sidebar-toggle → toggle sidebar  
-- zen-mode-nav-btn → zen mode  
-- feedbackBtn → feedback button  
+For shop_item action: params = {{"item_name": "name of item", "operation": "buy|equip|unequip"}}
+- "buy" = purchase (deducts XP) + auto-equip for themes/frames
+- "equip" = apply already-owned item
+- "unequip" = remove / revert to default
 
 === DOM ACTION FORMAT ===
 Each dom_action object: {{"op": "click|clickNth|clickByText|type|selectOption|focus|navigate",
@@ -7732,36 +7733,90 @@ QUIZ PAGE SPECIFICS (IMPORTANT):
 - To select 10 questions: {{"op":"clickByText","selector":".btn-select","text":"10"}}
 - To select Hard difficulty: {{"op":"clickByText","selector":".btn-select","text":"Hard"}}
 
-=== EXAMPLES ===
-"start byte battle" → action=start_battle, dom_actions=[]
+=== FULL APP COVERAGE — EXAMPLES FOR EVERY FEATURE ===
+
+── STATS & INFO (use live data above, no DOM needed) ──
+"what's my rank" → action=get_leaderboard, reply="You're ranked #{my_rank}. {rank_1_user} is #1 with {rank_1_xp} XP."
+"who is number 1" → action=get_leaderboard, reply speaking rank_1_user and rank_1_xp from live data
+"how many friends do I have" → action=get_friends, reply listing friends_str from live data
+"who are my friends" → action=get_friends, reply listing friends_str from live data
+"what's my streak" → action=get_streak
+"my stats / how am I doing" → action=get_stats (speak XP, level, streak, rank together)
+"my XP / how much XP" → action=get_xp
+"what tasks are pending / show todos" → action=read_pending_todos
+
+── NAVIGATION ──
+"go to leaderboard / who's winning" → action=navigate_leaderboard, dom_actions=[]
+"open support / I have a complaint / help / contact us / raise a ticket" → action=navigate_support, dom_actions=[]
+"go to chat / talk to AI / AI coach" → action=navigate_chat, dom_actions=[]
+"open group chat" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/group-chat"}}]
+"go to live streams / who is live" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/live"}}]
+"open profile / my profile" → action=navigate_profile, dom_actions=[]
+"open settings" → action=navigate_settings, dom_actions=[]
+"open shop / buy items" → action=navigate_shop, dom_actions=[]
+"open progress / my progress" → action=navigate_progress, dom_actions=[]
+"open calendar / my events" → action=navigate_calendar, dom_actions=[]
+"open syllabus / my courses" → action=navigate_syllabus, dom_actions=[]
+"open topic resolver / resolve topic / explain topic" → action=navigate_topic_resolver, dom_actions=[]
+"open photo solver / solve from photo" → action=navigate_photo_solver, dom_actions=[]
+
+── BATTLE ──
+"start byte battle / start battle / let's compete" → action=start_battle, dom_actions=[]
 "create a battle room" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/battle"}},{{"op":"click","id":"btn-create","delay":800}}]
-"type hi in chat" → action=dom_interact, dom_actions=[{{"op":"type","id":"chatInput","value":"hi"}},{{"op":"click","id":"sendButton","delay":200}}]
-"start the timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
-"stop the timer / pause" → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
-"reset pomodoro / reset timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"reset-btn"}}]
-"take a short break" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"shortBreakMode","delay":600}}]
-"switch to light mode / light mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
-"switch to dark mode / dark mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
-"zen mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"zen-mode-nav-btn"}}]
-"start quiz with 10 questions hard" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/quiz"}},{{"op":"clickByText","selector":".btn-select","text":"10","delay":600}},{{"op":"clickByText","selector":".btn-select","text":"Hard","delay":300}},{{"op":"click","id":"start-quiz-btn","delay":400}}]
-"start medium quiz with 5 questions" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/quiz"}},{{"op":"clickByText","selector":".btn-select","text":"5","delay":600}},{{"op":"clickByText","selector":".btn-select","text":"Medium","delay":300}},{{"op":"click","id":"start-quiz-btn","delay":400}}]
-"answer A / select option A / pick first" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":0}}]
-"answer B / option B / second option" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":1}}]
-"answer C" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":2}}]
-"answer D" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":3}}]
+"join battle room" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/battle"}},{{"op":"click","id":"btn-join","delay":600}}]
+"vote yes / it's correct" → action=dom_interact, dom_actions=[{{"op":"click","id":"btn-vote-yes"}}]
+"vote no / that's wrong" → action=dom_interact, dom_actions=[{{"op":"click","id":"btn-vote-no"}}]
+
+── POMODORO ──
+"start timer / start focus / let's grind" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"start-btn","delay":500}}]
+"start the timer" (already on pomodoro) → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
+"stop / pause timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
+"reset timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"reset-btn"}}]
+"short break / take a break" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"shortBreakMode","delay":600}}]
+"stopwatch mode" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"stopwatchMode","delay":600}}]
+"go live / stream now" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"goLiveBtn","delay":600}}]
+
+── QUIZ ──
+"start quiz / quiz me" → action=start_quiz, params={{"difficulty":"medium"}}, dom_actions=[]
+"10 questions hard quiz" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/quiz"}},{{"op":"clickByText","selector":".btn-select","text":"10","delay":600}},{{"op":"clickByText","selector":".btn-select","text":"Hard","delay":300}},{{"op":"click","id":"start-quiz-btn","delay":400}}]
+"answer A" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":0}}]
+"answer B" → index 1 | "answer C" → index 2 | "answer D" → index 3
 "next question" → action=dom_interact, dom_actions=[{{"op":"click","id":"next-question-btn"}}]
-"search for Rahul in friends" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/friends"}},{{"op":"type","id":"user-search","value":"Rahul","delay":800}}]
-"add exam prep high priority" → action=add_todo, params={{"title":"exam prep","priority":"high"}}, dom_actions=[]
-"send request to Priya" → action=send_friend_request, params={{"name":"Priya"}}, dom_actions=[]
-"what are my tasks" → action=read_pending_todos, params={{}}, dom_actions=[]
+
+── TODOS ──
+"add [task] with [priority] priority" → action=add_todo, extract title and priority
+"what tasks are pending" → action=read_pending_todos
+
+── FRIENDS ──
+"send request to [name]" → action=send_friend_request, params={{"name":"..."}}
+"search [name] in friends" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/friends"}},{{"op":"type","id":"user-search","value":"name","delay":800}}]
+
+── CHAT ──
+"type [message] in chat / send [message]" → action=dom_interact, dom_actions=[{{"op":"type","id":"chatInput","value":"message"}},{{"op":"click","id":"sendButton","delay":200}}]
+
+── GLOBAL CONTROLS ──
+"dark mode / light mode / switch theme" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
+"zen mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"zen-mode-nav-btn"}}]
+"open sidebar / close sidebar" → action=dom_interact, dom_actions=[{{"op":"click","id":"sidebar-toggle"}}]
+"give feedback" → action=dom_interact, dom_actions=[{{"op":"click","id":"feedbackBtn"}}]
+"search [item] in shop" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/shop"}},{{"op":"type","id":"shop-search","value":"item","delay":600}}]
+"upload syllabus / upload PDF" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/syllabus"}},{{"op":"click","id":"uploadPdf","delay":600}}]
 
 CRITICAL RULES:
-1. dom_interact = dom_actions only, zero server calls
-2. If navigating + doing something: navigate op FIRST, then action with delay
-3. ALWAYS include reply field
-4. dom_actions = [] if no DOM interaction needed
-5. NEVER run dom_actions for on-page toggles (theme, zen, timer) without navigate — they work from ANY page
-6. For quiz answers — the quiz must already be started and showing questions on screen
+1. dom_interact = dom_actions only, no server call
+2. If navigating + doing something: navigate op FIRST with delay on next actions
+3. ALWAYS include reply field (spoken)  
+4. dom_actions = [] if not needed
+5. For leaderboard/friends/stats: READ FROM LIVE DATA ABOVE, don't say "I don't know"
+6. "support" / "complaint" / "help" / "issue" / "ticket" = navigate_support (NOT feedbackBtn)
+7. CASUAL LANGUAGE: You MUST understand ANY natural phrasing. Examples:
+   - "apply it" / "put it on" = equip
+   - "take it off" / "revert" / "go back" / "undo" = unequip
+   - "I wanna get" / "let me buy" / "purchase this" = buy
+   - "bro start the thing" = start timer
+   - "let's do some questions" = start quiz
+   - "check how I'm doing" = get_stats
+   - "who's at the top" = get_leaderboard
 
 Respond ONLY with valid JSON, NO markdown, NO code fences:
 {{"action":"action_name","params":{{}},"reply":"spoken reply","dom_actions":[]}}
@@ -7903,6 +7958,46 @@ def verse_execute_action():
             'pending': Todo.query.filter_by(user_id=current_user.id, completed=False).count()
         })
 
+    # ── GET LEADERBOARD ───────────────────────────────────────────────────
+    elif action == 'get_leaderboard':
+        try:
+            my_rank = User.query.filter(
+                User.is_public_profile == True, User.is_admin == False, User.is_banned == False,
+                db.or_(User.level > current_user.level,
+                       db.and_(User.level == current_user.level,
+                               User.total_xp > current_user.total_xp))
+            ).count() + 1
+            top = User.query.filter(
+                User.is_public_profile == True, User.is_admin == False, User.is_banned == False
+            ).order_by(User.level.desc(), User.total_xp.desc()).first()
+            top_name = f"{top.first_name} {top.last_name or ''}".strip() if top else 'unknown'
+            top_xp   = top.total_xp or 0 if top else 0
+            msg = f"You are rank #{my_rank} on the leaderboard. {top_name} is in first place with {top_xp} XP."
+            return jsonify({'success': True, 'rank': my_rank, 'top_name': top_name, 'top_xp': top_xp, 'message': msg})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Could not fetch leaderboard: {e}'})
+
+    # ── GET FRIENDS ───────────────────────────────────────────────────────
+    elif action == 'get_friends':
+        try:
+            accepted = Friendship.query.filter(
+                ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
+                Friendship.status == 'accepted'
+            ).all()
+            names = []
+            for f in accepted:
+                fid = f.friend_id if f.user_id == current_user.id else f.user_id
+                friend = User.query.filter_by(id=fid).first()
+                if friend:
+                    names.append(f"{friend.first_name} {friend.last_name or ''}".strip())
+            if not names:
+                msg = "You don't have any friends yet on StudyVerse. Say 'send request to someone' to add them!"
+            else:
+                msg = f"You have {len(names)} friend{'s' if len(names) != 1 else ''}: {', '.join(names)}."
+            return jsonify({'success': True, 'friends': names, 'message': msg})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
     # ── START QUIZ (return signal for JS to auto-initiate) ────────────────
     elif action == 'start_quiz':
         difficulty = params.get('difficulty', 'medium')
@@ -7911,6 +8006,69 @@ def verse_execute_action():
     # ── START BATTLE (navigate + signal) ─────────────────────────────────
     elif action == 'start_battle':
         return jsonify({'success': True, 'navigate': '/battle', 'auto_create': True})
+
+    # ── SHOP ITEM: BUY / EQUIP / UNEQUIP ──────────────────────────────
+    elif action == 'shop_item':
+        item_name  = (params.get('item_name') or params.get('name') or '').strip().lower()
+        operation  = (params.get('operation') or '').lower()  # buy | equip | unequip
+
+        if not item_name:
+            return jsonify({'success': False, 'message': "I didn't catch which item you meant."})
+
+        # Fuzzy match against shop catalog
+        matched_id = None
+        matched_item = None
+        for iid, idata in ShopService.ITEMS.items():
+            search_name = idata['name'].lower()
+            # Strip emojis for comparison
+            clean_name = ''.join(c for c in search_name if c.isascii()).strip()
+            if (item_name in search_name or item_name in clean_name or
+                    item_name in iid.replace('_', ' ')):
+                matched_id = iid
+                matched_item = idata
+                break
+
+        if not matched_item:
+            return jsonify({'success': False,
+                            'message': f"I couldn't find an item called '{item_name}' in the shop."})
+
+        # ── UNEQUIP ──
+        if operation == 'unequip':
+            user_item = UserItem.query.filter_by(user_id=current_user.id, item_id=matched_id).first()
+            if not user_item:
+                return jsonify({'success': False, 'message': f"You don't own {matched_item['name']}."})
+            user_item.is_active = False
+            db.session.commit()
+            return jsonify({'success': True, 'message': f"Unequipped {matched_item['name']}! Back to default."})
+
+        # ── EQUIP (already owned) ──
+        if operation == 'equip':
+            result = ShopService.equip_item(current_user, matched_id)
+            return jsonify({'success': result['status'] == 'success', 'message': result['message']})
+
+        # ── BUY (then auto-equip if not consumable) ──
+        # First check if already owned
+        already_owned = UserItem.query.filter_by(user_id=current_user.id, item_id=matched_id).first()
+        if already_owned:
+            # If owned but not active, equip it
+            if not already_owned.is_active and matched_item['type'] != 'consumable':
+                result = ShopService.equip_item(current_user, matched_id)
+                return jsonify({'success': result['status'] == 'success',
+                                'message': f"You already own this! {result['message']}"})
+            return jsonify({'success': False, 'message': f"You already own {matched_item['name']}!"})
+
+        # Buy it
+        buy_result = ShopService.buy_item(current_user, matched_id)
+        if buy_result['status'] != 'success':
+            return jsonify({'success': False, 'message': buy_result['message']})
+
+        # Auto-equip themes and frames after purchase
+        if matched_item['type'] in ('theme', 'frame'):
+            ShopService.equip_item(current_user, matched_id)
+            return jsonify({'success': True,
+                            'message': f"Bought and equipped {matched_item['name']}! {buy_result.get('new_xp', 0)} XP remaining."})
+
+        return jsonify({'success': True, 'message': buy_result['message']})
 
     return jsonify({'success': False, 'message': 'Unknown action.'})
 
