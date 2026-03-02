@@ -54,13 +54,22 @@
         },
 
         // ── QUIZ (/quiz) ──────────────────────────────────
+        // Options are .quiz-option divs injected by JS — use clickNth with correct selector
+        // Settings are .btn-select buttons — use clickByText
         '/quiz': {
             start_quiz: { op: 'click', id: 'start-quiz-btn' },
             next_question: { op: 'click', id: 'next-question-btn' },
-            answer_a: { op: 'clickNth', selector: '.option-btn', index: 0 },
-            answer_b: { op: 'clickNth', selector: '.option-btn', index: 1 },
-            answer_c: { op: 'clickNth', selector: '.option-btn', index: 2 },
-            answer_d: { op: 'clickNth', selector: '.option-btn', index: 3 },
+            answer_a: { op: 'clickNth', selector: '#options-container .quiz-option', index: 0 },
+            answer_b: { op: 'clickNth', selector: '#options-container .quiz-option', index: 1 },
+            answer_c: { op: 'clickNth', selector: '#options-container .quiz-option', index: 2 },
+            answer_d: { op: 'clickNth', selector: '#options-container .quiz-option', index: 3 },
+            count_5: { op: 'clickByText', selector: '.btn-select', text: '5' },
+            count_10: { op: 'clickByText', selector: '.btn-select', text: '10' },
+            count_15: { op: 'clickByText', selector: '.btn-select', text: '15' },
+            count_20: { op: 'clickByText', selector: '.btn-select', text: '20' },
+            difficulty_easy: { op: 'clickByText', selector: '.btn-select', text: 'Easy' },
+            difficulty_medium: { op: 'clickByText', selector: '.btn-select', text: 'Medium' },
+            difficulty_hard: { op: 'clickByText', selector: '.btn-select', text: 'Hard' },
         },
 
         // ── TODOS (/todos) ────────────────────────────────
@@ -183,7 +192,29 @@
             case 'clickNth': {
                 const els = document.querySelectorAll(selector);
                 const el = els[index ?? 0];
-                if (el) { el.click(); return true; }
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await wait(150);
+                    el.click();
+                    return true;
+                }
+                console.warn('[Verse DOM] clickNth: no element at index', index, 'for', selector);
+                return false;
+            }
+
+            case 'clickByText': {
+                // Click a button/element whose text matches exactly (case-insensitive)
+                const candidates = document.querySelectorAll(selector || 'button, a, [role="button"]');
+                const target = text?.trim().toLowerCase();
+                for (const el of candidates) {
+                    if (el.textContent.trim().toLowerCase() === target) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        await wait(150);
+                        el.click();
+                        return true;
+                    }
+                }
+                console.warn('[Verse DOM] clickByText: no element matching text', text);
                 return false;
             }
 
@@ -424,15 +455,10 @@
             // Speak reply
             speak(data.reply, () => scheduleBubbleHide(7000));
 
-            // Execute backend action (add_todo, friend request, etc.)
+            // Execute action — dom_actions are handled INSIDE executeBackendAction.
+            // DO NOT execute dom_actions a second time here — it causes double-clicks (toggle flicker).
             if (data.action && data.action !== 'none' && data.action !== 'conversation') {
                 await executeBackendAction(data.action, data.params || {}, data.dom_actions || []);
-            }
-
-            // Execute any extra DOM actions returned directly
-            if (data.dom_actions && data.dom_actions.length) {
-                await wait(600);
-                await executeDomActions(data.dom_actions);
             }
 
         } catch (err) {

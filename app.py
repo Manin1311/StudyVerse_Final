@@ -7697,38 +7697,60 @@ GLOBAL (any page) IDs:
 - feedbackBtn → feedback button  
 
 === DOM ACTION FORMAT ===
-Each dom_action is: {{"op": "click|type|selectOption|focus|navigate", 
-  "id": "element-id", "selector": "css-selector", "value": "for type/select",
-  "index": 0, "delay": 300}}
+Each dom_action object: {{"op": "click|clickNth|clickByText|type|selectOption|focus|navigate",
+  "id": "element-id",
+  "selector": "css-selector",
+  "value": "text to type or option value",
+  "text": "exact button text for clickByText",
+  "index": 0}}
 
-Examples:
-- Click create room: {{"op":"click","id":"btn-create"}}
-- Type in chat: {{"op":"type","id":"chatInput","value":"hello there"}}
-- Send chat: {{"op":"click","id":"sendButton"}}  
-- Select priority: {{"op":"selectOption","id":"taskPriority","value":"high"}}
-- Navigate then click: include {{"op":"navigate","value":"/battle"}} first
+ops explained:
+- click: click element by id or selector
+- clickNth: click the Nth element matching a selector (0=first)
+- clickByText: click a button/element whose visible text exactly matches "text" field
+- type: type value into an input (clears first)
+- selectOption: set a <select> value
+- focus: focus an element (e.g. textarea)
+- navigate: go to a URL path (always put FIRST if navigation needed)
+
+QUIZ PAGE SPECIFICS (IMPORTANT):
+- Quiz answer options are <div class="quiz-option"> inside #options-container
+- To click answer A: {{"op":"clickNth","selector":"#options-container .quiz-option","index":0}}
+- To click answer B: index:1, C: index:2, D: index:3
+- Question count/difficulty are .btn-select buttons with visible text "5","10","15","20","Easy","Medium","Hard"
+- To select 10 questions: {{"op":"clickByText","selector":".btn-select","text":"10"}}
+- To select Hard difficulty: {{"op":"clickByText","selector":".btn-select","text":"Hard"}}
 
 === EXAMPLES ===
-"start byte battle" → action=start_battle, dom_actions=[{{"op":"navigate","value":"/battle"}},{{"op":"click","id":"btn-create","delay":800}}]
-"type hi in chat" → action=dom_interact, dom_actions=[{{"op":"type","id":"chatInput","value":"hi"}},{{"op":"click","id":"sendButton","delay":200}}]  
+"start byte battle" → action=start_battle, dom_actions=[]
+"create a battle room" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/battle"}},{{"op":"click","id":"btn-create","delay":800}}]
+"type hi in chat" → action=dom_interact, dom_actions=[{{"op":"type","id":"chatInput","value":"hi"}},{{"op":"click","id":"sendButton","delay":200}}]
 "start the timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
-"reset pomodoro" → action=dom_interact, dom_actions=[{{"op":"click","id":"reset-btn"}}]
-"open quiz and start" → action=start_quiz, params={{"difficulty":"medium"}}, dom_actions=[]
-"add exam prep as high priority" → action=add_todo, params={{"title":"exam prep","priority":"high"}}, dom_actions=[]
-"search for Rahul in friends" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/friends"}},{{"op":"type","id":"user-search","value":"Rahul","delay":800}}]
-"switch to dark mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
-"zen mode on" → action=dom_interact, dom_actions=[{{"op":"click","id":"zen-mode-nav-btn"}}]
+"stop the timer / pause" → action=dom_interact, dom_actions=[{{"op":"click","id":"start-btn"}}]
+"reset pomodoro / reset timer" → action=dom_interact, dom_actions=[{{"op":"click","id":"reset-btn"}}]
 "take a short break" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/pomodoro"}},{{"op":"click","id":"shortBreakMode","delay":600}}]
-"add chemistry notes task" → action=add_todo, params={{"title":"chemistry notes","priority":"medium"}}
-"send request to Priya" → action=send_friend_request, params={{"name":"Priya"}}
-"what are my tasks" → action=read_pending_todos, params={{}}
+"switch to light mode / light mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
+"switch to dark mode / dark mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
+"zen mode" → action=dom_interact, dom_actions=[{{"op":"click","id":"zen-mode-nav-btn"}}]
+"start quiz with 10 questions hard" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/quiz"}},{{"op":"clickByText","selector":".btn-select","text":"10","delay":600}},{{"op":"clickByText","selector":".btn-select","text":"Hard","delay":300}},{{"op":"click","id":"start-quiz-btn","delay":400}}]
+"start medium quiz with 5 questions" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/quiz"}},{{"op":"clickByText","selector":".btn-select","text":"5","delay":600}},{{"op":"clickByText","selector":".btn-select","text":"Medium","delay":300}},{{"op":"click","id":"start-quiz-btn","delay":400}}]
+"answer A / select option A / pick first" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":0}}]
+"answer B / option B / second option" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":1}}]
+"answer C" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":2}}]
+"answer D" → action=dom_interact, dom_actions=[{{"op":"clickNth","selector":"#options-container .quiz-option","index":3}}]
+"next question" → action=dom_interact, dom_actions=[{{"op":"click","id":"next-question-btn"}}]
+"search for Rahul in friends" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/friends"}},{{"op":"type","id":"user-search","value":"Rahul","delay":800}}]
+"add exam prep high priority" → action=add_todo, params={{"title":"exam prep","priority":"high"}}, dom_actions=[]
+"send request to Priya" → action=send_friend_request, params={{"name":"Priya"}}, dom_actions=[]
+"what are my tasks" → action=read_pending_todos, params={{}}, dom_actions=[]
 
 CRITICAL RULES:
-1. If the action is dom_interact, use dom_actions ONLY — no server call
-2. If navigating to a page and then doing something, put navigate FIRST in dom_actions
-3. ALWAYS include a friendly "reply" (spoken text)
-4. dom_actions can be empty array if not needed
-5. Be smart — "let's grind" = start timer. "search shop for theme" = type in shop search.
+1. dom_interact = dom_actions only, zero server calls
+2. If navigating + doing something: navigate op FIRST, then action with delay
+3. ALWAYS include reply field
+4. dom_actions = [] if no DOM interaction needed
+5. NEVER run dom_actions for on-page toggles (theme, zen, timer) without navigate — they work from ANY page
+6. For quiz answers — the quiz must already be started and showing questions on screen
 
 Respond ONLY with valid JSON, NO markdown, NO code fences:
 {{"action":"action_name","params":{{}},"reply":"spoken reply","dom_actions":[]}}
