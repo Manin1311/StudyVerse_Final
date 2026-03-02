@@ -5571,8 +5571,17 @@ def handle_wb_draw(data):
 def handle_wb_clear(data):
     room = data.get('room')
     if room:
-        # Broadcast clear command to all users in room
         emit('wb_clear', data, room=str(room), broadcast=True, include_self=True)
+
+@socketio.on('wb_snapshot')
+def handle_wb_snapshot(data):
+    """Relay a full canvas snapshot (PNG dataURL) to all group members.
+    Used by Verse AI to broadcast drawn shapes to collaborators."""
+    room = data.get('room')
+    if room:
+        # Relay to everyone in room EXCEPT the sender (they already have it)
+        emit('wb_snapshot', {'snap': data.get('snap', '')},
+             room=str(room), broadcast=True, skip_sid=request.sid)
 
 @socketio.on('join')
 def on_join(data):
@@ -7696,6 +7705,7 @@ FRIENDS (/friends): user-search
 SHOP (/shop): shop-search [NOTE: for buying/equipping items, use shop_item action, NOT DOM clicks]
 CALENDAR (/calendar): quick-add-title
 SYLLABUS (/syllabus): uploadPdf (click to open file picker)
+WHITEBOARD (/group → Board tab): use action=wb_draw_ai with params={"shape":"tree|line|circle|house|star|triangle|arrow|heart|smiley|square", "color":"optional color name"}
 GLOBAL (any page): theme-toggle, sidebar-toggle, zen-mode-nav-btn, feedbackBtn
 
 === SHOP CATALOG (use shop_item action) ===
@@ -7759,8 +7769,9 @@ QUIZ PAGE SPECIFICS (IMPORTANT):
 "go to leaderboard / who's winning" → action=navigate_leaderboard, dom_actions=[]
 "open support / I have a complaint / help / contact us / raise a ticket" → action=navigate_support, dom_actions=[]
 "go to chat / talk to AI / AI coach" → action=navigate_chat, dom_actions=[]
-"open group chat" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/group-chat"}}]
+"open group chat" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/group"}}]
 "go to live streams / who is live" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/live"}}]
+"draw a [shape] on the whiteboard / draw a tree / draw a circle / draw a house / draw a star / draw an arrow / draw a heart / draw a smiley / draw a line" → action=wb_draw_ai, params={{"shape":"<shape name>", "color":"<color if mentioned>"}}, dom_actions=[]
 "open profile / my profile" → action=navigate_profile, dom_actions=[]
 "open settings" → action=navigate_settings, dom_actions=[]
 "open shop / buy items" → action=navigate_shop, dom_actions=[]
@@ -7811,6 +7822,18 @@ QUIZ PAGE SPECIFICS (IMPORTANT):
 "give feedback" → action=dom_interact, dom_actions=[{{"op":"click","id":"feedbackBtn"}}]
 "search [item] in shop" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/shop"}},{{"op":"type","id":"shop-search","value":"item","delay":600}}]
 "upload syllabus / upload PDF" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/syllabus"}},{{"op":"click","id":"uploadPdf","delay":600}}]
+
+── WHITEBOARD DRAWING (via Verse) ──
+"draw a tree" → action=wb_draw_ai, params={{"shape":"tree"}}
+"draw a red circle" → action=wb_draw_ai, params={{"shape":"circle","color":"red"}}
+"draw a house" → action=wb_draw_ai, params={{"shape":"house"}}
+"draw a star" → action=wb_draw_ai, params={{"shape":"star"}}
+"draw a line" → action=wb_draw_ai, params={{"shape":"line"}}
+"draw an arrow" → action=wb_draw_ai, params={{"shape":"arrow"}}
+"draw a heart" → action=wb_draw_ai, params={{"shape":"heart"}}
+"draw a smiley" → action=wb_draw_ai, params={{"shape":"smiley"}}
+"draw a triangle" → action=wb_draw_ai, params={{"shape":"triangle"}}
+"draw a square / box / rectangle" → action=wb_draw_ai, params={{"shape":"rectangle"}}
 
 CRITICAL RULES:
 1. dom_interact = dom_actions only, no server call

@@ -513,6 +513,35 @@
             return;
         }
 
+        // ── wb_draw_ai — Voice-controlled whiteboard drawing ─
+        if (action === 'wb_draw_ai') {
+            const shape = (params.shape || 'line').toLowerCase();
+            const color = (params.color || '').toLowerCase();
+            const drawCmd = color ? `${color} ${shape}` : shape;
+
+            const doDrawing = () => {
+                // Switch to whiteboard tab
+                if (typeof switchTab === 'function') switchTab('whiteboard');
+                // Wait a bit for canvas to resize, then draw
+                setTimeout(() => {
+                    if (typeof window.verseDrawOnWhiteboard === 'function') {
+                        window.verseDrawOnWhiteboard(drawCmd);
+                    } else {
+                        showToast('✏️ Whiteboard not loaded yet — try again!');
+                    }
+                }, 400);
+            };
+
+            if (window.location.pathname === '/group') {
+                doDrawing();
+            } else {
+                // Navigate to /group, then draw after load
+                sessionStorage.setItem('verse_wb_draw_pending', drawCmd);
+                setTimeout(() => { window.location.href = '/group'; }, 1200);
+            }
+            return;
+        }
+
         // ── Real server-side actions ──────────────────────
         const serverActions = [
             'add_todo', 'read_pending_todos', 'send_friend_request',
@@ -767,6 +796,20 @@
 
         // Handle pending actions from previous page navigation
         checkPendingActions();
+
+        // Handle pending whiteboard draw (after navigating to /group)
+        const wbPendingCmd = sessionStorage.getItem('verse_wb_draw_pending');
+        if (wbPendingCmd && window.location.pathname === '/group') {
+            sessionStorage.removeItem('verse_wb_draw_pending');
+            setTimeout(() => {
+                if (typeof switchTab === 'function') switchTab('whiteboard');
+                setTimeout(() => {
+                    if (typeof window.verseDrawOnWhiteboard === 'function') {
+                        window.verseDrawOnWhiteboard(wbPendingCmd);
+                    }
+                }, 600);
+            }, 1500);
+        }
     }
 
 
