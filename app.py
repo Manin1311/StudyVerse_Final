@@ -7627,14 +7627,21 @@ def voice_assistant():
             db.or_(User.level > current_user.level,
                    db.and_(User.level == current_user.level, User.total_xp > current_user.total_xp))
         ).count() + 1
-        top = User.query.filter(
+        top_users = User.query.filter(
             User.is_public_profile == True, User.is_admin == False, User.is_banned == False
-        ).order_by(User.level.desc(), User.total_xp.desc()).first()
-        if top:
-            rank_1_user = f"{top.first_name} {top.last_name or ''}".strip()
-            rank_1_xp   = top.total_xp or 0
+        ).order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
+        if top_users:
+            rank_1_user = f"{top_users[0].first_name} {top_users[0].last_name or ''}".strip()
+            rank_1_xp   = top_users[0].total_xp or 0
+        # Build top 5 summary string
+        top5_parts = []
+        for i, u in enumerate(top_users, 1):
+            n = f"{u.first_name} {u.last_name or ''}".strip()
+            top5_parts.append(f"#{i} {n} ({u.total_xp} XP)")
+        top5_str = " | ".join(top5_parts) if top5_parts else 'unknown'
     except Exception as _e:
         print(f"[Verse] Leaderboard context error: {_e}")
+        top5_str = 'unknown'
 
     # ── System prompt with FULL DOM knowledge ─────────────────
     system_prompt = f"""You are Verse, the AI voice assistant that FULLY CONTROLS the StudyVerse app.
@@ -7645,7 +7652,8 @@ Name: {user_name} | Streak: {streak} days | XP: {xp} | Level: {level}
 Pending todos ({pending_count}): {todo_list_str}
 Upcoming events: {upcoming_count}
 Friends: {friends_str}
-Leaderboard: You are rank #{my_rank} globally | #1 is {rank_1_user} with {rank_1_xp} XP
+Your rank: #{my_rank} globally
+Top 5 leaderboard: {top5_str}
 Current page: {page}
 
 === YOUR PERSONALITY ===
@@ -7657,22 +7665,24 @@ Friendly, brief (2 sentences max), motivating. You speak out loud (TTS) so be na
 navigate_dashboard, navigate_pomodoro, navigate_todos, navigate_quiz,
 navigate_syllabus, navigate_leaderboard, navigate_friends, navigate_shop,
 navigate_progress, navigate_chat, navigate_battle, navigate_profile,
-navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver
+navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver,
+navigate_support, navigate_live, navigate_user_profile
 
 ──── SERVER ACTIONS (use "action" field) ────
-- read_pending_todos  → read pending task list aloud (params: {{}})
-- add_todo            → save todo to DB (params: {{"title":"...", "priority":"high/medium/low"}})
-- send_friend_request → send request by name (params: {{"name":"..."}})
-- start_quiz          → navigate to quiz + auto-start (params: {{"difficulty":"easy/medium/hard"}})
-- start_battle        → navigate to battle + auto-create room (params: {{}})
-- shop_item           → buy/equip/unequip a shop item (params: {{"item_name":"...","operation":"buy|equip|unequip"}})
-- get_leaderboard     → speak user's rank + who is #1 (use live data above in reply)
-- get_streak          → speak streak (use live data)
-- get_stats           → speak XP, level, streak, rank (use live data)
-- get_xp              → speak XP total (use live data)
-- get_friends         → list friend names aloud (use live data)
-- dom_interact        → pure DOM interaction, no server call
-- conversation        → just reply, nothing else
+- read_pending_todos     → read pending task list aloud (params: {{}})
+- add_todo               → save todo to DB (params: {{"title":"...", "priority":"high/medium/low"}})
+- send_friend_request    → send request by name (params: {{"name":"..."}})
+- start_quiz             → navigate to quiz + auto-start (params: {{"difficulty":"easy/medium/hard"}})
+- start_battle           → navigate to battle + auto-create room (params: {{}})
+- shop_item              → buy/equip/unequip a shop item (params: {{"item_name":"...","operation":"buy|equip|unequip"}})
+- navigate_user_profile  → open any user's profile by name (params: {{"name":"..."}}). Use for "open Krisha's profile", "show Beast's page", etc.
+- get_leaderboard        → speak user's rank + top 5 (use live data above in reply)
+- get_streak             → speak streak (use live data)
+- get_stats              → speak XP, level, streak, rank (use live data)
+- get_xp                 → speak XP total (use live data)
+- get_friends            → list friend names aloud (use live data)
+- dom_interact           → pure DOM interaction, no server call
+- conversation           → just reply, nothing else
 
 ──── DOM ACTIONS (use "dom_actions" array) ────
 These execute on the browser DOM. Use IDs below.
@@ -7967,13 +7977,17 @@ def verse_execute_action():
                        db.and_(User.level == current_user.level,
                                User.total_xp > current_user.total_xp))
             ).count() + 1
-            top = User.query.filter(
+            top_users = User.query.filter(
                 User.is_public_profile == True, User.is_admin == False, User.is_banned == False
-            ).order_by(User.level.desc(), User.total_xp.desc()).first()
-            top_name = f"{top.first_name} {top.last_name or ''}".strip() if top else 'unknown'
-            top_xp   = top.total_xp or 0 if top else 0
-            msg = f"You are rank #{my_rank} on the leaderboard. {top_name} is in first place with {top_xp} XP."
-            return jsonify({'success': True, 'rank': my_rank, 'top_name': top_name, 'top_xp': top_xp, 'message': msg})
+            ).order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
+            lines = []
+            for i, u in enumerate(top_users, 1):
+                n = f"{u.first_name} {u.last_name or ''}".strip()
+                lines.append(f"#{i} {n} with {u.total_xp} XP")
+            top_str = ", ".join(lines) if lines else "no data"
+            msg = (f"You are rank #{my_rank} on the leaderboard. "
+                   f"Top 5: {top_str}.")
+            return jsonify({'success': True, 'rank': my_rank, 'message': msg})
         except Exception as e:
             return jsonify({'success': False, 'message': f'Could not fetch leaderboard: {e}'})
 
@@ -8006,6 +8020,25 @@ def verse_execute_action():
     # ── START BATTLE (navigate + signal) ─────────────────────────────────
     elif action == 'start_battle':
         return jsonify({'success': True, 'navigate': '/battle', 'auto_create': True})
+
+    # ── NAVIGATE TO ANY USER'S PROFILE ────────────────────────────────────
+    elif action == 'navigate_user_profile':
+        name = (params.get('name') or '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': "I need a name to open a profile."})
+        parts = name.split()
+        fname, lname = parts[0], parts[1] if len(parts) > 1 else ''
+        query = User.query.filter(User.id != current_user.id)
+        if lname:
+            query = query.filter(User.first_name.ilike(f'%{fname}%'), User.last_name.ilike(f'%{lname}%'))
+        else:
+            query = query.filter(User.first_name.ilike(f'%{fname}%'))
+        target = query.first()
+        if not target:
+            return jsonify({'success': False, 'message': f"I couldn't find a user named {name}."})
+        profile_url = f'/profile/{target.id}'
+        return jsonify({'success': True, 'navigate': profile_url,
+                        'message': f"Opening {target.first_name}'s profile!"})
 
     # ── SHOP ITEM: BUY / EQUIP / UNEQUIP ──────────────────────────────
     elif action == 'shop_item':

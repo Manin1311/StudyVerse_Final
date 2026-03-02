@@ -519,7 +519,7 @@
             'start_quiz', 'start_battle',
             'get_stats', 'get_streak', 'get_xp',
             'get_leaderboard', 'get_friends',
-            'shop_item',
+            'shop_item', 'navigate_user_profile',
             'dom_interact'
         ];
         if (!serverActions.includes(action)) return;
@@ -616,13 +616,22 @@
 
             } else if (action === 'shop_item') {
                 const msg = result.message || data.reply;
-                showToast((result.success ? '🛍️ ' : '❌ ') + msg);
+                showToast((result.success ? '\uD83D\uDECD\uFE0F ' : '\u274C ') + msg);
                 showBubble('reply', null, msg);
                 stopSpeaking();
                 setTimeout(() => speak(msg), 200);
-                // Navigate to shop so user sees the change applied visually
-                if (result.success && window.location.pathname !== '/shop') {
-                    setTimeout(() => { window.location.href = '/shop'; }, 2500);
+                // ALWAYS reload after shop action so theme CSS (body class) gets re-applied by Flask
+                if (result.success) {
+                    setTimeout(() => { window.location.reload(); }, 2500);
+                }
+
+            } else if (action === 'navigate_user_profile') {
+                const msg = result.message || data.reply;
+                showBubble('reply', null, msg);
+                stopSpeaking();
+                setTimeout(() => speak(msg), 200);
+                if (result.navigate) {
+                    setTimeout(() => { window.location.href = result.navigate; }, 1500);
                 }
             }
 
