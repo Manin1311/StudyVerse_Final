@@ -7631,14 +7631,13 @@ def voice_assistant():
     rank_1_user = 'unknown'
     rank_1_xp   = 0
     try:
+        # User model does not have is_public_profile, is_admin, or is_banned,
+        # so we rely on standard filtering
         my_rank = User.query.filter(
-            User.is_public_profile == True, User.is_admin == False, User.is_banned == False,
             db.or_(User.level > current_user.level,
                    db.and_(User.level == current_user.level, User.total_xp > current_user.total_xp))
         ).count() + 1
-        top_users = User.query.filter(
-            User.is_public_profile == True, User.is_admin == False, User.is_banned == False
-        ).order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
+        top_users = User.query.order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
         if top_users:
             rank_1_user = f"{top_users[0].first_name} {top_users[0].last_name or ''}".strip()
             rank_1_xp   = top_users[0].total_xp or 0

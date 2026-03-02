@@ -449,6 +449,7 @@
             if (!resp.ok) throw new Error('Server error ' + resp.status);
             const data = await resp.json();
 
+
             // Show reply in bubble
             showBubble('reply', transcript, data.reply);
 
@@ -462,7 +463,7 @@
             }
 
         } catch (err) {
-            console.error('[Verse]', err);
+            console.error('[Verse] Error:', err?.message || err);
             const errMsg = 'Sorry, I hit a snag. Try again!';
             showBubble('reply', transcript, errMsg);
             speak(errMsg);
@@ -638,7 +639,7 @@
             } else if (action === 'get_leaderboard' || action === 'get_friends' ||
                 action === 'get_stats' || action === 'get_streak' || action === 'get_xp') {
                 // These return a spoken message — just speak it
-                const msg = result.message || data.reply;
+                const msg = result.message || 'Here are your stats!';
                 showBubble('reply', null, msg);
                 stopSpeaking();
                 setTimeout(() => speak(msg), 200);
