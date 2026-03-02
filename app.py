@@ -489,7 +489,7 @@ socketio = SocketIO(
 # Priority: AI_API_KEY_1, AI_API_KEY_2, ... up to AI_API_KEY_9
 # Backward-compatible: AI_API_KEY alone also works.
 _raw_keys = []
-for _i in range(1, 10):
+for _i in range(1, 21):   # supports AI_API_KEY_1 ... AI_API_KEY_20
     _k = os.getenv(f"AI_API_KEY_{_i}", "").strip()
     if _k:
         _raw_keys.append(_k)
