@@ -23,6 +23,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.9">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/zen_mode.css') }}?v=1.0.1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/verse_assistant.css') }}?v=1.0.0">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
 </head>
 
@@ -1407,6 +1408,89 @@
             const text = encodeURIComponent(`Hey! I've been using StudyVerse to boost my studies 📚🚀\n\nIt has AI coaching, battle quizzes, streaks and more!\n\nJoin using my invite link — we both get 500 XP 🎁\n${_refLink}`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
+    </script>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <!-- ════════════════════════════════════════════════
+         VERSE — AI Voice Assistant
+         Always-floating mic + welcome overlay
+    ═══════════════════════════════════════════════════ -->
+
+    <!-- Welcome Overlay (shown on dashboard) -->
+    <div id="verse-welcome-overlay">
+        <!-- Pulsing rings -->
+        <div class="verse-rings">
+            <div class="verse-ring"></div>
+            <div class="verse-ring"></div>
+            <div class="verse-ring"></div>
+            <div class="verse-ring"></div>
+        </div>
+        <!-- Orb -->
+        <div class="verse-orb">🎙️</div>
+        <!-- Text -->
+        <div class="verse-welcome-title">Hey, {{ current_user.first_name }}! 👋</div>
+        <div class="verse-welcome-subtitle">Loading your personalised welcome...</div>
+        <!-- Waveform -->
+        <div class="verse-waveform-welcome">
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+            <div class="verse-wave-bar"></div>
+        </div>
+        <div class="verse-dismiss-hint">Tap anywhere to dismiss</div>
+    </div>
+
+    <!-- Floating Mic Button -->
+    <button id="verse-mic-btn" title="Talk to Verse (Alt+V)" aria-label="Verse AI Voice Assistant">
+        <i class="fa-solid fa-microphone"></i>
+    </button>
+    <div id="verse-mic-label">Verse AI</div>
+
+    <!-- Transcript / Response Bubble -->
+    <div id="verse-bubble">
+        <div class="verse-bubble-header" id="verse-bubble-header">
+            <span class="verse-bubble-dot" id="verse-bubble-dot"></span>
+            Listening...
+        </div>
+        <div class="verse-bubble-text" id="verse-bubble-text"></div>
+        <div class="verse-bubble-user" id="verse-bubble-user" style="display:none;"></div>
+    </div>
+
+    <!-- Verse JS (loaded last for full DOM access) -->
+    <script src="{{ url_for('static', filename='js/verse_assistant.js') }}?v=1.0.0"></script>
+
+    <!-- Dashboard welcome trigger -->
+    <script>
+        (function () {
+            const IS_DASHBOARD = window.location.pathname === '/dashboard';
+            const SHOWN_KEY = 'verse_welcome_shown_v1';
+
+            if (!IS_DASHBOARD) return;
+            // Show on every dashboard visit (you can gate it per-session via sessionStorage)
+            const alreadyShown = sessionStorage.getItem(SHOWN_KEY);
+            if (alreadyShown) return;
+            sessionStorage.setItem(SHOWN_KEY, '1');
+
+            // Fetch personalised welcome data from server
+            fetch('/api/verse/welcome')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data) return;
+                    if (window.Verse) window.Verse.showWelcome(data.message);
+                })
+                .catch(() => {
+                    // Fallback generic welcome
+                    if (window.Verse) window.Verse.showWelcome("Welcome back to StudyVerse! What would you like to work on today?");
+                });
+        })();
     </script>
     {% endif %}
 

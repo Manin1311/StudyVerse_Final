@@ -482,19 +482,122 @@ socketio = SocketIO(
 )
 
 # ============================================================================
-# AI API CONFIGURATION (Google Gemini)
+# AI API CONFIGURATION (Google Gemini) - Multi-Key Rotation
 # ============================================================================
 
-# Load AI API credentials from environment
-AI_API_KEY = os.getenv("AI_API_KEY", "")
+# Collect all available API keys from environment variables.
+# Priority: AI_API_KEY_1, AI_API_KEY_2, ... up to AI_API_KEY_9
+# Backward-compatible: AI_API_KEY alone also works.
+_raw_keys = []
+for _i in range(1, 10):
+    _k = os.getenv(f"AI_API_KEY_{_i}", "").strip()
+    if _k:
+        _raw_keys.append(_k)
+# Fall back to the original single-key env var if no numbered keys are set
+if not _raw_keys:
+    _single = os.getenv("AI_API_KEY", "").strip()
+    if _single:
+        _raw_keys.append(_single)
+
+# Keep AI_API_KEY pointing to the first key (used in legacy checks like `if not AI_API_KEY`)
+AI_API_KEY = _raw_keys[0] if _raw_keys else ""
 AI_API_TYPE = os.getenv("AI_API_TYPE", "google")  # Currently only Google Gemini supported
 
-# Configure Gemini API if available
-if GEMINI_AVAILABLE and AI_API_KEY:
-    try:
-        genai.configure(api_key=AI_API_KEY)
-    except Exception as e:
-        print(f"Failed to configure Gemini: {e}")
+
+class GeminiKeyRotator:
+    """
+    API Key Pool with automatic rotation on quota exhaustion.
+
+    How it works:
+    - Holds a list of Gemini API keys.
+    - On every `generate_content` call, it uses the current active key.
+    - If a ResourceExhausted (429) or quota error is detected, it rotates
+      to the next key, re-configures genai, and retries automatically.
+    - If ALL keys are exhausted, raises an exception.
+
+    Usage in Render:
+    - Set AI_API_KEY_1, AI_API_KEY_2, AI_API_KEY_3, ... in Render environment.
+    """
+
+    def __init__(self, keys: list):
+        self.keys = keys
+        self._index = 0  # Current active key index
+        if GEMINI_AVAILABLE and self.keys:
+            try:
+                genai.configure(api_key=self.keys[0])
+                print(f"[Gemini] Loaded {len(self.keys)} API key(s). Active: key #{1}")
+            except Exception as e:
+                print(f"[Gemini] Failed to configure with key #1: {e}")
+
+    @property
+    def current_key(self):
+        return self.keys[self._index] if self.keys else ""
+
+    def _is_quota_error(self, exc: Exception) -> bool:
+        """Detect quota/rate-limit errors from Gemini API."""
+        err_str = str(exc).lower()
+        quota_signals = [
+            'resource_exhausted', 'resourceexhausted',
+            'quota exceeded', 'quota_exceeded',
+            '429', 'rate limit', 'ratelimit',
+            'too many requests', 'per day'
+        ]
+        return any(signal in err_str for signal in quota_signals)
+
+    def _rotate(self) -> bool:
+        """Rotate to the next available key. Returns True if rotation succeeded."""
+        next_index = self._index + 1
+        if next_index >= len(self.keys):
+            print("[Gemini] All API keys exhausted. No more keys to try.")
+            return False
+        self._index = next_index
+        new_key = self.keys[self._index]
+        try:
+            genai.configure(api_key=new_key)
+            print(f"[Gemini] Rotated to API key #{self._index + 1}")
+            return True
+        except Exception as e:
+            print(f"[Gemini] Failed to configure key #{self._index + 1}: {e}")
+            return False
+
+    def generate_content(self, model_name: str, *args, **kwargs):
+        """
+        Call generate_content with automatic key rotation on quota errors.
+        Wraps genai.GenerativeModel(model_name).generate_content(...).
+        """
+        if not GEMINI_AVAILABLE:
+            raise RuntimeError("google-generativeai library not installed.")
+        if not self.keys:
+            raise ValueError("No Gemini API keys configured.")
+
+        tried = set()
+        while True:
+            if self._index in tried:
+                raise RuntimeError("All Gemini API keys have been exhausted for today.")
+            tried.add(self._index)
+            try:
+                model = genai.GenerativeModel(model_name)
+                return model.generate_content(*args, **kwargs)
+            except Exception as exc:
+                if self._is_quota_error(exc):
+                    print(f"[Gemini] Key #{self._index + 1} quota exhausted: {exc}")
+                    if not self._rotate():
+                        raise RuntimeError(
+                            "All Gemini API keys have been exhausted for today. "
+                            "Please try again tomorrow or add more API keys."
+                        ) from exc
+                    # Retry with the new key (loop continues)
+                else:
+                    raise  # Non-quota error — propagate immediately
+
+    @property
+    def available(self) -> bool:
+        """True if at least one API key is configured."""
+        return bool(self.keys)
+
+
+# Global key rotator instance
+gemini_rotator = GeminiKeyRotator(_raw_keys)
 
 # ============================================================================
 # TIMEZONE CONFIGURATION
@@ -1667,69 +1770,29 @@ class SyllabusService:
 # ------------------------------
 def call_ai_api(messages):
     """
-    Call Google Gemini API (or other configured AI).
+    Call Google Gemini API with automatic key rotation on quota exhaustion.
     messages: list of dicts [{'role': 'user', 'content': '...'}]
     Returns: str (response content)
     """
-    if not AI_API_KEY:
-         raise ValueError("AI_API_KEY not configured. Please set it in .env")
+    if not gemini_rotator.available:
+        raise ValueError("No Gemini API keys configured. Set AI_API_KEY_1, AI_API_KEY_2, etc. in environment.")
 
-    # Extract the last user prompt (Gemini is often stateless/one-shot via this simple helper, 
-    # or we can build the history string if using the chat model properly).
-    # For simplicity/robustness here:
-    
     conversation_history = ""
     for m in messages:
         role = "User" if m['role'] == 'user' else "Model"
         conversation_history += f"{role}: {m['content']}\n"
-    
-    # We'll just use the last prompt if we want simple stateless, but history is good.
-    # Actually, let's just send the last 2000 chars of history to avoid context limits if using free tier.
-    final_prompt = conversation_history[-3000:] 
+
+    # Limit context to last 3000 chars to stay within free-tier token limits
+    final_prompt = conversation_history[-3000:]
 
     try:
-        model_id = os.environ.get("GEMINI_MODEL", "models/gemini-2.5-flash")
-        
-        # Use simple requests if genai lib issues, or if preferred.
-        # But allow genai lib if available.
-        if GEMINI_AVAILABLE:
-            model = genai.GenerativeModel(model_id)
-            # Create a chat session or just generate content
-            # Mapping roles for Gemini (user/model)
-            gemini_hist = []
-            # We need to format specific for Gemini history if we use start_chat.
-            # But generate_content is easier for one-off.
-            
-            response = model.generate_content(final_prompt)
-            return response.text
-            
-        else:
-            # Fallback to requests REST API
-            if "/" in model_id:
-                endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model_id}:generateContent?key={AI_API_KEY}"
-            else:
-                endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={AI_API_KEY}"
-
-            payload = {
-                "contents": [{
-                    "parts": [{"text": final_prompt}]
-                }]
-            }
-            
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=30)
-            if r.status_code != 200:
-                raise ValueError(f"API Error {r.status_code}: {r.text}")
-                
-            data = r.json()
-            if 'candidates' in data and data['candidates']:
-                return data['candidates'][0]['content']['parts'][0]['text']
-            
-            return "Error: No content returned."
+        model_id = os.environ.get("GEMINI_MODEL", AI_MODEL)
+        # Use rotator — automatically switches key on quota exhaustion
+        response = gemini_rotator.generate_content(model_id, final_prompt)
+        return response.text
 
     except Exception as e:
-        print(f"AI API Call Failed: {e}")
-        # Return a friendly error or re-raise
-        # Re-raising allows the caller (ChatService) to catch and format nicely
+        print(f"[Gemini] call_ai_api failed: {e}")
         raise e
 
 
@@ -6635,8 +6698,7 @@ Generate a structured learning breakdown in JSON format:
 
 Return ONLY valid JSON. No markdown, no extra text."""
 
-        model = genai.GenerativeModel(AI_MODEL)
-        resp = model.generate_content(prompt)
+        resp = gemini_rotator.generate_content(AI_MODEL, prompt)
         raw = resp.text.strip()
         # Strip markdown code fences if present
         if raw.startswith('```'):
@@ -6793,15 +6855,15 @@ def topic_resolver_diagram():
         return jsonify({'description': 'AI diagram service not available.'}), 200
 
     try:
-        # Try Gemini image generation model
-        image_model = genai.GenerativeModel('gemini-2.0-flash-preview-image-generation')
+        # Try Gemini image generation model (rotator handles quota failover)
         image_prompt = (
             f"Create a clean, educational diagram or concept map for the topic: '{topic}'. "
             f"The diagram should be: labeled clearly, use arrows and boxes, show relationships, "
             f"use a dark background with colourful labels, academic style, no text clutter. "
             f"Similar to a textbook figure or Khan Academy illustration."
         )
-        image_response = image_model.generate_content(
+        image_response = gemini_rotator.generate_content(
+            'gemini-2.0-flash-preview-image-generation',
             image_prompt,
             generation_config={"response_modalities": ["image", "text"]}
         )
@@ -6823,8 +6885,7 @@ def topic_resolver_diagram():
         fallback_prompt = f"""Create a clear, structured text diagram or concept map for: "{topic}"
 Use ASCII art, arrows (→, ↓, ←, ↑), boxes (┌─┐ │ └─┘), and indentation to show relationships.
 Make it educational, concise, and visually clear. Max 30 lines."""
-        model = genai.GenerativeModel(AI_MODEL)
-        fb_resp = model.generate_content(fallback_prompt)
+        fb_resp = gemini_rotator.generate_content(AI_MODEL, fallback_prompt)
         return jsonify({'description': fb_resp.text.strip()})
     except Exception as fb_err:
         return jsonify({'description': f'Diagram generation unavailable for: {topic}'}), 200
@@ -6917,8 +6978,8 @@ IMPORTANT:
 - Be thorough with steps — explain each one clearly for a student.
 - Use simple, friendly language."""
 
-        model = genai.GenerativeModel(AI_MODEL)
-        response = model.generate_content(
+        response = gemini_rotator.generate_content(
+            AI_MODEL,
             contents=[
                 {'role': 'user', 'parts': [
                     {'inline_data': image_data},
@@ -7485,6 +7546,159 @@ def referral_landing(code):
         session['ref_code'] = code
         flash(f'🎁 You were invited by {referrer.first_name}! Sign up to give them 500 XP.', 'success')
     return redirect(url_for('auth') + f'?ref={code}')
+
+
+# ============================================================================
+# VERSE — AI VOICE ASSISTANT API
+# ============================================================================
+
+@app.route('/api/voice-assistant', methods=['POST'])
+@login_required
+def voice_assistant():
+    """
+    Verse Voice Assistant — Natural Language Intent Engine.
+
+    Receives a transcript of what the user said, sends it to Gemini
+    with a StudyVerse-aware system prompt, and returns:
+      - action:  string key for the JS dispatcher
+      - params:  dict of action parameters
+      - reply:   friendly text for Verse to speak back
+    """
+    if not gemini_rotator.available:
+        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm not fully set up yet. Please configure my API keys."})
+
+    data       = request.get_json(silent=True) or {}
+    transcript = (data.get('text') or '').strip()
+    page       = data.get('page', '/')
+
+    if not transcript:
+        return jsonify({'action': 'none', 'params': {}, 'reply': "I didn't catch that. Could you say it again?"})
+
+    # Gather live user context for Gemini
+    user_name    = current_user.first_name or 'there'
+    streak       = current_user.current_streak or 0
+    xp           = current_user.total_xp or 0
+    level        = current_user.level or 1
+    pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+    upcoming_events = Event.query.filter(
+        Event.user_id == current_user.id,
+        Event.date >= datetime.utcnow().date()
+    ).count() if 'Event' in dir() else 0
+
+    system_prompt = f"""You are Verse, the friendly AI voice assistant built into StudyVerse — an AI-powered student productivity app.
+
+USER CONTEXT (live data):
+- Name: {user_name}
+- Current streak: {streak} days
+- Total XP: {xp}
+- Level: {level}
+- Pending todos: {pending_todos}
+- Upcoming events: {upcoming_events}
+- Current page: {page}
+
+YOUR PERSONALITY:
+- Friendly, encouraging, like a smart study buddy
+- Brief and natural — you speak out loud, so keep replies under 2 sentences
+- Use the user's name naturally sometimes
+- Be motivating and upbeat
+
+AVAILABLE ACTIONS (return exactly one):
+navigate_dashboard, navigate_pomodoro, navigate_todos, navigate_quiz,
+navigate_syllabus, navigate_leaderboard, navigate_friends, navigate_shop,
+navigate_progress, navigate_chat, navigate_battle, navigate_profile,
+navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver,
+add_todo, start_pomodoro, add_event, get_stats, get_streak, get_todos, get_xp,
+conversation, none
+
+NATURAL LANGUAGE MAPPING (IMPORTANT — be flexible, not rigid):
+- "focus", "grind", "study session", "pomodoro", "timer" → navigate_pomodoro or start_pomodoro
+- "tasks", "todos", "to-do", "my list", "what do I have to do" → navigate_todos
+- "quiz", "test me", "practice" → navigate_quiz
+- "add [thing] to my list/tasks" → add_todo with title extracted
+- "leaderboard", "ranking", "who's winning" → navigate_leaderboard
+- "shop", "buy", "rewards" → navigate_shop
+- "friends", "people", "buddy" → navigate_friends
+- "progress", "stats", "how am I doing" → navigate_progress or get_stats
+- "chat", "AI coach", "coach" → navigate_chat
+- "battle", "compete", "byte battle" → navigate_battle
+- "profile", "settings" → navigate_profile / navigate_settings
+- "calendar", "event", "schedule", "remind me" → navigate_calendar or add_event
+- "streak" → get_streak
+- "XP", "experience", "points" → get_xp
+- General question or chat → conversation
+
+IMPORTANT: The user speaks casually! "let's have some focus session today" = navigate_pomodoro.
+"I'm behind on my syllabus" = navigate_syllabus. Be smart about intent.
+
+Respond ONLY with valid JSON (no markdown, no code fences):
+{{
+  "action": "action_name",
+  "params": {{}},
+  "reply": "Your friendly 1-2 sentence spoken reply here."
+}}
+
+For add_todo, include params: {{"title": "extracted task title", "priority": "high/medium/low"}}
+For get_stats, include the actual numbers in your reply using the live context above.
+For get_streak, say the streak number in your reply.
+For conversation, just reply naturally — no navigation.
+
+User said: "{transcript}"
+"""
+
+    try:
+        response = gemini_rotator.generate_content(AI_MODEL, system_prompt)
+        raw = response.text.strip()
+
+        # Strip markdown code fences if present
+        if raw.startswith('```'):
+            raw = raw.split('```')[1]
+            if raw.startswith('json'):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        result = json.loads(raw)
+
+        # Validate structure
+        action = result.get('action', 'none')
+        params = result.get('params', {})
+        reply  = result.get('reply', 'Got it!')
+
+        return jsonify({'action': action, 'params': params, 'reply': reply})
+
+    except json.JSONDecodeError:
+        # Gemini returned plain text — use as reply
+        plain = response.text.strip() if 'response' in dir() else "I'm not sure about that."
+        return jsonify({'action': 'conversation', 'params': {}, 'reply': plain})
+    except Exception as e:
+        print(f"[Verse] Error: {e}")
+        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm having trouble understanding right now. Please try again."})
+
+
+@app.route('/api/verse/welcome')
+@login_required
+def verse_welcome_data():
+    """Return personalised welcome message data for Verse."""
+    name   = current_user.first_name or 'there'
+    streak = current_user.current_streak or 0
+    pending = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+
+    try:
+        upcoming = Event.query.filter(
+            Event.user_id == current_user.id,
+            Event.date >= datetime.utcnow().date()
+        ).count()
+    except Exception:
+        upcoming = 0
+
+    msg = (
+        f"Welcome back, {name}! "
+        f"You're on a {streak}-day streak — keep it going! "
+        f"You have {pending} pending task{'s' if pending != 1 else ''}"
+        f"{f' and {upcoming} upcoming event{chr(115) if upcoming != 1 else chr(46)}' if upcoming else '.'} "
+        f"What would you like to work on today?"
+    )
+
+    return jsonify({'message': msg, 'name': name, 'streak': streak, 'pending': pending})
 
 
 # ============================================================================
