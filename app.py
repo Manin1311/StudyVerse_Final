@@ -7570,16 +7570,27 @@ def voice_assistant():
     if not transcript:
         return jsonify({'action': 'none', 'params': {}, 'reply': "I didn't catch that.", 'dom_actions': []})
 
-    # ── Live context ──────────────────────────────────────────
+    # ── Live context (safe defaults on any DB error) ──────────────
     user_name     = current_user.first_name or 'there'
-    streak        = current_user.current_streak or 0
-    xp            = current_user.total_xp or 0
-    level         = current_user.level or 1
-    pending_count = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+    streak        = 0
+    xp            = 0
+    level         = 1
+    pending_count = 0
+    todo_list_str = 'none'
+    upcoming_count = 0
+    friends_str   = 'none'
 
-    pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
-                              .order_by(Todo.created_at.desc()).limit(5).all()
-    todo_list_str = ', '.join([f'"{t.title}" ({t.priority})' for t in pending_todos]) or 'none'
+    try:
+        streak        = current_user.current_streak or 0
+        xp            = current_user.total_xp or 0
+        level         = current_user.level or 1
+        pending_count = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+
+        pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
+                                  .order_by(Todo.created_at.desc()).limit(5).all()
+        todo_list_str = ', '.join([f'"{t.title}" ({t.priority})' for t in pending_todos]) or 'none'
+    except Exception as _e:
+        print(f"[Verse] Todo context error: {_e}")
 
     try:
         upcoming_count = Event.query.filter(
@@ -7587,7 +7598,7 @@ def voice_assistant():
             Event.date >= datetime.utcnow().date()
         ).count()
     except Exception:
-        upcoming_count = 0
+        pass
 
     try:
         accepted = Friendship.query.filter(
@@ -7601,8 +7612,8 @@ def voice_assistant():
             if friend:
                 friends_names.append(f"{friend.first_name} {friend.last_name or ''}".strip())
         friends_str = ', '.join(friends_names) or 'none'
-    except Exception:
-        friends_str = 'none'
+    except Exception as _e:
+        print(f"[Verse] Friends context error: {_e}")
 
     # ── System prompt with FULL DOM knowledge ─────────────────
     system_prompt = f"""You are Verse, the AI voice assistant that FULLY CONTROLS the StudyVerse app.
@@ -7775,11 +7786,27 @@ User said: "{transcript}"
         return jsonify({'action': action, 'params': params, 'reply': reply, 'dom_actions': dom_actions})
 
     except json.JSONDecodeError:
-        plain = getattr(response, 'text', '').strip() or "I'm not sure about that."
-        return jsonify({'action': 'conversation', 'params': {}, 'reply': plain, 'dom_actions': []})
+        raw_fallback = getattr(response, 'text', '').strip() or "I'm not sure about that."
+        return jsonify({'action': 'conversation', 'params': {}, 'reply': raw_fallback, 'dom_actions': []})
     except Exception as e:
-        print(f"[Verse] Error: {e}")
-        return jsonify({'action': 'none', 'params': {}, 'reply': "I had a hiccup. Try again!", 'dom_actions': []})
+        import traceback
+        err_str = str(e)
+        traceback.print_exc()  # Full traceback in Render logs
+        print(f"[Verse] Error type: {type(e).__name__}: {err_str}")
+
+        # Quota / rate limit
+        if '429' in err_str or 'quota' in err_str.lower() or 'rate' in err_str.lower():
+            msg = "I'm a bit overloaded right now — Gemini quota hit. Try in a moment!"
+        # API key / authentication
+        elif 'api_key' in err_str.lower() or 'invalid' in err_str.lower() or '401' in err_str:
+            msg = "There's an issue with my AI keys. Check Render environment variables."
+        # Network / timeout
+        elif 'timeout' in err_str.lower() or 'connect' in err_str.lower():
+            msg = "Connection timed out. Please try again."
+        else:
+            msg = f"I ran into a problem: {err_str[:80]}" if len(err_str) < 200 else "Something went wrong on my end. Check the Render logs!"
+
+        return jsonify({'action': 'none', 'params': {}, 'reply': msg, 'dom_actions': []})
 
 
 @app.route('/api/verse/action', methods=['POST'])
