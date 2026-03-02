@@ -187,79 +187,105 @@
 
     /* ─── ACTION EXECUTOR ─────────────────────────────────── */
     async function executeAction(action, params) {
-        // Small delay so speech starts first
-        await wait(300);
+        await wait(300); // Let speech start first
 
         const nav = (path) => {
-            setTimeout(() => { window.location.href = path; }, 1400);
+            setTimeout(() => { window.location.href = path; }, 1500);
         };
 
-        switch (action) {
+        // ── Pure navigation actions ─────────────────────────
+        const navMap = {
+            navigate_dashboard: '/dashboard',
+            navigate_pomodoro: '/pomodoro',
+            navigate_todos: '/todos',
+            navigate_quiz: '/quiz',
+            navigate_syllabus: '/syllabus',
+            navigate_leaderboard: '/leaderboard',
+            navigate_friends: '/friends',
+            navigate_shop: '/shop',
+            navigate_progress: '/progress',
+            navigate_chat: '/chat',
+            navigate_battle: '/battle',
+            navigate_profile: '/profile',
+            navigate_settings: '/settings',
+            navigate_calendar: '/calendar',
+            navigate_topic_resolver: '/topic-resolver',
+            navigate_photo_solver: '/photo-solver',
+        };
+        if (navMap[action]) { nav(navMap[action]); return; }
 
-            /* ── Navigation ── */
-            case 'navigate_dashboard': nav('/dashboard'); break;
-            case 'navigate_pomodoro': nav('/pomodoro'); break;
-            case 'navigate_todos': nav('/todos'); break;
-            case 'navigate_quiz': nav('/quiz'); break;
-            case 'navigate_syllabus': nav('/syllabus'); break;
-            case 'navigate_leaderboard': nav('/leaderboard'); break;
-            case 'navigate_friends': nav('/friends'); break;
-            case 'navigate_shop': nav('/shop'); break;
-            case 'navigate_progress': nav('/progress'); break;
-            case 'navigate_chat': nav('/chat'); break;
-            case 'navigate_battle': nav('/battle'); break;
-            case 'navigate_profile': nav('/profile'); break;
-            case 'navigate_settings': nav('/settings'); break;
-            case 'navigate_calendar': nav('/calendar'); break;
-            case 'navigate_topic_resolver': nav('/topic-resolver'); break;
-            case 'navigate_photo_solver': nav('/photo-solver'); break;
+        // ── Real server-side actions ────────────────────────
+        const realActions = [
+            'add_todo', 'read_pending_todos', 'send_friend_request',
+            'start_quiz', 'start_battle', 'get_stats', 'get_streak', 'get_xp'
+        ];
+        if (!realActions.includes(action)) return; // conversation/none — done
 
-            /* ── Todo ── */
-            case 'add_todo': {
-                if (params.title) {
-                    try {
-                        await fetch('/todos/add', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                title: params.title,
-                                priority: params.priority || 'medium',
-                                category: params.category || 'general'
-                            })
-                        });
-                        showToast('✅ Todo added: ' + params.title);
-                    } catch (e) { showToast('⚠️ Could not add todo'); }
+        try {
+            const resp = await fetch('/api/verse/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, params })
+            });
+            const result = await resp.json();
+
+            if (!result.success) {
+                const errMsg = result.message || "I couldn't do that right now.";
+                showBubble('reply', null, errMsg);
+                stopSpeaking();
+                setTimeout(() => speak(errMsg), 200);
+                return;
+            }
+
+            // ── Handle each real action result ───────────────
+            if (action === 'add_todo') {
+                showToast('✅ ' + result.message);
+                // Verse already spoke the Gemini reply
+
+            } else if (action === 'read_pending_todos') {
+                const todos = result.todos || [];
+                if (todos.length === 0) {
+                    const msg = "You have no pending tasks — you're all caught up!";
+                    showBubble('reply', null, msg);
+                    stopSpeaking(); speak(msg);
+                } else {
+                    // Show formatted list in bubble
+                    const listHTML = todos.map(t =>
+                        `<div style="padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <span style="font-size:0.8rem;">${t.priority === 'high' ? '🔴' : t.priority === 'medium' ? '🟡' : '🟢'} ${t.title}</span>
+                         </div>`
+                    ).join('');
+                    if (bubbleText) bubbleText.innerHTML = listHTML;
+                    if (bubbleHeader) bubbleHeader.innerHTML = '📋 Your Pending Tasks';
+                    stopSpeaking();
+                    setTimeout(() => speak(result.message), 200);
                 }
-                break;
+
+            } else if (action === 'send_friend_request') {
+                showToast('👋 ' + result.message);
+                showBubble('reply', null, result.message);
+                stopSpeaking();
+                setTimeout(() => speak(result.message), 200);
+
+            } else if (action === 'get_stats' || action === 'get_streak' || action === 'get_xp') {
+                // Gemini already spoke the stat — nothing extra needed
+
+            } else if (action === 'start_quiz') {
+                if (result.difficulty) {
+                    sessionStorage.setItem('verse_quiz_autostart', result.difficulty);
+                }
+                nav(result.navigate || '/quiz');
+
+            } else if (action === 'start_battle') {
+                sessionStorage.setItem('verse_battle_autostart', '1');
+                nav(result.navigate || '/battle');
             }
 
-            /* ── Pomodoro ── */
-            case 'start_pomodoro': {
-                nav('/pomodoro');
-                break;
-            }
-
-            /* ── Calendar Event ── */
-            case 'add_event': {
-                nav('/calendar');
-                break;
-            }
-
-            /* ── Stats (read aloud — already spoken via reply) ── */
-            case 'get_stats':
-            case 'get_streak':
-            case 'get_todos':
-            case 'get_xp':
-                // Stats are included in the reply text from backend
-                break;
-
-            /* ── Conversational (no action needed) ── */
-            case 'conversation':
-            case 'none':
-            default:
-                break;
+        } catch (err) {
+            console.error('[Verse] Action error:', err);
         }
     }
+
 
     /* ─── WELCOME ANIMATION ───────────────────────────────── */
     function showWelcome(welcomeText) {

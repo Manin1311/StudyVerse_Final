@@ -7557,15 +7557,11 @@ def referral_landing(code):
 def voice_assistant():
     """
     Verse Voice Assistant — Natural Language Intent Engine.
-
-    Receives a transcript of what the user said, sends it to Gemini
-    with a StudyVerse-aware system prompt, and returns:
-      - action:  string key for the JS dispatcher
-      - params:  dict of action parameters
-      - reply:   friendly text for Verse to speak back
+    Receives speech transcript, returns { action, params, reply }.
+    The JS dispatcher calls /api/verse/action to actually execute server-side actions.
     """
     if not gemini_rotator.available:
-        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm not fully set up yet. Please configure my API keys."})
+        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm not fully set up yet."})
 
     data       = request.get_json(silent=True) or {}
     transcript = (data.get('text') or '').strip()
@@ -7574,73 +7570,96 @@ def voice_assistant():
     if not transcript:
         return jsonify({'action': 'none', 'params': {}, 'reply': "I didn't catch that. Could you say it again?"})
 
-    # Gather live user context for Gemini
-    user_name    = current_user.first_name or 'there'
-    streak       = current_user.current_streak or 0
-    xp           = current_user.total_xp or 0
-    level        = current_user.level or 1
-    pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
-    upcoming_events = Event.query.filter(
-        Event.user_id == current_user.id,
-        Event.date >= datetime.utcnow().date()
-    ).count() if 'Event' in dir() else 0
+    # Live user context
+    user_name     = current_user.first_name or 'there'
+    streak        = current_user.current_streak or 0
+    xp            = current_user.total_xp or 0
+    level         = current_user.level or 1
+    pending_count = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
 
-    system_prompt = f"""You are Verse, the friendly AI voice assistant built into StudyVerse — an AI-powered student productivity app.
+    # Fetch actual pending todos for context
+    pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
+                              .order_by(Todo.created_at.desc()).limit(5).all()
+    todo_list_str = ', '.join([f'"{t.title}" ({t.priority})' for t in pending_todos]) or 'none'
 
-USER CONTEXT (live data):
+    try:
+        upcoming_count = Event.query.filter(
+            Event.user_id == current_user.id,
+            Event.date >= datetime.utcnow().date()
+        ).count()
+    except Exception:
+        upcoming_count = 0
+
+    # Friends list for context
+    try:
+        accepted = Friendship.query.filter(
+            ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
+            Friendship.status == 'accepted'
+        ).all()
+        friends_names = []
+        for f in accepted[:8]:
+            fid = f.friend_id if f.user_id == current_user.id else f.user_id
+            friend = User.query.get(fid)
+            if friend:
+                friends_names.append(f"{friend.first_name} {friend.last_name or ''}".strip())
+        friends_str = ', '.join(friends_names) or 'none'
+    except Exception:
+        friends_str = 'none'
+
+    system_prompt = f"""You are Verse, the friendly AI voice assistant built into StudyVerse — a student productivity app.
+
+LIVE USER DATA:
 - Name: {user_name}
-- Current streak: {streak} days
-- Total XP: {xp}
-- Level: {level}
-- Pending todos: {pending_todos}
-- Upcoming events: {upcoming_events}
+- Streak: {streak} days  |  XP: {xp}  |  Level: {level}
+- Pending todos ({pending_count}): {todo_list_str}
+- Upcoming events: {upcoming_count}
+- Friends: {friends_str}
 - Current page: {page}
 
-YOUR PERSONALITY:
-- Friendly, encouraging, like a smart study buddy
-- Brief and natural — you speak out loud, so keep replies under 2 sentences
-- Use the user's name naturally sometimes
-- Be motivating and upbeat
+YOUR PERSONALITY: Friendly, brief, encouraging — like a study buddy. Keep replies under 2 sentences. Speak naturally (this is TTS).
 
-AVAILABLE ACTIONS (return exactly one):
+AVAILABLE ACTIONS — pick the BEST one:
+
+NAVIGATION (just go to the page):
 navigate_dashboard, navigate_pomodoro, navigate_todos, navigate_quiz,
 navigate_syllabus, navigate_leaderboard, navigate_friends, navigate_shop,
 navigate_progress, navigate_chat, navigate_battle, navigate_profile,
-navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver,
-add_todo, start_pomodoro, add_event, get_stats, get_streak, get_todos, get_xp,
-conversation, none
+navigate_settings, navigate_calendar, navigate_topic_resolver, navigate_photo_solver
 
-NATURAL LANGUAGE MAPPING (IMPORTANT — be flexible, not rigid):
-- "focus", "grind", "study session", "pomodoro", "timer" → navigate_pomodoro or start_pomodoro
-- "tasks", "todos", "to-do", "my list", "what do I have to do" → navigate_todos
-- "quiz", "test me", "practice" → navigate_quiz
-- "add [thing] to my list/tasks" → add_todo with title extracted
-- "leaderboard", "ranking", "who's winning" → navigate_leaderboard
-- "shop", "buy", "rewards" → navigate_shop
-- "friends", "people", "buddy" → navigate_friends
-- "progress", "stats", "how am I doing" → navigate_progress or get_stats
-- "chat", "AI coach", "coach" → navigate_chat
-- "battle", "compete", "byte battle" → navigate_battle
-- "profile", "settings" → navigate_profile / navigate_settings
-- "calendar", "event", "schedule", "remind me" → navigate_calendar or add_event
-- "streak" → get_streak
-- "XP", "experience", "points" → get_xp
-- General question or chat → conversation
+REAL ACTIONS (actually DO something — do NOT navigate, the app handles it):
+- read_pending_todos   → read out the user's pending tasks aloud (use params: {{}})
+- add_todo             → create a new todo  (params: {{"title": "...", "priority": "high/medium/low"}})
+- send_friend_request  → send a friend request by name (params: {{"name": "friend name"}})
+- start_quiz           → auto-start a quiz session (params: {{"difficulty": "easy/medium/hard"}})
+- start_battle         → navigate to battle and auto-create room (params: {{}})
+- get_streak           → speak the streak (use the live data above in reply)
+- get_stats            → speak XP, level, streak together
+- get_xp               → speak XP total
+- conversation         → just reply, no action
 
-IMPORTANT: The user speaks casually! "let's have some focus session today" = navigate_pomodoro.
-"I'm behind on my syllabus" = navigate_syllabus. Be smart about intent.
+NATURAL LANGUAGE EXAMPLES:
+- "what tasks are pending / show my todos / what do I have" → read_pending_todos
+- "add finish assignment to my list" → add_todo {{"title":"finish assignment","priority":"medium"}}
+- "add physics notes with low priority" → add_todo {{"title":"physics notes","priority":"low"}}
+- "add exam prep as high priority" → add_todo {{"title":"exam prep","priority":"high"}}
+- "send friend request to Rahul / add Priya as friend" → send_friend_request {{"name":"Rahul"}}
+- "start a quiz / quiz me / test me on chemistry" → start_quiz {{"difficulty":"medium"}}
+- "start hard quiz" → start_quiz {{"difficulty":"hard"}}
+- "byte battle / start battle / let's compete" → start_battle
+- "let's focus / grind session / pomodoro" → navigate_pomodoro
+- "how's my streak / streak" → get_streak
+- "how am I doing / my stats / my XP" → get_stats
+- "open shop / buy something" → navigate_shop
+- "who's winning / leaderboard" → navigate_leaderboard
+- "talk to AI / coach me" → navigate_chat
 
-Respond ONLY with valid JSON (no markdown, no code fences):
-{{
-  "action": "action_name",
-  "params": {{}},
-  "reply": "Your friendly 1-2 sentence spoken reply here."
-}}
+For read_pending_todos, include the actual tasks in your reply using the live todo data above.
+For get_streak/get_stats/get_xp, include the ACTUAL numbers from live data in your reply.
+For send_friend_request, extract the person's name from what the user said.
+Be smart — "I'm behind on my syllabus" = navigate_syllabus. Think intent, not keywords.
 
-For add_todo, include params: {{"title": "extracted task title", "priority": "high/medium/low"}}
-For get_stats, include the actual numbers in your reply using the live context above.
-For get_streak, say the streak number in your reply.
-For conversation, just reply naturally — no navigation.
+Respond ONLY with valid JSON (absolutely NO markdown, NO code fences):
+{{"action": "action_name", "params": {{}}, "reply": "friendly spoken reply"}}
 
 User said: "{transcript}"
 """
@@ -7648,30 +7667,131 @@ User said: "{transcript}"
     try:
         response = gemini_rotator.generate_content(AI_MODEL, system_prompt)
         raw = response.text.strip()
-
-        # Strip markdown code fences if present
         if raw.startswith('```'):
             raw = raw.split('```')[1]
-            if raw.startswith('json'):
-                raw = raw[4:]
+            if raw.startswith('json'): raw = raw[4:]
         raw = raw.strip()
 
         result = json.loads(raw)
-
-        # Validate structure
         action = result.get('action', 'none')
         params = result.get('params', {})
         reply  = result.get('reply', 'Got it!')
-
         return jsonify({'action': action, 'params': params, 'reply': reply})
 
     except json.JSONDecodeError:
-        # Gemini returned plain text — use as reply
-        plain = response.text.strip() if 'response' in dir() else "I'm not sure about that."
+        plain = getattr(response, 'text', '').strip() or "I'm not sure about that."
         return jsonify({'action': 'conversation', 'params': {}, 'reply': plain})
     except Exception as e:
         print(f"[Verse] Error: {e}")
-        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm having trouble understanding right now. Please try again."})
+        return jsonify({'action': 'none', 'params': {}, 'reply': "I had a hiccup. Try again!"})
+
+
+@app.route('/api/verse/action', methods=['POST'])
+@login_required
+def verse_execute_action():
+    """
+    Execute real server-side actions for Verse voice assistant.
+    Called by JS after /api/voice-assistant returns an actionable result.
+    Returns { success, data, message } for JS to use in the spoken reply.
+    """
+    data   = request.get_json(silent=True) or {}
+    action = data.get('action', '')
+    params = data.get('params', {})
+
+    # ── ADD TODO ──────────────────────────────────────────────────────────
+    if action == 'add_todo':
+        title    = (params.get('title') or '').strip()
+        priority = params.get('priority', 'medium').lower()
+        if priority not in ('high', 'medium', 'low'):
+            priority = 'medium'
+        if not title:
+            return jsonify({'success': False, 'message': 'No todo title provided.'})
+        todo = Todo(
+            user_id=current_user.id,
+            title=title,
+            completed=False,
+            priority=priority,
+            is_group=False
+        )
+        db.session.add(todo)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Added "{title}" with {priority} priority.'})
+
+    # ── READ PENDING TODOS ────────────────────────────────────────────────
+    elif action == 'read_pending_todos':
+        todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
+                          .order_by(Todo.created_at.desc()).limit(8).all()
+        if not todos:
+            return jsonify({'success': True, 'todos': [], 'message': 'You have no pending tasks. All clear!'})
+        todo_data = [{'title': t.title, 'priority': t.priority} for t in todos]
+        names = [t.title for t in todos]
+        msg = f"You have {len(todos)} pending tasks: {', '.join(names[:5])}{'and more.' if len(todos) > 5 else '.'}"
+        return jsonify({'success': True, 'todos': todo_data, 'message': msg})
+
+    # ── SEND FRIEND REQUEST ───────────────────────────────────────────────
+    elif action == 'send_friend_request':
+        name = (params.get('name') or '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': 'No friend name found.'})
+        parts = name.split()
+        fname, lname = parts[0], parts[1] if len(parts) > 1 else ''
+        # Search for the user
+        query = User.query.filter(User.id != current_user.id)
+        if lname:
+            query = query.filter(User.first_name.ilike(f'%{fname}%'), User.last_name.ilike(f'%{lname}%'))
+        else:
+            query = query.filter(User.first_name.ilike(f'%{fname}%'))
+        target = query.first()
+        if not target:
+            return jsonify({'success': False, 'message': f'Could not find a user named {name}.'})
+        # Check existing friendship
+        existing = Friendship.query.filter(
+            ((Friendship.user_id == current_user.id) & (Friendship.friend_id == target.id)) |
+            ((Friendship.user_id == target.id) & (Friendship.friend_id == current_user.id))
+        ).first()
+        if existing:
+            status = existing.status
+            if status == 'accepted':
+                return jsonify({'success': False, 'message': f'You are already friends with {target.first_name}.'})
+            else:
+                return jsonify({'success': False, 'message': f'A friend request to {target.first_name} already exists.'})
+        req = Friendship(user_id=current_user.id, friend_id=target.id, status='pending')
+        db.session.add(req)
+        db.session.commit()
+        # Socket notification
+        try:
+            socketio.emit('friend_request_received', {
+                'from_id':   current_user.id,
+                'from_name': f"{current_user.first_name} {current_user.last_name or ''}".strip(),
+                'avatar':    current_user.get_avatar(64),
+                'request_id': req.id
+            }, room=f"user_{target.id}")
+        except Exception:
+            pass
+        return jsonify({'success': True, 'message': f'Friend request sent to {target.first_name}!'})
+
+    # ── GET STATS ─────────────────────────────────────────────────────────
+    elif action in ('get_stats', 'get_streak', 'get_xp'):
+        return jsonify({
+            'success': True,
+            'streak': current_user.current_streak or 0,
+            'xp': current_user.total_xp or 0,
+            'level': current_user.level or 1,
+            'pending': Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+        })
+
+    # ── START QUIZ (return signal for JS to auto-initiate) ────────────────
+    elif action == 'start_quiz':
+        difficulty = params.get('difficulty', 'medium')
+        return jsonify({'success': True, 'difficulty': difficulty, 'navigate': '/quiz', 'auto_start': True})
+
+    # ── START BATTLE (navigate + signal) ─────────────────────────────────
+    elif action == 'start_battle':
+        return jsonify({'success': True, 'navigate': '/battle', 'auto_create': True})
+
+    return jsonify({'success': False, 'message': 'Unknown action.'})
+
+
 
 
 @app.route('/api/verse/welcome')
