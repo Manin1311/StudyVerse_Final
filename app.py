@@ -7707,7 +7707,7 @@ FRIENDS (/friends): user-search
 SHOP (/shop): shop-search [NOTE: for buying/equipping items, use shop_item action, NOT DOM clicks]
 CALENDAR (/calendar): quick-add-title
 SYLLABUS (/syllabus): uploadPdf (click to open file picker)
-WHITEBOARD (/group → Board tab): use action=wb_draw_ai with params={"shape":"tree|line|circle|house|star|triangle|arrow|heart|smiley|square", "color":"optional color name"}
+WHITEBOARD (/group → Board tab): use action=wb_draw_ai with params={{"shape":"tree|line|circle|house|star|triangle|arrow|heart|smiley|square", "color":"optional color name"}}
 GLOBAL (any page): theme-toggle, sidebar-toggle, zen-mode-nav-btn, feedbackBtn
 
 === SHOP CATALOG (use shop_item action) ===
