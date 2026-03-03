@@ -7568,91 +7568,94 @@ def voice_assistant():
     Verse Voice Assistant — Natural Language Full-UI Control Engine.
     Returns { action, params, reply, dom_actions[] } where dom_actions
     are executed directly by the JS DOM automation engine.
+    This function is fully wrapped in a try/except so we NEVER leak a raw 500 HTML response
+    to the frontend (which breaks the JSON contract expected by verse_assistant.js).
     """
-    if not gemini_rotator.available:
-        return jsonify({'action': 'none', 'params': {}, 'reply': "I'm not set up yet.", 'dom_actions': []})
-
-    data       = request.get_json(silent=True) or {}
-    transcript = (data.get('text') or '').strip()
-    page       = data.get('page', '/')
-
-    if not transcript:
-        return jsonify({'action': 'none', 'params': {}, 'reply': "I didn't catch that.", 'dom_actions': []})
-
-    # ── Live context (safe defaults on any DB error) ──────────────
-    user_name     = current_user.first_name or 'there'
-    streak        = 0
-    xp            = 0
-    level         = 1
-    pending_count = 0
-    todo_list_str = 'none'
-    upcoming_count = 0
-    friends_str   = 'none'
-
     try:
-        streak        = current_user.current_streak or 0
-        xp            = current_user.total_xp or 0
-        level         = current_user.level or 1
-        pending_count = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
+        if not gemini_rotator.available:
+            return jsonify({'action': 'none', 'params': {}, 'reply': "I'm not set up yet.", 'dom_actions': []})
 
-        pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
-                                  .order_by(Todo.created_at.desc()).limit(5).all()
-        todo_list_str = ', '.join([f'"{t.title}" ({t.priority})' for t in pending_todos]) or 'none'
-    except Exception as _e:
-        print(f"[Verse] Todo context error: {_e}")
+        data       = request.get_json(silent=True) or {}
+        transcript = (data.get('text') or '').strip()
+        page       = data.get('page', '/')
 
-    try:
-        upcoming_count = Event.query.filter(
-            Event.user_id == current_user.id,
-            Event.date >= datetime.utcnow().date()
-        ).count()
-    except Exception:
-        pass
+        if not transcript:
+            return jsonify({'action': 'none', 'params': {}, 'reply': "I didn't catch that.", 'dom_actions': []})
 
-    try:
-        accepted = Friendship.query.filter(
-            ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
-            Friendship.status == 'accepted'
-        ).all()
-        friends_names = []
-        for f in accepted[:10]:
-            fid = f.friend_id if f.user_id == current_user.id else f.user_id
-            friend = User.query.filter_by(id=fid).first()  # always works
-            if friend:
-                name = f"{friend.first_name or ''} {friend.last_name or ''}".strip()
-                if name:
-                    friends_names.append(name)
-        friends_str = ', '.join(friends_names) if friends_names else 'none'
-    except Exception as _e:
-        print(f"[Verse] Friends context error: {_e}")
+        # ── Live context (safe defaults on any DB error) ──────────────
+        user_name     = current_user.first_name or 'there'
+        streak        = 0
+        xp            = 0
+        level         = 1
+        pending_count = 0
+        todo_list_str = 'none'
+        upcoming_count = 0
+        friends_str   = 'none'
 
-    # ── Leaderboard context ─────────────────────────────────────
-    my_rank = 999
-    rank_1_user = 'unknown'
-    rank_1_xp   = 0
-    try:
-        # User model does not have is_public_profile, is_admin, or is_banned,
-        # so we rely on standard filtering
-        my_rank = User.query.filter(
-            db.or_(User.level > current_user.level,
-                   db.and_(User.level == current_user.level, User.total_xp > current_user.total_xp))
-        ).count() + 1
-        top_users = User.query.order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
-        if top_users:
-            rank_1_user = f"{top_users[0].first_name} {top_users[0].last_name or ''}".strip()
-            rank_1_xp   = top_users[0].total_xp or 0
-        # Build top 5 summary string
-        top5_parts = []
-        for i, u in enumerate(top_users, 1):
-            n = f"{u.first_name} {u.last_name or ''}".strip()
-            top5_parts.append(f"#{i} {n} ({u.total_xp} XP)")
-        top5_str = " | ".join(top5_parts) if top5_parts else 'unknown'
-    except Exception as _e:
-        print(f"[Verse] Leaderboard context error: {_e}")
-        top5_str = 'unknown'
+        try:
+            streak        = current_user.current_streak or 0
+            xp            = current_user.total_xp or 0
+            level         = current_user.level or 1
+            pending_count = Todo.query.filter_by(user_id=current_user.id, completed=False).count()
 
-    # ── System prompt with FULL DOM knowledge ─────────────────
-    system_prompt = f"""You are Verse, the AI voice assistant that FULLY CONTROLS the StudyVerse app.
+            pending_todos = Todo.query.filter_by(user_id=current_user.id, completed=False)\
+                                      .order_by(Todo.created_at.desc()).limit(5).all()
+            todo_list_str = ', '.join([f'"{t.title}" ({t.priority})' for t in pending_todos]) or 'none'
+        except Exception as _e:
+            print(f"[Verse] Todo context error: {_e}")
+
+        try:
+            upcoming_count = Event.query.filter(
+                Event.user_id == current_user.id,
+                Event.date >= datetime.utcnow().date()
+            ).count()
+        except Exception:
+            pass
+
+        try:
+            accepted = Friendship.query.filter(
+                ((Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)),
+                Friendship.status == 'accepted'
+            ).all()
+            friends_names = []
+            for f in accepted[:10]:
+                fid = f.friend_id if f.user_id == current_user.id else f.user_id
+                friend = User.query.filter_by(id=fid).first()  # always works
+                if friend:
+                    name = f"{friend.first_name or ''} {friend.last_name or ''}".strip()
+                    if name:
+                        friends_names.append(name)
+            friends_str = ', '.join(friends_names) if friends_names else 'none'
+        except Exception as _e:
+            print(f"[Verse] Friends context error: {_e}")
+
+        # ── Leaderboard context ─────────────────────────────────────
+        my_rank = 999
+        rank_1_user = 'unknown'
+        rank_1_xp   = 0
+        try:
+            # User model does not have is_public_profile, is_admin, or is_banned,
+            # so we rely on standard filtering
+            my_rank = User.query.filter(
+                db.or_(User.level > current_user.level,
+                       db.and_(User.level == current_user.level, User.total_xp > current_user.total_xp))
+            ).count() + 1
+            top_users = User.query.order_by(User.level.desc(), User.total_xp.desc()).limit(5).all()
+            if top_users:
+                rank_1_user = f"{top_users[0].first_name} {top_users[0].last_name or ''}".strip()
+                rank_1_xp   = top_users[0].total_xp or 0
+            # Build top 5 summary string
+            top5_parts = []
+            for i, u in enumerate(top_users, 1):
+                n = f"{u.first_name} {u.last_name or ''}".strip()
+                top5_parts.append(f"#{i} {n} ({u.total_xp} XP)")
+            top5_str = " | ".join(top5_parts) if top5_parts else 'unknown'
+        except Exception as _e:
+            print(f"[Verse] Leaderboard context error: {_e}")
+            top5_str = 'unknown'
+
+        # ── System prompt with FULL DOM knowledge ─────────────────
+        system_prompt = f"""You are Verse, the AI voice assistant that FULLY CONTROLS the StudyVerse app.
 You can navigate pages AND directly interact with any UI element on the current page.
 
 === LIVE USER DATA ===
@@ -7856,43 +7859,56 @@ Respond ONLY with valid JSON, NO markdown, NO code fences:
 User said: "{transcript}"
 """
 
-    try:
-        response = gemini_rotator.generate_content(AI_MODEL, system_prompt)
-        raw = response.text.strip()
-        if raw.startswith('```'):
-            raw = raw.split('```')[1]
-            if raw.startswith('json'): raw = raw[4:]
-        raw = raw.strip()
+        try:
+            response = gemini_rotator.generate_content(AI_MODEL, system_prompt)
+            raw = response.text.strip()
+            if raw.startswith('```'):
+                raw = raw.split('```')[1]
+                if raw.startswith('json'):
+                    raw = raw[4:]
+            raw = raw.strip()
 
-        result     = json.loads(raw)
-        action     = result.get('action', 'none')
-        params     = result.get('params', {})
-        reply      = result.get('reply', 'Got it!')
-        dom_actions = result.get('dom_actions', [])
+            result      = json.loads(raw)
+            action      = result.get('action', 'none')
+            params      = result.get('params', {})
+            reply       = result.get('reply', 'Got it!')
+            dom_actions = result.get('dom_actions', [])
 
-        return jsonify({'action': action, 'params': params, 'reply': reply, 'dom_actions': dom_actions})
+            return jsonify({'action': action, 'params': params, 'reply': reply, 'dom_actions': dom_actions})
 
-    except json.JSONDecodeError:
-        raw_fallback = getattr(response, 'text', '').strip() or "I'm not sure about that."
-        return jsonify({'action': 'conversation', 'params': {}, 'reply': raw_fallback, 'dom_actions': []})
-    except Exception as e:
+        except json.JSONDecodeError:
+            raw_fallback = getattr(response, 'text', '').strip() or "I'm not sure about that."
+            return jsonify({'action': 'conversation', 'params': {}, 'reply': raw_fallback, 'dom_actions': []})
+        except Exception as e:
+            import traceback
+            err_str = str(e)
+            traceback.print_exc()  # Full traceback in Render logs
+            print(f"[Verse] Error type: {type(e).__name__}: {err_str}")
+
+            # Quota / rate limit
+            if '429' in err_str or 'quota' in err_str.lower() or 'rate' in err_str.lower():
+                msg = "I'm a bit overloaded right now — Gemini quota hit. Try in a moment!"
+            # API key / authentication
+            elif 'api_key' in err_str.lower() or 'invalid' in err_str.lower() or '401' in err_str:
+                msg = "There's an issue with my AI keys. Check Render environment variables."
+            # Network / timeout
+            elif 'timeout' in err_str.lower() or 'connect' in err_str.lower():
+                msg = "Connection timed out. Please try again."
+            else:
+                msg = (
+                    f"I ran into a problem: {err_str[:80]}"
+                    if len(err_str) < 200
+                    else "Something went wrong on my end. Check the Render logs!"
+                )
+
+            return jsonify({'action': 'none', 'params': {}, 'reply': msg, 'dom_actions': []})
+
+    except Exception as outer_e:
+        # Absolute last-resort guard: if ANYTHING above throws, never return a raw 500 HTML page.
         import traceback
-        err_str = str(e)
-        traceback.print_exc()  # Full traceback in Render logs
-        print(f"[Verse] Error type: {type(e).__name__}: {err_str}")
-
-        # Quota / rate limit
-        if '429' in err_str or 'quota' in err_str.lower() or 'rate' in err_str.lower():
-            msg = "I'm a bit overloaded right now — Gemini quota hit. Try in a moment!"
-        # API key / authentication
-        elif 'api_key' in err_str.lower() or 'invalid' in err_str.lower() or '401' in err_str:
-            msg = "There's an issue with my AI keys. Check Render environment variables."
-        # Network / timeout
-        elif 'timeout' in err_str.lower() or 'connect' in err_str.lower():
-            msg = "Connection timed out. Please try again."
-        else:
-            msg = f"I ran into a problem: {err_str[:80]}" if len(err_str) < 200 else "Something went wrong on my end. Check the Render logs!"
-
+        traceback.print_exc()
+        msg = "Something broke while preparing your AI request. Please check the server logs for Verse."
+        print(f"[Verse] Outer voice_assistant failure: {outer_e}")
         return jsonify({'action': 'none', 'params': {}, 'reply': msg, 'dom_actions': []})
 
 
