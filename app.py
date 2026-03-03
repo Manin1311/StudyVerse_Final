@@ -7703,12 +7703,14 @@ POMODORO (/pomodoro): start-btn (start/pause), reset-btn, focusMode, shortBreakM
 QUIZ (/quiz): start-quiz-btn, next-question-btn; answers = clickNth on #options-container .quiz-option (index 0=A,1=B,2=C,3=D); settings = clickByText on .btn-select ("5","10","15","20","Easy","Medium","Hard")
 TODOS (/todos): taskTitle, taskPriority (select: high/medium/low), taskDueDate, btnDone; open modal = click text "Add Task"
 CHAT (/chat): chatInput, sendButton, chatForm
+GROUP CHAT (/group): groupChatInput, groupSendButton, groupChatForm
 FRIENDS (/friends): user-search
 SHOP (/shop): shop-search [NOTE: for buying/equipping items, use shop_item action, NOT DOM clicks]
 CALENDAR (/calendar): quick-add-title
 SYLLABUS (/syllabus): uploadPdf (click to open file picker)
 WHITEBOARD (/group → Board tab): use action=wb_draw_ai with params={{"shape":"tree|line|circle|house|star|triangle|arrow|heart|smiley|square", "color":"optional color name"}}
 GLOBAL (any page): theme-toggle, sidebar-toggle, zen-mode-nav-btn, feedbackBtn
+PROGRESS TRACKER (/progress → Habit Matrix): use helper functions verseToggleHabits and verseAddHabit via dom_actions with op="callFunction"
 
 === SHOP CATALOG (use shop_item action) ===
 Themes (apply visual theme to the entire app):
@@ -7731,12 +7733,15 @@ For shop_item action: params = {{"item_name": "name of item", "operation": "buy|
 - "unequip" = remove / revert to default
 
 === DOM ACTION FORMAT ===
-Each dom_action object: {{"op": "click|clickNth|clickByText|type|selectOption|focus|navigate",
+Each dom_action object: {{"op": "click|clickNth|clickByText|type|selectOption|focus|navigate|callFunction",
   "id": "element-id",
   "selector": "css-selector",
-  "value": "text to type or option value",
+  "value": "text to type or option value OR function name for callFunction",
   "text": "exact button text for clickByText",
-  "index": 0}}
+  "index": 0,
+  "fn": "optional function name for callFunction",
+  "args": {{"any":"json arguments to pass"}}
+}}
 
 ops explained:
 - click: click element by id or selector
@@ -7746,6 +7751,7 @@ ops explained:
 - selectOption: set a <select> value
 - focus: focus an element (e.g. textarea)
 - navigate: go to a URL path (always put FIRST if navigation needed)
+- callFunction: call a helper function on window with "fn" or "value" and pass "args"
 
 QUIZ PAGE SPECIFICS (IMPORTANT):
 - Quiz answer options are <div class="quiz-option"> inside #options-container
@@ -7816,6 +7822,13 @@ QUIZ PAGE SPECIFICS (IMPORTANT):
 
 ── CHAT ──
 "type [message] in chat / send [message]" → action=dom_interact, dom_actions=[{{"op":"type","id":"chatInput","value":"message"}},{{"op":"click","id":"sendButton","delay":200}}]
+"say [message] in group / send [message] in group chat" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/group"}},{{"op":"type","id":"groupChatInput","value":"message","delay":600}},{{"op":"click","id":"groupSendButton","delay":200}}]
+
+── HABIT MATRIX (PROGRESS TRACKER) ──
+"I did [habit] today" or "mark [habit] for today" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/progress"}},{{"op":"callFunction","fn":"verseToggleHabits","args":{{"habits":["habit"],"day":"today"}}}}]
+"I did reading and coding today" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/progress"}},{{"op":"callFunction","fn":"verseToggleHabits","args":{{"habits":["reading","coding"],"day":"today"}}}}]
+"mark [habit] on [day]" (e.g. Thursday) → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/progress"}},{{"op":"callFunction","fn":"verseToggleHabits","args":{{"habits":["habit"],"day":"<day name>"}}}}]
+"add habit [name]" or "track [name] as a habit" → action=dom_interact, dom_actions=[{{"op":"navigate","value":"/progress"}},{{"op":"callFunction","fn":"verseAddHabit","args":"name"}}]
 
 ── GLOBAL CONTROLS ──
 "dark mode / light mode / switch theme" → action=dom_interact, dom_actions=[{{"op":"click","id":"theme-toggle"}}]
