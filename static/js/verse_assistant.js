@@ -440,16 +440,44 @@
             const resp = await fetch('/api/voice-assistant', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     text: transcript,
                     page: window.location.pathname
                 })
             });
 
-            if (!resp.ok) throw new Error('Server error ' + resp.status);
-            const data = await resp.json();
+            // Always read the raw text so we can debug non-JSON responses (e.g. 500 HTML, login redirects)
+            const rawText = await resp.text();
+            let data = null;
 
+            try {
+                data = rawText ? JSON.parse(rawText) : null;
+            } catch (parseErr) {
+                console.error('[Verse] Failed to parse JSON from /api/voice-assistant:', parseErr, rawText);
+            }
 
+            // Handle HTTP errors or non-JSON responses gracefully instead of throwing,
+            // so the user gets a helpful explanation instead of a generic "snag" message.
+            if (!resp.ok || !data) {
+                let friendly = 'Something went wrong talking to the AI on the server.';
+
+                // If the backend sent a JSON error-like object, surface its message
+                if (data && typeof data.reply === 'string') {
+                    friendly = data.reply;
+                } else if (resp.status === 401 || resp.status === 302) {
+                    friendly = 'Your session might have expired. Please refresh the page and sign in again.';
+                } else if (resp.status >= 500) {
+                    friendly = 'The server hit an error while processing that. Check your Render logs.';
+                }
+
+                console.error('[Verse] /api/voice-assistant HTTP error:', resp.status, rawText);
+                showBubble('reply', transcript, friendly);
+                speak(friendly);
+                return;
+            }
+
+            // At this point we have a valid JSON payload from the backend
             // Show reply in bubble
             showBubble('reply', transcript, data.reply);
 
@@ -463,8 +491,8 @@
             }
 
         } catch (err) {
-            console.error('[Verse] Error:', err?.message || err);
-            const errMsg = 'Sorry, I hit a snag. Try again!';
+            console.error('[Verse] Network or unexpected error:', err?.message || err);
+            const errMsg = 'Sorry, I hit a snag. Please check your internet connection and try again.';
             showBubble('reply', transcript, errMsg);
             speak(errMsg);
         } finally {
