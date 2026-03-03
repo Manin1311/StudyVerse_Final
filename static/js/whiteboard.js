@@ -20,11 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let color = '#000000';
     let size = 2;
 
+    // Stroke history for undo (local only)
+    // Each entry: { type: 'line' | 'snapshot', data: {...} }
+    const history = [];
+
     // Controls
     const colorPicker = document.getElementById('wb-color');
     const sizePicker = document.getElementById('wb-size');
     const clearBtn = document.getElementById('wb-clear');
     const saveBtn = document.getElementById('wb-save');
+    const undoBtn = document.getElementById('wb-undo');
 
     if (colorPicker) {
         colorPicker.addEventListener('change', (e) => color = e.target.value);
@@ -37,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             clearCanvas();
+            history.length = 0;
             socket.emit('wb_clear', { room: group_id });
         });
     }
@@ -46,6 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
             link.download = `whiteboard-${Date.now()}.png`;
             link.href = canvas.toDataURL();
             link.click();
+        });
+    }
+
+    if (undoBtn) {
+        undoBtn.addEventListener('click', () => {
+            if (!history.length) return;
+            history.pop(); // remove last stroke
+            redrawFromHistory();
+            socket.emit('wb_undo', { room: group_id });
         });
     }
 
@@ -72,6 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.closePath();
 
         if (!emit) return;
+
+        // Record in local history
+        history.push({
+            type: 'line',
+            data: { x0, y0, x1, y1, color: strokeColor, size: strokeSize }
+        });
+
         socket.emit('wb_draw', {
             room: group_id,
             x0: x0 / canvas.width,
@@ -85,6 +107,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clearCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function redrawFromHistory() {
+        clearCanvas();
+        for (const entry of history) {
+            if (entry.type === 'line') {
+                const d = entry.data;
+                drawLine(d.x0, d.y0, d.x1, d.y1, d.color, d.size, false);
+            } else if (entry.type === 'snapshot') {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = entry.data.snap;
+            }
+        }
     }
 
     // Mouse Events
@@ -133,14 +169,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Socket Listeners
     socket.on('wb_draw', (data) => {
-        drawLine(
-            data.x0 * canvas.width, data.y0 * canvas.height,
-            data.x1 * canvas.width, data.y1 * canvas.height,
-            data.color, data.size, false
-        );
+        const x0 = data.x0 * canvas.width;
+        const y0 = data.y0 * canvas.height;
+        const x1 = data.x1 * canvas.width;
+        const y1 = data.y1 * canvas.height;
+        drawLine(x0, y0, x1, y1, data.color, data.size, false);
+        history.push({
+            type: 'line',
+            data: { x0, y0, x1, y1, color: data.color, size: data.size }
+        });
     });
 
-    socket.on('wb_clear', () => { clearCanvas(); });
+    socket.on('wb_clear', () => {
+        clearCanvas();
+        history.length = 0;
+    });
+
+    socket.on('wb_undo', () => {
+        if (!history.length) return;
+        history.pop();
+        redrawFromHistory();
+    });
 
     // Tab switching fix
     window.triggerWhiteboardResize = function () { setTimeout(resize, 50); };
@@ -227,13 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function broadcastSnapshot() {
         try {
             const snap = canvas.toDataURL('image/png');
+            history.push({ type: 'snapshot', data: { snap } });
             socket.emit('wb_snapshot', { room: group_id, snap });
         } catch (e) { /* cross-origin canvas — skip */ }
     }
 
     socket.on('wb_snapshot', (data) => {
         const img = new Image();
-        img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            history.push({ type: 'snapshot', data: { snap: data.snap } });
+        };
         img.src = data.snap;
     });
 
