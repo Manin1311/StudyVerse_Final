@@ -174,7 +174,7 @@
      * @param {{op, id, selector, value, index, text}} action
      */
     async function executeDomAction(action) {
-        const { op, id, selector, value, index, text, placeholder } = action;
+        const { op, id, selector, value, index, text, placeholder, fn, args } = action;
 
         switch (op) {
             case 'click': {
@@ -271,6 +271,29 @@
             case 'navigate': {
                 setTimeout(() => { window.location.href = value; }, 400);
                 return true;
+            }
+
+            case 'callFunction': {
+                // Call a global helper function, e.g. for complex UI like Habit Matrix.
+                const fnName = fn || value;
+                if (!fnName) return false;
+
+                try {
+                    // Support nested paths like "App.helpers.doThing"
+                    const parts = fnName.split('.');
+                    let ctx = window;
+                    for (const p of parts) {
+                        if (!ctx[p]) { ctx = null; break; }
+                        ctx = ctx[p];
+                    }
+                    if (typeof ctx === 'function') {
+                        ctx(args);
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('[Verse DOM] callFunction failed for', fnName, e);
+                }
+                return false;
             }
 
             default:
