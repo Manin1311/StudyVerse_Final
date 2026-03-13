@@ -406,8 +406,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable modification tra
 # NullPool: Disables connection pooling to prevent "un-acquired lock" errors with eventlet
 # pool_pre_ping: Tests connections before use to handle dropped connections
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'poolclass': NullPool,      # No connection pooling (eventlet compatibility)
+    'poolclass': NullPool,      # No connection pooling
     'pool_pre_ping': True,      # Validate connections before use
+    'connect_args': {'connect_timeout': 10},  # Fail fast if DB is unreachable (prevents startup hang)
 }
 
 # File upload configuration for profile images and syllabus PDFs
@@ -469,15 +470,13 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # - Real-time notifications
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",    # Allow all origins (configure for specific domain in production)
-    async_mode='threading',       # Use stable threading mode
+    cors_allowed_origins="*",    # Allow all origins
+    async_mode='threading',       # Stable threading mode (no eventlet/gevent needed)
     ping_timeout=120,             # 2-minute timeout for slow/mobile connections
     ping_interval=25,             # Send ping every 25 seconds to keep connection alive
-    max_http_buffer_size=1e8,     # 100MB max message size (for file sharing)
+    max_http_buffer_size=1e8,     # 100MB max message size
     logger=False,                 # Disable verbose Socket.IO logs
     engineio_logger=False,        # Disable verbose Engine.IO logs
-    transports=['polling', 'websocket'],  # Support both transports for compatibility
-    cookie=None                   # Avoid session conflicts with some reverse proxies
 )
 
 # ============================================================================
