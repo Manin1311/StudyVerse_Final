@@ -474,7 +474,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",    # Allow all origins (configure for specific domain in production)
-    async_mode='threading',       # Threading mode for Python 3.13 compatibility
+    async_mode='eventlet',        # Must match gunicorn --worker-class eventlet
     ping_timeout=120,             # 2-minute timeout for slow/mobile connections
     ping_interval=25,             # Send ping every 25 seconds to keep connection alive
     max_http_buffer_size=1e8,     # 100MB max message size (for file sharing)
