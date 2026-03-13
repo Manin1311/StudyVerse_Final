@@ -154,12 +154,22 @@
             return weekDates;
         }
 
+        window.verseAddHabit = function (name) {
+            if (!name || !name.trim()) return;
+            const trimmed = name.trim();
+            // Avoid duplicate habits by name (case-insensitive)
+            if (habitList.some(h => h.name.toLowerCase() === trimmed.toLowerCase())) {
+                return;
+            }
+            const newId = 'h' + Date.now();
+            habitList.push({ id: newId, name: trimmed });
+            saveHabits();
+        };
+
         window.addHabit = function () {
             const name = prompt("Enter new habit name:");
             if (name && name.trim()) {
-                const newId = 'h' + Date.now();
-                habitList.push({ id: newId, name: name.trim() });
-                saveHabits();
+                window.verseAddHabit(name);
             }
         };
 
@@ -282,6 +292,62 @@
                 }
             }
         }
+
+        // Helper for Verse voice assistant: toggle multiple habits for a given day.
+        // config = { habits: ['reading','coding'], day: 'today'|'mon'|'tue'|... }
+        window.verseToggleHabits = function (config) {
+            if (!config) return;
+            let { habits, day } = config;
+            if (!habits) return;
+
+            if (typeof habits === 'string') {
+                habits = [habits];
+            }
+            if (!Array.isArray(habits) || habits.length === 0) return;
+
+            const normalizedHabits = habits
+                .map(h => String(h).trim().toLowerCase())
+                .filter(Boolean);
+            if (!normalizedHabits.length) return;
+
+            const weekDates = getWeekDates();
+            const todayStr = getLocalDateString(new Date());
+
+            let targetIndex = 0;
+            if (typeof day === 'string' && day.trim()) {
+                const d = day.trim().toLowerCase();
+                if (d === 'today') {
+                    targetIndex = weekDates.indexOf(todayStr);
+                    if (targetIndex < 0) targetIndex = 0;
+                } else {
+                    const shortDayMap = {
+                        'mon': 0, 'monday': 0,
+                        'tue': 1, 'tues': 1, 'tuesday': 1,
+                        'wed': 2, 'weds': 2, 'wednesday': 2,
+                        'thu': 3, 'thur': 3, 'thurs': 3, 'thursday': 3,
+                        'fri': 4, 'friday': 4,
+                        'sat': 5, 'saturday': 5,
+                        'sun': 6, 'sunday': 6
+                    };
+                    if (shortDayMap.hasOwnProperty(d)) {
+                        targetIndex = shortDayMap[d];
+                    }
+                }
+            } else {
+                // Default to "today"
+                targetIndex = weekDates.indexOf(todayStr);
+                if (targetIndex < 0) targetIndex = 0;
+            }
+
+            const dateStr = weekDates[targetIndex] || todayStr;
+
+            normalizedHabits.forEach(hName => {
+                const habit = habitList.find(h => h.name.toLowerCase() === hName);
+                if (habit) {
+                    toggleCheck(habit.id, dateStr);
+                }
+            });
+        };
 
         // Try to render immediately
         try {
