@@ -13,8 +13,6 @@ pytz==2024.1             # Timezone Handling
 psycopg2-binary==2.9.11  # PostgreSQL Database Driver
 gunicorn==21.2.0         # Production WSGI Server
 eventlet==0.35.2         # PINNED: 0.36+ breaks gunicorn eventlet worker port binding
-python-socketio==5.11.4  # Pinned for Flask-SocketIO 5.5.1 compatibility
-python-engineio==4.9.1   # Pinned for Flask-SocketIO 5.5.1 compatibility
 dnspython==2.4.2         # DNS Toolkit (Used by some database connectors)
 simple-websocket==1.0.0  # WebSocket Protocol Implementation
 whitenoise==6.6.0        # Static File Server for Production
