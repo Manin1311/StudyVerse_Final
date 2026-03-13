@@ -87,10 +87,6 @@ LAST UPDATED: February 2026
 # IMPORTS AND INITIALIZATION
 # ============================================================================
 
-# Eventlet must be patched first for async Socket.IO support
-import eventlet
-eventlet.monkey_patch()
-
 # Database and ORM imports
 from sqlalchemy.pool import NullPool
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify
@@ -474,7 +470,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",    # Allow all origins (configure for specific domain in production)
-    async_mode='eventlet',        # Must match gunicorn --worker-class eventlet
+    async_mode='threading',       # Use stable threading mode
     ping_timeout=120,             # 2-minute timeout for slow/mobile connections
     ping_interval=25,             # Send ping every 25 seconds to keep connection alive
     max_http_buffer_size=1e8,     # 100MB max message size (for file sharing)
@@ -5860,7 +5856,7 @@ def check_task_reminders():
             print(f"Scheduler Error: {e}")
             
         # Sleep for 60 seconds
-        eventlet.sleep(60)
+        socketio.sleep(60)
 
 # IMPORTANT: Order matters. Define logic, THEN run schema check and updates.
 try:
@@ -8269,7 +8265,7 @@ if __name__ == '__main__':
     # For production task reminders, use a separate cron job or background worker service
     if not SCHEDULER_STARTED:
         print("Starting background task reminder scheduler (development mode only)...")
-        eventlet.spawn(check_task_reminders)
+        socketio.start_background_task(check_task_reminders)
         SCHEDULER_STARTED = True
 
     # Use socketio.run instead of app.run
