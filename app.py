@@ -8212,50 +8212,59 @@ def get_streak():
 # ============================================================================
 # AUTO-CREATE NEW DB TABLES + SAFE COLUMN MIGRATIONS ON STARTUP
 #
-# db.create_all()  → creates brand-new tables (UserFeedback, ReferralReward)
-# ALTER TABLE      → adds new columns to EXISTING tables (PostgreSQL + SQLite)
-#
-# Both operations are idempotent: safe to run on every startup, will silently
-# skip if tables / columns already exist. No Flask-Migrate required.
+# Runs in a background daemon thread so Gunicorn can bind to $PORT immediately.
+# Previously this was a blocking module-level call — if the DB connection
+# took > a few seconds, Render reported "No open ports detected" and killed
+# the process before it ever started serving traffic.
 # ============================================================================
-with app.app_context():
-    # Step 1: Create any new tables that don't exist yet
+import threading as _threading
+
+def _startup_db_init():
+    """Run DB create_all and column migrations in the background after startup."""
+    import time as _time
+    _time.sleep(2)  # Give gunicorn workers a moment to fully start first
+    print("[DB-INIT] Starting background database initialization...")
     try:
-        db.create_all()
-        print("✅  DB tables verified / created.")
-    except Exception as _dbe:
-        print(f"⚠️  db.create_all() warning: {_dbe}")
+        with app.app_context():
+            # Step 1: Create any new tables that don't exist yet
+            try:
+                db.create_all()
+                print("✅  DB tables verified / created.")
+            except Exception as _dbe:
+                print(f"⚠️  db.create_all() warning: {_dbe}")
 
-    # Step 2: Safely add new columns to the existing 'user' table.
-    #
-    # PostgreSQL supports ADD COLUMN IF NOT EXISTS natively.
-    # SQLite does NOT support IF NOT EXISTS for columns, so we catch the
-    # "duplicate column" OperationalError and continue.
-    _new_user_columns = [
-        # (sql_for_postgres,                                   sql_for_sqlite)
-        ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20) UNIQUE",
-         'ALTER TABLE "user" ADD COLUMN referral_code VARCHAR(20)'),
-        ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES \"user\"(id)",
-         'ALTER TABLE "user" ADD COLUMN referred_by INTEGER'),
-    ]
+            # Step 2: Safely add new columns to the existing 'user' table.
+            _new_user_columns = [
+                ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20) UNIQUE",
+                 'ALTER TABLE "user" ADD COLUMN referral_code VARCHAR(20)'),
+                ("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES \"user\"(id)",
+                 'ALTER TABLE "user" ADD COLUMN referred_by INTEGER'),
+            ]
 
-    _is_postgres = 'postgresql' in app.config.get('SQLALCHEMY_DATABASE_URI', '')
+            _is_postgres = 'postgresql' in app.config.get('SQLALCHEMY_DATABASE_URI', '')
 
-    for _pg_sql, _sqlite_sql in _new_user_columns:
-        try:
-            _sql = _pg_sql if _is_postgres else _sqlite_sql
-            db.session.execute(db.text(_sql))
-            db.session.commit()
-            print(f"✅  Migration OK: {_sql[:60]}…")
-        except Exception as _col_err:
-            db.session.rollback()
-            _msg = str(_col_err).lower()
-            if 'already exists' in _msg or 'duplicate column' in _msg:
-                pass  # Column already present — this is fine
-            else:
-                print(f"⚠️  Migration warning: {_col_err}")
+            for _pg_sql, _sqlite_sql in _new_user_columns:
+                try:
+                    _sql = _pg_sql if _is_postgres else _sqlite_sql
+                    db.session.execute(db.text(_sql))
+                    db.session.commit()
+                    print(f"✅  Migration OK: {_sql[:60]}…")
+                except Exception as _col_err:
+                    db.session.rollback()
+                    _msg = str(_col_err).lower()
+                    if 'already exists' in _msg or 'duplicate column' in _msg:
+                        pass  # Column already present — this is fine
+                    else:
+                        print(f"⚠️  Migration warning: {_col_err}")
 
-    print("✅  DB migrations complete.")
+            print("✅  DB migrations complete.")
+    except Exception as _e:
+        print(f"⚠️  DB init thread error: {_e}")
+
+# Start DB init in background — does NOT block gunicorn from binding to $PORT
+_db_init_thread = _threading.Thread(target=_startup_db_init, daemon=True, name="db-init")
+_db_init_thread.start()
+print("[DB-INIT] Background DB initialization thread started.")
 
 
 # ============================================================================
