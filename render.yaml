@@ -3,8 +3,8 @@ services:
     name: studyverse
     env: python
     buildCommand: pip install --no-cache-dir -r requirements.txt
-    # Force use of gthread for generic WebSocket support without patches
-    startCommand: gunicorn --worker-class gthread --threads 50 -w 1 --timeout 120 --bind 0.0.0.0:$PORT --preload --log-level debug --capture-output --error-logfile - app:app
+    # gthread worker + threading async_mode — no eventlet/gevent needed
+    startCommand: gunicorn --worker-class gthread --threads 4 -w 1 --timeout 120 --bind 0.0.0.0:$PORT --log-level info --capture-output --error-logfile - app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4

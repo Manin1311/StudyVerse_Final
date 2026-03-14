@@ -388,7 +388,7 @@ app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Database Configuration
-# Production: Uses PostgreSQL from Render.com (DATABASE_URL environment variable)
+# Production: Uses PostgreSQL from Neon/Supabase/Render (DATABASE_URL environment variable)
 # Development: Falls back to SQLite for local testing
 database_url = os.getenv('DATABASE_URL', 'sqlite:///StudyVerse.db').strip()  # .strip() removes hidden \n from Render textarea
 
@@ -397,18 +397,23 @@ if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
 # Log the URL being used (masked) for debugging
-print(f"[DB] Connecting to: {database_url[:50]}...{database_url[-20:]}")
+_safe_url = database_url[:30] + "..." + database_url[-15:] if len(database_url) > 50 else database_url
+print(f"[DB] Connecting to: {_safe_url}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable modification tracking to save memory
 
-# Connection Pool Settings for Cloud PostgreSQL
-# NullPool: Disables connection pooling to prevent "un-acquired lock" errors with eventlet
-# pool_pre_ping: Tests connections before use to handle dropped connections
+# Connection Pool Settings for Cloud PostgreSQL (Neon/Supabase/Render)
+# NullPool: Opens a fresh connection per request — safest for cloud DBs with connection limits
+# No pool_pre_ping with NullPool (it's redundant; each connection is brand-new)
+_is_postgres_url = database_url.startswith("postgresql://") or database_url.startswith("postgres://")
+_connect_args = {'connect_timeout': 10}
+if _is_postgres_url:
+    _connect_args['sslmode'] = 'require'   # Required for Neon / Supabase
+
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'poolclass': NullPool,      # No connection pooling
-    'pool_pre_ping': True,      # Validate connections before use
-    'connect_args': {'connect_timeout': 10},  # Fail fast if DB is unreachable (prevents startup hang)
+    'poolclass': NullPool,          # No connection pooling — one connection per request
+    'connect_args': _connect_args,  # Timeout + SSL (Neon/Supabase require SSL)
 }
 
 # File upload configuration for profile images and syllabus PDFs
