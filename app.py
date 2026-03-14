@@ -87,6 +87,12 @@ LAST UPDATED: February 2026
 # IMPORTS AND INITIALIZATION
 # ============================================================================
 
+# Force unbuffered output so all print() calls appear immediately in Render logs
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+print("[STARTUP] app.py loading...", flush=True)
+
 # Database and ORM imports
 from sqlalchemy.pool import NullPool
 from flask import Flask, render_template, request, session, redirect, url_for, Response, flash, jsonify

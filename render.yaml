@@ -3,13 +3,15 @@ services:
     name: studyverse
     env: python
     buildCommand: pip install --no-cache-dir -r requirements.txt
-    # gthread worker + threading async_mode — no eventlet/gevent needed
-    startCommand: gunicorn --worker-class gthread --threads 4 -w 1 --timeout 120 --bind 0.0.0.0:$PORT --log-level info --capture-output --error-logfile - app:app
+    # sync worker — Flask-SocketIO async_mode='threading' manages threads internally
+    startCommand: gunicorn --worker-class sync -w 1 --timeout 120 --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
       - key: WEB_CONCURRENCY
         value: 1
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
 
 
